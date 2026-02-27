@@ -243,7 +243,7 @@ export default function Home() {
 
   return (
     <main className="home-page app-page-enter">
-      <section className="home-shell">
+      <section className="home-shell app-content-slide">
         <header className="topbar app-fade-stagger">
           <div className="brand">
             <div className="brand-icon">

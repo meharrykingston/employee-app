@@ -53,7 +53,7 @@ export default function Health() {
   const [range, setRange] = useState<Range>("Day")
 
   return (
-    <main className="health-screen app-page-enter">
+    <main className="health-screen app-page-enter app-content-slide-rtl">
       <header className="health-header app-fade-stagger">
         <button className="back-btn app-pressable" onClick={() => navigate("/home")} aria-label="Back to home">
           <Icon name="back" className="h-icon" />
