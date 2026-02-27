@@ -1,13 +1,13 @@
 .home-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #f3f4f6;
   color: #1f2940;
-  padding-bottom: 92px;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom));
 }
 
 .home-shell {
   width: 100%;
-  max-width: 390px;
+  max-width: 430px;
   margin: 0 auto;
   padding: 10px 6px 20px;
 }
@@ -588,7 +588,7 @@
   left: 50%;
   transform: translateX(-50%);
   bottom: 0;
-  width: min(390px, 100%);
+  width: min(100vw, 430px);
   background: #f5f6f8;
   border-top: 1px solid #e1e5ed;
   padding: 9px 12px calc(9px + env(safe-area-inset-bottom));
