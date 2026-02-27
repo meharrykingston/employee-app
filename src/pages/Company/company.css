@@ -1,0 +1,133 @@
+/* ---------- Screen ---------- */
+.company-screen {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #5a189a, #8a2be2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+/* ---------- Card ---------- */
+.company-card {
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Entrance Animation ---------- */
+.animate-in {
+  animation: fadeSlide 0.6s ease-out forwards;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Text ---------- */
+.title {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 22px;
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ---------- Input ---------- */
+.label {
+  margin-top: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hint {
+  color: #9ca3af;
+}
+
+.input-wrapper {
+  margin-top: 8px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.input-wrapper.error {
+  border: 1px solid #ef4444;
+}
+
+.input-wrapper input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 14px;
+  letter-spacing: 1px;
+  font-family: "Manrope", sans-serif;
+}
+
+/* ---------- Error ---------- */
+.error-text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+/* ---------- Button ---------- */
+.continue-btn {
+  margin-top: 20px;
+  width: 100%;
+  height: 48px;
+  background: linear-gradient(90deg, #7c3aed, #9333ea);
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.continue-btn.loading {
+  opacity: 0.8;
+}
+
+/* ---------- Loader ---------- */
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Footer ---------- */
+.terms {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #e5e7eb;
+  text-align: center;
+}

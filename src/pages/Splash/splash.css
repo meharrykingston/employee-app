@@ -1,0 +1,75 @@
+.splash-container {
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, #f6f3ff, #ffffff);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.pulse-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 32px;
+}
+
+.logo-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  background: #6d5cff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.logo-text {
+  color: white;
+  font-size: 28px;
+  font-weight: 600;
+  font-family: Satoshi, Manrope, sans-serif;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(109, 92, 255, 0.2);
+  transform: translate(-50%, -50%) scale(0.7);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.pulse-ring.delay {
+  animation-delay: 1.25s;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.7);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 0;
+  }
+}
+
+.splash-text {
+  font-size: 14px;
+  color: #6b6b6b;
+  letter-spacing: 0.3px;
+}
