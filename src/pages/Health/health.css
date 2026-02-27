@@ -1,7 +1,8 @@
 ﻿.health-screen {
   height: 100dvh;
   padding: 16px;
-  padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  padding-top: 62px;
+  padding-bottom: calc(98px + env(safe-area-inset-bottom));
   font-family: "Manrope", sans-serif;
   background: #f3f4f6;
   overflow-y: auto;
@@ -12,10 +13,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  position: sticky;
-  top: -1px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 430px;
   z-index: 12;
-  padding: 8px 0 10px;
+  padding: 6px 12px 8px;
   background: rgba(243, 244, 246, 0.88);
   backdrop-filter: blur(12px);
 }
@@ -33,7 +39,7 @@
 .health-header h1 {
   font-family: "Satoshi", sans-serif;
   margin: 0;
-  font-size: 24px;
+  font-size: 21px;
 }
 
 .health-header p {
@@ -220,14 +226,19 @@
 }
 
 .bottom-actions {
-  position: sticky;
-  bottom: 12px;
-  left: auto;
-  transform: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
+  max-width: 430px;
   display: flex;
   gap: 12px;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(243, 244, 246, 0.92);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid #e5e7eb;
 }
 
 .chat-btn,
@@ -252,3 +263,4 @@
   border: 1px solid #e5e7eb;
   color: #1f2937;
 }
+

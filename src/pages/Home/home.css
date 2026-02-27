@@ -1,8 +1,7 @@
-.home-page {
+﻿.home-page {
   height: 100dvh;
   background: #f3f4f6;
   color: #1f2940;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -11,18 +10,24 @@
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 10px 6px 20px;
+  padding: calc(62px + env(safe-area-inset-top)) 6px calc(98px + env(safe-area-inset-bottom));
 }
 
 .topbar {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid #e2e6ee;
-  padding: 10px 14px 16px;
-  position: sticky;
+  padding: calc(6px + env(safe-area-inset-top)) 12px 8px;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 430px;
+  min-height: 62px;
   z-index: 15;
   backdrop-filter: blur(12px);
   background: rgba(243, 244, 246, 0.88);
@@ -51,16 +56,16 @@
 
 .brand h1 {
   margin: 0;
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 600;
   color: #75316f;
 }
 
 .brand p {
-  margin: 3px 0 0;
+  margin: 1px 0 0;
   color: #6f7485;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.1;
 }
 
@@ -79,15 +84,13 @@
   stroke-linejoin: round;
 }
 
-.icon-btn,
-.sos-btn {
+.icon-btn {
   border: 0;
   cursor: pointer;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .icon-btn:active,
-.sos-btn:active,
 .tab:active,
 .quick-card:active,
 .feeling-card:active,
@@ -96,24 +99,11 @@
 }
 
 .icon-btn {
-  width: 38px;
-  height: 32px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   color: #2f3445;
-  background: transparent;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.sos-btn {
-  min-width: 64px;
-  height: 34px;
-  border-radius: 10px;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  background: #ff3d42;
-  position: relative;
+  background: #eceff5;
 }
 
 .tabbar {
@@ -121,7 +111,7 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
-  padding: 10px 10px 8px;
+  padding: 8px 10px 8px;
 }
 
 .tab {
@@ -129,9 +119,24 @@
   background: transparent;
   border-radius: 10px;
   color: #61677b;
-  font-size: 12px;
-  padding: 10px 2px;
+  font-size: 10px;
+  padding: 7px 2px;
   cursor: pointer;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+
+.tab span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tab-ico {
+  width: 14px;
+  height: 14px;
 }
 
 .tab.active {
@@ -607,11 +612,13 @@
 }
 
 .composer {
-  position: sticky;
-  left: auto;
-  transform: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   bottom: 0;
   width: 100%;
+  max-width: 430px;
   background: #f5f6f8;
   border-top: 1px solid #e1e5ed;
   padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
@@ -728,6 +735,7 @@
   z-index: 50;
   display: flex;
   justify-content: flex-end;
+  touch-action: none;
 }
 
 .drawer {
@@ -770,3 +778,35 @@
   color: #1f2940;
   font-weight: 600;
 }
+
+.hamburger {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: #eceff5;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+}
+
+.hamburger span {
+  width: 16px;
+  height: 2px;
+  background: #2f3445;
+  border-radius: 999px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.hamburger.open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+

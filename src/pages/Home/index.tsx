@@ -34,8 +34,18 @@ type IconName =
   | "user"
   | "call"
   | "video"
+  | "chat"
+  | "wallet"
+  | "spark"
+  | "home"
 
-const tabs = ["Home", "Health", "AI Chat", "Stress Relief", "Wallet"] as const
+const tabs = [
+  { id: "Home", icon: "home" },
+  { id: "Health", icon: "heart" },
+  { id: "AI Chat", icon: "chat" },
+  { id: "Stress Relief", icon: "spark" },
+  { id: "Wallet", icon: "wallet" },
+] as const
 
 const quickAccess: QuickAccessItem[] = [
   { title: "Stress Relief", subtitle: "Chat for emotional support", tone: "purple", badge: "New", icon: "brain" },
@@ -132,6 +142,14 @@ function AppIcon({ name, className }: { name: IconName; className?: string }) {
       return <svg {...common} className={className}><path d="M6 3h4l1 4-2 2a13 13 0 0 0 6 6l2-2 4 1v4a2 2 0 0 1-2 2A15 15 0 0 1 4 5a2 2 0 0 1 2-2z" /></svg>
     case "video":
       return <svg {...common} className={className}><path d="M4 7h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4V7zm13 4 3-2v6l-3-2v-2z" /></svg>
+    case "chat":
+      return <svg {...common} className={className}><path d="M4 5h16v10H8l-4 4V5z" /></svg>
+    case "wallet":
+      return <svg {...common} className={className}><path d="M3 7h18v10H3V7zm12 5h3m-12-8h12v3H6z" /></svg>
+    case "spark":
+      return <svg {...common} className={className}><path d="M13 2 6 13h5l-1 9 7-11h-5l1-9z" /></svg>
+    case "home":
+      return <svg {...common} className={className}><path d="M4 11 12 4l8 7v9h-6v-6h-4v6H4v-9z" /></svg>
     default:
       return <svg {...common} className={className}><circle cx="12" cy="12" r="2" /></svg>
   }
@@ -148,12 +166,13 @@ export default function Home() {
   const [showAttachMenu, setShowAttachMenu] = useState(false)
   const [fileAccept, setFileAccept] = useState("image/*,.pdf")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const tipTouchStartX = useRef<number | null>(null)
 
   const currentTip = tips[tipIndex]
   const score = useMemo(() => 92 + Math.min(selectedFeelings.length, 6), [selectedFeelings.length])
   const activeTab = location.pathname === "/health" ? "Health" : "Home"
 
-  function handleTabClick(tab: (typeof tabs)[number]) {
+  function handleTabClick(tab: (typeof tabs)[number]["id"]) {
     if (tab === "Home") {
       navigate("/home")
       return
@@ -203,6 +222,25 @@ export default function Home() {
     e.target.value = ""
   }
 
+  function onTipTouchStart(e: React.TouchEvent<HTMLElement>) {
+    tipTouchStartX.current = e.changedTouches[0]?.clientX ?? null
+  }
+
+  function onTipTouchEnd(e: React.TouchEvent<HTMLElement>) {
+    if (tipTouchStartX.current === null) {
+      return
+    }
+    const endX = e.changedTouches[0]?.clientX ?? tipTouchStartX.current
+    const delta = endX - tipTouchStartX.current
+    tipTouchStartX.current = null
+
+    if (delta > 45) {
+      prevTip()
+    } else if (delta < -45) {
+      nextTip()
+    }
+  }
+
   return (
     <main className="home-page app-page-enter">
       <section className="home-shell">
@@ -216,21 +254,23 @@ export default function Home() {
               <p>Health Companion</p>
             </div>
           </div>
-          <button className="sos-btn app-pressable">SOS</button>
           <button className="icon-btn app-pressable" aria-label="notifications"><AppIcon name="bell" className="ico" /></button>
-          <button className="icon-btn app-pressable" aria-label="menu" onClick={() => setShowNav(true)}>
-            <AppIcon name="menu" className="ico" />
+          <button className={`hamburger app-pressable ${showNav ? "open" : ""}`} aria-label="menu" onClick={() => setShowNav(true)}>
+            <span />
+            <span />
+            <span />
           </button>
         </header>
 
         <nav className="tabbar app-fade-stagger">
           {tabs.map((tab) => (
             <button
-              key={tab}
-              className={`tab app-pressable ${activeTab === tab ? "active" : ""}`}
-              onClick={() => handleTabClick(tab)}
+              key={tab.id}
+              className={`tab app-pressable ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => handleTabClick(tab.id)}
             >
-              {tab}
+              <AppIcon name={tab.icon} className="tab-ico" />
+              <span>{tab.id}</span>
             </button>
           ))}
         </nav>
@@ -294,7 +334,7 @@ export default function Home() {
 
         <section className="section app-fade-stagger">
           <h3 className="section-title">Daily Health Tips</h3>
-          <article className="tip-card">
+          <article className="tip-card" onTouchStart={onTipTouchStart} onTouchEnd={onTipTouchEnd}>
             <button className="tip-arrow left app-pressable" onClick={prevTip} aria-label="previous tip">&lt;</button>
             <button className="tip-arrow right app-pressable" onClick={nextTip} aria-label="next tip">&gt;</button>
             <div className="tip-header">
@@ -427,7 +467,11 @@ export default function Home() {
       )}
 
       {showNav && (
-        <div className="drawer-overlay" onClick={() => setShowNav(false)}>
+        <div className="drawer-overlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowNav(false)
+          }
+        }}>
           <aside className="drawer app-page-enter" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
               <div>
