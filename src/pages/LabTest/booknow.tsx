@@ -17,7 +17,12 @@ type LabTestItem = {
 export default function LabBookNowStep3() {
   const navigate = useNavigate()
   const { state } = useLocation() as {
-    state?: { selectedTest?: LabTestItem; collectionType?: string; address?: string }
+    state?: {
+      selectedTest?: LabTestItem
+      collectionType?: string
+      address?: string
+      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+    }
   }
 
   const test =
@@ -99,6 +104,7 @@ export default function LabBookNowStep3() {
                 selectedTest: test,
                 collectionType: state?.collectionType,
                 address: state?.address,
+                readiness: state?.readiness,
               },
             })
           }
@@ -115,6 +121,7 @@ export default function LabBookNowStep3() {
                 collectionType: state?.collectionType,
                 address: state?.address,
                 date: "Arriving in 5 mins",
+                readiness: state?.readiness,
               },
             })
           }

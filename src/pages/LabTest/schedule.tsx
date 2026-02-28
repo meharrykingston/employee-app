@@ -18,7 +18,14 @@ const TIMES = ["6:00 AM", "8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM
 
 export default function LabScheduleLater() {
   const navigate = useNavigate()
-  const { state } = useLocation() as { state?: { selectedTest?: LabTestItem; collectionType?: string; address?: string } }
+  const { state } = useLocation() as {
+    state?: {
+      selectedTest?: LabTestItem
+      collectionType?: string
+      address?: string
+      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+    }
+  }
   const [date, setDate] = useState("Tomorrow")
   const [time, setTime] = useState("10:00 AM")
 
@@ -112,6 +119,7 @@ export default function LabScheduleLater() {
                 address: state?.address,
                 date,
                 time,
+                readiness: state?.readiness,
               },
             })
           }

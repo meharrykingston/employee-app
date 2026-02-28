@@ -17,7 +17,12 @@ type LabTestItem = {
 
 export default function LabLocationStep2() {
   const navigate = useNavigate()
-  const { state } = useLocation() as { state?: { selectedTest?: LabTestItem } }
+  const { state } = useLocation() as {
+    state?: {
+      selectedTest?: LabTestItem
+      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+    }
+  }
   const selectedTest = state?.selectedTest
   const [collectionType, setCollectionType] = useState<"home" | "office">("home")
 
@@ -102,6 +107,7 @@ export default function LabLocationStep2() {
                 selectedTest,
                 collectionType,
                 address,
+                readiness: state?.readiness,
               },
             })
           }

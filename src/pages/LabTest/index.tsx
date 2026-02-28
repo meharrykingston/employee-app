@@ -147,7 +147,7 @@ export default function LabTestsStep1() {
           <button
             key={test.id}
             className="lab-test-card"
-            onClick={() => navigate("/lab-tests/location", { state: { selectedTest: test } })}
+            onClick={() => navigate("/lab-tests/readiness", { state: { selectedTest: test } })}
             type="button"
           >
             <div className={`lab-icon ${test.color}`} />

@@ -10,7 +10,7 @@ type Tip = {
 
 type QuickAccessItem = {
   title: string
-  subtitle: string
+  subtitle?: string
   tone: "purple" | "blue" | "indigo" | "orange" | "green" | "gold"
   badge?: string
   icon: IconName
@@ -58,7 +58,7 @@ const tabRoutes: Record<(typeof tabs)[number]["id"], string> = {
 const quickAccess: QuickAccessItem[] = [
   { title: "Stress Relief", subtitle: "Chat for emotional support", tone: "purple", badge: "New", icon: "brain" },
   { title: "Lab Tests", subtitle: "Free Slots", tone: "blue", icon: "test" },
-  { title: "OPD / Tele...", subtitle: "Unlimited Co...", tone: "indigo", icon: "pin" },
+  { title: "OPD / Teleconsultation", subtitle: "Unlimited Consultation", tone: "indigo", icon: "pin" },
   { title: "Weekend Tasks", subtitle: "Earn coins", tone: "orange", icon: "trophy" },
   { title: "Pharmacy", subtitle: "Order medicines", tone: "green", icon: "pill" },
   { title: "Badges", subtitle: "View your ranking", tone: "gold", badge: "#42", icon: "award" },
@@ -67,7 +67,9 @@ const quickAccess: QuickAccessItem[] = [
 const quickAccessRoutes: Partial<Record<QuickAccessItem["title"], string>> = {
   "Stress Relief": "/stress-relief",
   "Lab Tests": "/lab-tests",
-  "Weekend Tasks": "/wallet",
+  "OPD / Teleconsultation": "/teleconsultation",
+  "Weekend Tasks": "/weekend-tasks",
+  Pharmacy: "/pharmacy",
   Badges: "/wallet",
 }
 
@@ -276,7 +278,11 @@ export default function Home() {
               <p>Health Companion</p>
             </div>
           </div>
-          <button className="icon-btn app-pressable" aria-label="notifications"><AppIcon name="bell" className="ico" /></button>
+
+          <button className="icon-btn notify-btn app-pressable" aria-label="notifications">
+            <AppIcon name="bell" className="ico" />
+          </button>
+
           <button
             className={`hamburger app-pressable ${showNav ? "open" : ""}`}
             aria-label="menu"
@@ -311,7 +317,7 @@ export default function Home() {
             <p>Internal Medicine</p>
             <div className="doctor-meta">
               <span className="online-dot" />
-              <span>4.9</span>
+              <span className="star">★ 4.9</span>
               <span className="pill">Available now</span>
             </div>
           </div>
@@ -335,7 +341,7 @@ export default function Home() {
                   <AppIcon name={item.icon} className="ico" />
                 </span>
                 <h4>{item.title}</h4>
-                <p>{item.subtitle}</p>
+                {item.subtitle && <p>{item.subtitle}</p>}
               </button>
             ))}
           </div>
@@ -471,7 +477,7 @@ export default function Home() {
 
         <button className="send-btn app-pressable" aria-label="send message" onClick={sendMessage}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 11.5L21 3l-8.5 18-2.3-6.7L3 11.5z" />
+            <path d="M12 14a3.5 3.5 0 0 0 3.5-3.5V7A3.5 3.5 0 0 0 12 3.5 3.5 3.5 0 0 0 8.5 7v3.5A3.5 3.5 0 0 0 12 14zm-5-3v.5a5 5 0 0 0 10 0V11M12 16v4m-3 0h6" />
           </svg>
         </button>
       </footer>
