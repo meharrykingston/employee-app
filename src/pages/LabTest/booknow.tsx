@@ -77,8 +77,13 @@ export default function LabBookNowStep3() {
         </div>
       </div>
 
-      <div className="map-box">
-        <img src="/images/map-placeholder.png" alt="Map route preview" />
+      <div className="map-box live-map">
+        <iframe
+          title="Pickup route map"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src="https://maps.google.com/maps?q=12.9716,77.5946%20to%2012.9352,77.6245&z=12&output=embed"
+        />
       </div>
 
       <div className="address-line">

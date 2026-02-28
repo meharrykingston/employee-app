@@ -57,7 +57,7 @@ export default function LabLocationStep2() {
             type="button"
             onClick={() => setCollectionType("home")}
           >
-            <div className="collection-icon active-icon"><FiHome /></div>
+            <div className="collection-icon"><FiHome /></div>
             <h3>Home Collection</h3>
             <p>Sample collected at your doorstep</p>
             <span className="mini-pill green">in 5 mins</span>
@@ -76,8 +76,17 @@ export default function LabLocationStep2() {
         </div>
       </section>
 
-      <div className="map-box">
-        <img src="/images/map-placeholder.png" alt="Map route preview" />
+      <div className="map-box live-map">
+        <iframe
+          title="Collection route map"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src={
+            collectionType === "home"
+              ? "https://maps.google.com/maps?q=12.9716,77.5946%20to%2012.9352,77.6245&z=12&output=embed"
+              : "https://maps.google.com/maps?q=12.9716,77.5946%20to%2012.9833,77.7284&z=12&output=embed"
+          }
+        />
       </div>
 
       <div className="address-line">

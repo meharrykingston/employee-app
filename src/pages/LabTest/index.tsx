@@ -75,8 +75,11 @@ const TESTS: LabTestItem[] = [
 export default function LabTestsStep1() {
   const navigate = useNavigate()
   const [query, setQuery] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilterModal, setShowFilterModal] = useState(false)
   const [activeFilter, setActiveFilter] = useState<"All" | LabTestItem["tag"]>("All")
+  const [modalTag, setModalTag] = useState<"All" | LabTestItem["tag"]>("All")
+  const [onlyQuick, setOnlyQuick] = useState(false)
+  const [modalQuick, setModalQuick] = useState(false)
 
   const filteredTests = useMemo(() => {
     return TESTS.filter((test) => {
@@ -84,9 +87,10 @@ export default function LabTestsStep1() {
       const textMatch =
         test.name.toLowerCase().includes(query.toLowerCase()) ||
         test.desc.toLowerCase().includes(query.toLowerCase())
-      return tagMatch && textMatch
+      const quickMatch = !onlyQuick || !!test.quick
+      return tagMatch && textMatch && quickMatch
     })
-  }, [activeFilter, query])
+  }, [activeFilter, onlyQuick, query])
 
   return (
     <div className="lab-page">
@@ -120,28 +124,23 @@ export default function LabTestsStep1() {
 
       <div className="lab-section-head">
         <h2>Popular Tests</h2>
-        <button className="filter-btn" type="button" onClick={() => setShowFilters((prev) => !prev)}>
+        <button
+          className="filter-btn"
+          type="button"
+          onClick={() => {
+            setModalTag(activeFilter)
+            setModalQuick(onlyQuick)
+            setShowFilterModal(true)
+          }}
+        >
           <FiFilter /> Filter
         </button>
       </div>
 
-      {showFilters && (
-        <div className="filter-row">
-          {(["All", "Blood Test", "Hormone Test", "Vitamin Test"] as const).map((tag) => (
-            <button
-              key={tag}
-              className={`filter-chip ${activeFilter === tag ? "active" : ""}`}
-              type="button"
-              onClick={() => {
-                setActiveFilter(tag)
-                setShowFilters(false)
-              }}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="active-filter-line">
+        <span>Filter: {activeFilter}</span>
+        {onlyQuick && <span className="active-quick">Quick only</span>}
+      </div>
 
       <div className="lab-list">
         {filteredTests.map((test) => (
@@ -186,6 +185,63 @@ export default function LabTestsStep1() {
           </div>
         )}
       </div>
+
+      {showFilterModal && (
+        <div className="filter-modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="filter-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Filter Tests</h3>
+
+            <div className="modal-section">
+              <p>Category</p>
+              <div className="filter-row">
+                {(["All", "Blood Test", "Hormone Test", "Vitamin Test"] as const).map((tag) => (
+                  <button
+                    key={tag}
+                    className={`filter-chip ${modalTag === tag ? "active" : ""}`}
+                    type="button"
+                    onClick={() => setModalTag(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="quick-toggle">
+              <input
+                type="checkbox"
+                checked={modalQuick}
+                onChange={(e) => setModalQuick(e.target.checked)}
+              />
+              Show only quick tests
+            </label>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setModalTag("All")
+                  setModalQuick(false)
+                }}
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  setActiveFilter(modalTag)
+                  setOnlyQuick(modalQuick)
+                  setShowFilterModal(false)
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { FiArrowLeft, FiCalendar, FiCheck, FiMapPin } from "react-icons/fi"
 import { RiTestTubeLine } from "react-icons/ri"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -9,6 +10,7 @@ type LabTestItem = {
 
 export default function LabConfirm() {
   const navigate = useNavigate()
+  const [phase, setPhase] = useState<"processing" | "confirmed">("processing")
   const { state } = useLocation() as {
     state?: { selectedTest?: LabTestItem; collectionType?: string; date?: string; time?: string }
   }
@@ -16,6 +18,13 @@ export default function LabConfirm() {
   const dateTime = state?.date ? `${state.date}${state?.time ? ` ${state.time}` : ""}` : "Arriving in 5 mins"
   const collectionType = state?.collectionType === "office" ? "Office Collection" : "Home Collection"
   const selectedTest = state?.selectedTest?.name ?? "Complete Blood Count (CBC)"
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setPhase("confirmed")
+    }, 1600)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   return (
     <div className="lab-page">
@@ -39,49 +48,61 @@ export default function LabConfirm() {
         <div className="step active">4. Confirm</div>
       </div>
 
-      <div className="confirm-top">
-        <div className="confirm-check pulse">
-          <span className="confirm-check-inner">
-            <FiCheck />
-          </span>
-        </div>
-        <h2>Booking Confirmed!</h2>
-        <p>Your lab test has been booked successfully</p>
-      </div>
-
-      <div className="detail-box">
-        <h3>Booking Detail</h3>
-
-        <div className="detail-item">
-          <FiCalendar />
-          <div>
-            <span>Date & Time</span>
-            <strong>{dateTime}</strong>
+      {phase === "processing" ? (
+        <div className="confirm-top processing">
+          <div className="processing-ring">
+            <span />
           </div>
+          <h2>Processing Booking...</h2>
+          <p>Please wait while we confirm your lab appointment</p>
         </div>
-
-        <div className="detail-item">
-          <FiMapPin />
-          <div>
-            <span>Collection Type</span>
-            <strong>{collectionType}</strong>
+      ) : (
+        <>
+          <div className="confirm-top">
+            <div className="confirm-check pulse">
+              <span className="confirm-check-inner">
+                <FiCheck />
+              </span>
+            </div>
+            <h2>Booking Confirmed!</h2>
+            <p>Your lab test has been booked successfully</p>
           </div>
-        </div>
 
-        <div className="detail-item">
-          <RiTestTubeLine />
-          <div>
-            <span>Tests Selected</span>
-            <strong>{selectedTest}</strong>
+          <div className="detail-box">
+            <h3>Booking Detail</h3>
+
+            <div className="detail-item">
+              <FiCalendar />
+              <div>
+                <span>Date & Time</span>
+                <strong>{dateTime}</strong>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <FiMapPin />
+              <div>
+                <span>Collection Type</span>
+                <strong>{collectionType}</strong>
+              </div>
+            </div>
+
+            <div className="detail-item">
+              <RiTestTubeLine />
+              <div>
+                <span>Tests Selected</span>
+                <strong>{selectedTest}</strong>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="bottom-buttons single">
-        <button className="btn-primary" onClick={() => navigate("/home")} type="button">
-          Return Home
-        </button>
-      </div>
+          <div className="bottom-buttons single">
+            <button className="btn-primary" onClick={() => navigate("/home")} type="button">
+              Return Home
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
