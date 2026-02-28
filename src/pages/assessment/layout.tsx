@@ -20,17 +20,32 @@ export default function AssessmentLayout({
   return (
     <div className="assessment-screen">
       <div className="progress-wrapper">
-        <div className="progress-bar" style={{ width: `${(step / totalSteps) * 100}%` }} />
+        <div
+          className="progress-bar"
+          style={{ width: `${(step / totalSteps) * 100}%` }}
+        />
       </div>
 
-      <div className="assessment-content">{children}</div>
+      <div className="assessment-content">
+        {children}
+      </div>
 
       {showNext && (
         <div className="assessment-footer">
-          <button className="next-btn" onClick={onNext} type="button">
-            <FiCheckCircle className="assessment-icon" aria-hidden="true" />
+          <button
+            className="next-btn"
+            onClick={onNext}
+            type="button"
+          >
+            <FiCheckCircle
+              className="assessment-icon"
+              aria-hidden="true"
+            />
             <span>Continue</span>
-            <FiArrowRight className="assessment-icon" aria-hidden="true" />
+            <FiArrowRight
+              className="assessment-icon"
+              aria-hidden="true"
+            />
           </button>
         </div>
       )}

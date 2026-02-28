@@ -15,24 +15,33 @@ export default function Company() {
   const [error, setError] = useState("")
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12)
+    const value = e.target.value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 12)
+
     setCode(value)
     setError("")
   }
 
   function handleContinue() {
     if (!isValidCompanyCode(code)) {
-      setError("Company code must be 12 characters, alphanumeric, with letters and numbers")
+      setError(
+        "Company code must be 12 characters, alphanumeric, with letters and numbers"
+      )
       return
     }
 
     setLoading(true)
 
+    // Simulated API call
     setTimeout(() => {
       setLoading(false)
       navigate("/login")
     }, 900)
   }
+
+  const isValid = isValidCompanyCode(code)
 
   return (
     <div className="company-screen app-page-enter">
@@ -47,14 +56,26 @@ export default function Company() {
 
         <div className="company-card animate-in app-fade-stagger">
           <h2 className="company-title">Enter Company Code</h2>
-          <p className="company-subtitle">Use your assigned organization code to continue.</p>
+          <p className="company-subtitle">
+            Use your assigned organization code to continue.
+          </p>
 
-          <label className="company-label" htmlFor="company-code-input">
+          <label
+            className="company-label"
+            htmlFor="company-code-input"
+          >
             Company Code
           </label>
 
-          <div className={`company-input-wrapper ${error ? "error" : ""}`}>
-            <span className="company-input-icon"><FiBriefcase aria-hidden="true" /></span>
+          <div
+            className={`company-input-wrapper ${
+              error ? "error" : ""
+            }`}
+          >
+            <span className="company-input-icon">
+              <FiBriefcase aria-hidden="true" />
+            </span>
+
             <input
               id="company-code-input"
               type="text"
@@ -66,22 +87,34 @@ export default function Company() {
             />
           </div>
 
-          <p className="company-meta">Format: uppercase letters + numbers only</p>
+          <p className="company-meta">
+            Format: uppercase letters + numbers only
+          </p>
 
-          {error && <p className="company-error-text">{error}</p>}
+          {error && (
+            <p className="company-error-text">{error}</p>
+          )}
 
           <button
-            className={`company-continue-btn app-pressable ${loading ? "loading" : ""}`}
+            className={`company-continue-btn app-pressable ${
+              loading ? "loading" : ""
+            }`}
             onClick={handleContinue}
-            disabled={loading}
+            disabled={loading || !isValid}
             type="button"
           >
-            {loading ? <span className="loader"></span> : "Continue"}
+            {loading ? (
+              <span className="loader"></span>
+            ) : (
+              "Continue"
+            )}
           </button>
         </div>
 
         <p className="company-terms">
-          By signing in, you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy</Link>
+          By signing in, you agree to our{" "}
+          <Link to="/terms">Terms</Link> and{" "}
+          <Link to="/privacy">Privacy</Link>
         </p>
       </section>
     </div>
