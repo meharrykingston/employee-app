@@ -1,31 +1,47 @@
-﻿import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { FiEye, FiEyeOff, FiLock, FiMail } from "react-icons/fi"
 import "./login.css"
 
-function MailIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="ui-icon">
-      <path d="M3 6h18v12H3V6zm1 1 8 6 8-6" />
-    </svg>
-  )
+const blockedDomains = new Set(["gmail.com", "yahoo.com", "yahoo.co.in", "yahoo.in"])
+
+function validateEmail(rawEmail: string) {
+  const email = rawEmail.trim().toLowerCase()
+
+  if (!/^[^\s@]+@([a-z0-9-]+\.)+[a-z]{2,}$/i.test(email)) {
+    return "Enter a valid company email address"
+  }
+
+  const domain = email.split("@")[1]
+  if (!domain || blockedDomains.has(domain)) {
+    return "Use your company domain email, not Gmail or Yahoo"
+  }
+
+  return ""
 }
 
-function LockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="ui-icon">
-      <path d="M7 10V7a5 5 0 0 1 10 0v3M6 10h12v10H6V10z" />
-    </svg>
-  )
-}
+function validatePassword(password: string) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters"
+  }
 
-function EyeIcon({ open }: { open: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="ui-icon eye-icon">
-      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z" />
-      <circle cx="12" cy="12" r="2" />
-      {!open && <path d="M4 20 20 4" />}
-    </svg>
-  )
+  if (!/[A-Z]/.test(password)) {
+    return "Password must include an uppercase letter"
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return "Password must include a lowercase letter"
+  }
+
+  if (!/\d/.test(password)) {
+    return "Password must include a number"
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Password must include a special character"
+  }
+
+  return ""
 }
 
 export default function Login() {
@@ -43,80 +59,85 @@ export default function Login() {
       return
     }
 
+    const emailError = validateEmail(email)
+    if (emailError) {
+      setError(emailError)
+      return
+    }
+
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      setError(passwordError)
+      return
+    }
+
     setError("")
     setLoading(true)
 
     setTimeout(() => {
       setLoading(false)
       navigate("/home")
-    }, 1500)
+    }, 1000)
   }
 
   return (
     <div className="login-screen app-page-enter">
-      <div className="brand app-fade-stagger">
+      <header className="login-brand-banner app-fade-stagger">
         <h1>HCLTech</h1>
         <p>Your Health Companion</p>
-      </div>
+      </header>
 
       <div className="login-card animate-in app-fade-stagger">
-        <h2 className="title">Welcome Back</h2>
-        <p className="subtitle">Sign in to continue your health journey</p>
+        <h2 className="login-title">Welcome Back</h2>
+        <p className="login-subtitle">Sign in to continue your health journey</p>
 
-        <label>Email Address</label>
-        <div className="input-wrapper">
-          <span className="icon"><MailIcon /></span>
+        <label htmlFor="login-email">Email Address</label>
+        <div className="login-input-wrapper">
+          <span className="login-icon"><FiMail className="ui-icon" aria-hidden="true" /></span>
           <input
+            id="login-email"
             type="email"
-            placeholder="Enter your work email..."
+            placeholder="Enter your work email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
           />
         </div>
 
-        <label>Password</label>
-        <div className="input-wrapper">
-          <span className="icon"><LockIcon /></span>
+        <label htmlFor="login-password">Password</label>
+        <div className="login-input-wrapper">
+          <span className="login-icon"><FiLock className="ui-icon" aria-hidden="true" /></span>
           <input
+            id="login-password"
             type={showPassword ? "text" : "password"}
-            placeholder="Enter your password..."
+            placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
           />
-          <button className="eye app-pressable" onClick={() => setShowPassword(!showPassword)} aria-label="toggle password">
-            <EyeIcon open={showPassword} />
+          <button className="login-eye app-pressable" onClick={() => setShowPassword(!showPassword)} aria-label="toggle password" type="button">
+            {showPassword ? <FiEyeOff className="ui-icon" aria-hidden="true" /> : <FiEye className="ui-icon" aria-hidden="true" />}
           </button>
         </div>
 
-        {error && <p className="error-text">{error}</p>}
+        {error && <p className="login-error-text">{error}</p>}
 
         <button
-          className={`signin-btn app-pressable ${loading ? "loading" : ""}`}
+          className={`login-signin-btn app-pressable ${loading ? "loading" : ""}`}
           onClick={handleSubmit}
           disabled={loading}
+          type="button"
         >
-          {loading ? <span className="loader"></span> : "Sign In ->"}
+          {loading ? <span className="loader"></span> : "Sign In"}
         </button>
 
-        <p
-          className="forgot"
-          onClick={() => navigate("/forgot")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              navigate("/forgot")
-            }
-          }}
-          role="button"
-          tabIndex={0}
-        >
+        <button className="login-forgot app-pressable" onClick={() => navigate("/forgot")} type="button">
           Forgot password?
-        </p>
+        </button>
       </div>
 
-      <p className="terms">
-        By signing in, you agree to our <span>Terms</span> and <span>Privacy Policy</span>
+      <p className="login-terms">
+        By signing in, you agree to our <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>
       </p>
     </div>
   )

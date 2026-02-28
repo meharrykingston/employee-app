@@ -151,6 +151,9 @@ label {
   font-size: 13px;
   color: #7c3aed;
   cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
 }
 
 .terms {
@@ -158,4 +161,9 @@ label {
   font-size: 12px;
   color: #e5e7eb;
   text-align: center;
+}
+
+.terms a {
+  color: #fff;
+  text-underline-offset: 2px;
 }

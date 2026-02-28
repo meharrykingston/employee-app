@@ -60,7 +60,7 @@ body {
   margin: 0;
   min-height: 100dvh;
   font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #dde1e8;
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
@@ -78,7 +78,7 @@ h1, h2, h3, h4, h5, h6,
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   margin: 0;
-  background: #f3f4f6;
+  background: #ffffff;
   position: relative;
   overflow: hidden;
 }
@@ -87,11 +87,30 @@ h1, h2, h3, h4, h5, h6,
   box-sizing: border-box;
 }
 
+*:focus-visible {
+  outline: 2px solid #6d2a73;
+  outline-offset: 2px;
+}
+
 input,
 button,
 textarea,
 select {
   font: inherit;
+}
+
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+button,
+a {
+  touch-action: manipulation;
 }
 
 input,

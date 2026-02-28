@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAM_ID.com.astikan.employee"],
+        "components": [
+          { "/": "/home/*" },
+          { "/": "/health/*" },
+          { "/": "/terms" },
+          { "/": "/privacy" }
+        ]
+      }
+    ]
+  }
+}

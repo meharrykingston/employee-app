@@ -1,9 +1,10 @@
-﻿.home-page {
+.home-page {
   height: 100dvh;
-  background: #f3f4f6;
+  background: #f8fafd;
   color: #1f2940;
   overflow-y: auto;
   overscroll-behavior: contain;
+  font-family: "Manrope", sans-serif;
 }
 
 .home-shell {
@@ -19,7 +20,7 @@
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid #e2e6ee;
-  padding: 6px 12px 8px;
+  padding: 8px 12px 10px;
   position: sticky;
   top: 0;
   left: auto;
@@ -27,7 +28,7 @@
   margin: 0;
   width: auto;
   max-width: none;
-  min-height: 62px;
+  min-height: 66px;
   z-index: 15;
   backdrop-filter: blur(12px);
   background: rgba(243, 244, 246, 0.88);
@@ -56,17 +57,18 @@
 
 .brand h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: clamp(1.1rem, 5vw, 1.35rem);
   line-height: 1;
-  font-weight: 600;
+  font-weight: 700;
   color: #75316f;
+  letter-spacing: 0.2px;
 }
 
 .brand p {
   margin: 1px 0 0;
   color: #6f7485;
-  font-size: 13px;
-  line-height: 1.1;
+  font-size: clamp(0.74rem, 3.2vw, 0.82rem);
+  line-height: 1.25;
 }
 
 .ico {
@@ -119,7 +121,7 @@
   background: transparent;
   border-radius: 10px;
   color: #61677b;
-  font-size: 10px;
+  font-size: 0.73rem;
   padding: 7px 2px;
   cursor: pointer;
   display: grid;
@@ -164,18 +166,18 @@
   place-items: center;
   border: 3px solid #c08ce5;
   background: linear-gradient(130deg, #8f58e7, #9f68f3);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .doctor-copy h2 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: clamp(1rem, 4.2vw, 1.1rem);
+  font-weight: 700;
 }
 
 .doctor-copy p {
   margin: 2px 0 6px;
-  font-size: 12px;
+  font-size: 0.8rem;
   opacity: 0.88;
 }
 
@@ -183,7 +185,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: clamp(0.74rem, 3.2vw, 0.82rem);
 }
 
 .online-dot {
@@ -197,7 +199,7 @@
   background: rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: 0.8rem;
 }
 
 .doctor-actions {
@@ -221,14 +223,16 @@
 .section-title {
   margin: 0;
   color: #1a2133;
-  font-size: 31px;
+  font-size: clamp(1.2rem, 5.6vw, 1.48rem);
   font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
 }
 
 .section-sub {
   margin: 4px 0 0;
   color: #5f6679;
-  font-size: 13px;
+  font-size: clamp(0.74rem, 3.2vw, 0.82rem);
 }
 
 .quick-grid {
@@ -272,13 +276,13 @@
 
 .quick-card h4 {
   margin: 10px 0 3px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .quick-card p {
   margin: 0;
-  font-size: 10px;
+  font-size: 0.73rem;
   opacity: 0.95;
 }
 
@@ -289,7 +293,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.24);
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: 0.73rem;
 }
 
 .purple { background: linear-gradient(145deg, #9f3be8, #ed6db4); }
@@ -334,16 +338,16 @@
 .feeling-card h4 {
   margin: 0 0 10px;
   color: #1e2538;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 0.87rem;
+  font-weight: 700;
 }
 
 .priority {
   border-radius: 999px;
   display: inline-block;
   padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .priority.low {
@@ -417,8 +421,8 @@
 
 .tip-header h4 {
   margin: 2px 0 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 .tip-tags {
@@ -428,7 +432,7 @@
 }
 
 .tip-tags span {
-  font-size: 11px;
+  font-size: 0.68rem;
   color: #495168;
   border-radius: 8px;
   background: #f5f7fc;
@@ -441,7 +445,7 @@
   border-radius: 999px;
   background: #e7d5ef;
   color: #683375;
-  font-size: 11px;
+  font-size: 0.68rem;
   padding: 4px 8px;
 }
 
@@ -449,7 +453,7 @@
   margin: 14px 28px 14px 0;
   color: #596178;
   line-height: 1.45;
-  font-size: 14px;
+  font-size: 0.87rem;
 }
 
 .slider-dots {
@@ -508,31 +512,31 @@
   padding: 4px 10px;
   background: #c5f0d8;
   color: #0d7e4b;
-  font-size: 11px;
+  font-size: 0.68rem;
 }
 
 .metric-value {
   margin: 30px 0 4px;
-  font-size: 34px;
+  font-size: clamp(1.4rem, 7vw, 1.7rem);
   color: #212a3f;
   font-weight: 700;
 }
 
 .metric-value span {
-  font-size: 19px;
+  font-size: clamp(0.82rem, 3.8vw, 0.96rem);
   color: #687185;
 }
 
 .metric-card h4 {
   margin: 0;
-  font-size: 13px;
+  font-size: clamp(0.74rem, 3.2vw, 0.82rem);
   color: #2a3247;
 }
 
 .metric-age {
   margin: 4px 0 12px;
   color: #667086;
-  font-size: 12px;
+  font-size: 0.8rem;
 }
 
 .metric-bars {
@@ -577,19 +581,19 @@
 .score-card h3 {
   margin: 0;
   color: #6a2f72;
-  font-size: 25px;
+  font-size: clamp(1.05rem, 4.6vw, 1.25rem);
 }
 
 .score {
   margin: 4px 0 8px;
   color: #6a2f72;
-  font-size: 35px;
+  font-size: clamp(1.35rem, 7vw, 1.85rem);
   font-weight: 700;
 }
 
 .score-card p {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.8rem;
   line-height: 1.35;
   color: #3b4258;
 }
@@ -598,7 +602,7 @@
   margin-top: 8px;
   display: block;
   color: #6a6f80;
-  font-size: 11px;
+  font-size: 0.68rem;
 }
 
 .score-icon {
@@ -674,7 +678,7 @@
   border-radius: 14px;
   padding: 0 16px;
   min-height: 46px;
-  font-size: 16px;
+  font-size: 0.95rem;
   color: #374053;
 }
 
@@ -707,7 +711,7 @@
 
 .attach-sheet h4 {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 0.95rem;
   color: #2d3548;
 }
 
@@ -716,7 +720,7 @@
   border: 0;
   border-radius: 12px;
   min-height: 44px;
-  font-size: 15px;
+  font-size: 0.96rem;
   margin-top: 8px;
   background: #e8ecf3;
   color: #2f374b;
@@ -725,7 +729,7 @@
 .attach-sheet .cancel {
   background: #f0dce8;
   color: #5f2e6f;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .drawer-overlay {
@@ -757,13 +761,13 @@
 
 .drawer-head h4 {
   margin: 0;
-  font-size: 16px;
+  font-size: 0.95rem;
 }
 
 .drawer-head p {
   margin: 3px 0 0;
   color: #4f5870;
-  font-size: 12px;
+  font-size: 0.8rem;
 }
 
 .drawer-link {
@@ -776,7 +780,7 @@
   margin-top: 8px;
   background: rgba(255, 255, 255, 0.55);
   color: #1f2940;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .hamburger {
@@ -809,4 +813,7 @@
 .hamburger.open span:nth-child(3) {
   transform: translateY(-6px) rotate(-45deg);
 }
+
+
+
 

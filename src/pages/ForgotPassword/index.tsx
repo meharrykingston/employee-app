@@ -1,5 +1,5 @@
 ﻿import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import "./forgot.css"
 
 function MailIcon() {
@@ -59,10 +59,11 @@ export default function ForgotPassword() {
         <h2 className="title">Forgot Password?</h2>
         <p className="subtitle">Reset your password from here</p>
 
-        <label>Email Address</label>
+        <label htmlFor="forgot-email">Email Address</label>
         <div className="input-wrapper">
           <span className="icon"><MailIcon /></span>
           <input
+            id="forgot-email"
             type="email"
             placeholder="Enter your email"
             value={email}
@@ -71,12 +72,13 @@ export default function ForgotPassword() {
           />
         </div>
 
-        <label>
+        <label htmlFor="forgot-company">
           Company Code <span className="hint">(Eg - ASTI2009025)</span>
         </label>
         <div className="input-wrapper">
           <span className="icon"><BuildingIcon /></span>
           <input
+            id="forgot-company"
             type="text"
             placeholder="ENTER YOUR COMPANY CODE"
             value={companyCode}
@@ -91,17 +93,18 @@ export default function ForgotPassword() {
           className={`continue-btn app-pressable ${loading ? "loading" : ""}`}
           onClick={handleSubmit}
           disabled={loading}
+          type="button"
         >
           {loading ? <span className="loader"></span> : "Continue ->"}
         </button>
 
-        <p className="back" onClick={() => navigate("/login")}>
+        <button className="back app-pressable" onClick={() => navigate("/login")} type="button">
           back to login?
-        </p>
+        </button>
       </div>
 
       <p className="terms">
-        By signing in, you agree to our <span>Terms of Service</span> and <span>Privacy Policy</span>
+        By signing in, you agree to our <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>
       </p>
     </div>
   )

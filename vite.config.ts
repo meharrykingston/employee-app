@@ -11,9 +11,13 @@ export default defineConfig({
       manifest: {
         name: "Astikan Employee App",
         short_name: "Astikan",
+        description: "Employee wellness companion for assessments, health tracking, and support.",
+        lang: "en-US",
         id: "/",
         start_url: "/",
         scope: "/",
+        categories: ["health", "medical", "productivity"],
+        prefer_related_applications: false,
         theme_color: "#6d5cff",
         background_color: "#ffffff",
         display: "fullscreen",
@@ -23,6 +27,14 @@ export default defineConfig({
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
         ],
+        shortcuts: [
+          { name: "Home", short_name: "Home", url: "/home" },
+          { name: "Health", short_name: "Health", url: "/health" }
+        ],
+        screenshots: [
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", form_factor: "wide" },
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }
+        ]
       },
     })
   ]

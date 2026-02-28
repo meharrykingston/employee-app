@@ -255,7 +255,14 @@ export default function Home() {
             </div>
           </div>
           <button className="icon-btn app-pressable" aria-label="notifications"><AppIcon name="bell" className="ico" /></button>
-          <button className={`hamburger app-pressable ${showNav ? "open" : ""}`} aria-label="menu" onClick={() => setShowNav(true)}>
+          <button
+            className={`hamburger app-pressable ${showNav ? "open" : ""}`}
+            aria-label="menu"
+            aria-expanded={showNav}
+            aria-controls="home-drawer"
+            onClick={() => setShowNav(true)}
+            type="button"
+          >
             <span />
             <span />
             <span />
@@ -472,20 +479,20 @@ export default function Home() {
             setShowNav(false)
           }
         }}>
-          <aside className="drawer app-page-enter" onClick={(e) => e.stopPropagation()}>
+          <aside id="home-drawer" className="drawer app-page-enter" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
               <div>
                 <h4>Quick Menu</h4>
                 <p>Navigate your app</p>
               </div>
-              <button className="icon-btn app-pressable" onClick={() => setShowNav(false)} aria-label="close menu">
+              <button className="icon-btn app-pressable" onClick={() => setShowNav(false)} aria-label="close menu" type="button">
                 x
               </button>
             </div>
-            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/home") }}>Home</button>
-            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/health") }}>Health</button>
-            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("AI Chat coming soon") }}>AI Chat</button>
-            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("Profile coming soon") }}>Profile</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/home") }} type="button">Home</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/health") }} type="button">Health</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("AI Chat coming soon") }} type="button">AI Chat</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("Profile coming soon") }} type="button">Profile</button>
           </aside>
         </div>
       )}
