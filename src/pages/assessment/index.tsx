@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { FiCheckCircle } from "react-icons/fi"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 
 import Welcome from "./steps/Welcome"
 import Height from "./steps/Height"
@@ -17,12 +17,6 @@ export default function HealthAssessment() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
 
-  // Optional countdown logic (not currently displayed but safe to keep)
-  const secondsLeft = useMemo(() => {
-    return step >= FINAL_STEP ? Math.max(0, 3 - (step - FINAL_STEP)) : 0
-  }, [step])
-
-  // ✅ FIXED useEffect
   useEffect(() => {
     if (step < FINAL_STEP) return
 
@@ -57,11 +51,10 @@ export default function HealthAssessment() {
         <div className="assessment-screen completion-screen app-page-enter">
           <div className="completion-card app-fade-stagger">
             <div className="completion-icon-wrap">
-              <FiCheckCircle className="completion-icon" aria-hidden="true" />
+              <FiCheckCircle className="completion-icon" />
             </div>
 
             <h1>Assessment Complete</h1>
-
             <p>
               Your baseline profile is ready. We are preparing your personalized health dashboard.
             </p>
