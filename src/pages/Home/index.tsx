@@ -47,6 +47,14 @@ const tabs = [
   { id: "Wallet", icon: "wallet" },
 ] as const
 
+const tabRoutes: Record<(typeof tabs)[number]["id"], string> = {
+  Home: "/home",
+  Health: "/health",
+  "AI Chat": "/ai-chat",
+  "Stress Relief": "/stress-relief",
+  Wallet: "/wallet",
+}
+
 const quickAccess: QuickAccessItem[] = [
   { title: "Stress Relief", subtitle: "Chat for emotional support", tone: "purple", badge: "New", icon: "brain" },
   { title: "Lab Tests", subtitle: "Free Slots", tone: "blue", icon: "test" },
@@ -55,6 +63,13 @@ const quickAccess: QuickAccessItem[] = [
   { title: "Pharmacy", subtitle: "Order medicines", tone: "green", icon: "pill" },
   { title: "Badges", subtitle: "View your ranking", tone: "gold", badge: "#42", icon: "award" },
 ]
+
+const quickAccessRoutes: Partial<Record<QuickAccessItem["title"], string>> = {
+  "Stress Relief": "/stress-relief",
+  "Lab Tests": "/lab-tests",
+  "Weekend Tasks": "/wallet",
+  Badges: "/wallet",
+}
 
 const feelings = [
   { id: "dizzy", title: "Feeling Dizzy", priority: "medium priority", tone: "light-blue", icon: "brain", level: "medium" },
@@ -170,18 +185,25 @@ export default function Home() {
 
   const currentTip = tips[tipIndex]
   const score = useMemo(() => 92 + Math.min(selectedFeelings.length, 6), [selectedFeelings.length])
-  const activeTab = location.pathname === "/health" ? "Health" : "Home"
+  const activeTab: (typeof tabs)[number]["id"] = (() => {
+    if (location.pathname.startsWith("/health")) return "Health"
+    if (location.pathname.startsWith("/ai-chat")) return "AI Chat"
+    if (location.pathname.startsWith("/stress-relief")) return "Stress Relief"
+    if (location.pathname.startsWith("/wallet")) return "Wallet"
+    return "Home"
+  })()
 
   function handleTabClick(tab: (typeof tabs)[number]["id"]) {
-    if (tab === "Home") {
-      navigate("/home")
+    navigate(tabRoutes[tab])
+  }
+
+  function openQuickAccess(title: QuickAccessItem["title"]) {
+    const route = quickAccessRoutes[title]
+    if (route) {
+      navigate(route)
       return
     }
-    if (tab === "Health") {
-      navigate("/health")
-      return
-    }
-    setLastAction(`${tab} coming soon`)
+    setLastAction(`${title} coming soon`)
   }
 
   function toggleFeeling(id: string) {
@@ -306,7 +328,7 @@ export default function Home() {
               <button
                 key={item.title}
                 className={`quick-card app-pressable ${item.tone}`}
-                onClick={() => setLastAction(`${item.title} opened`)}
+                onClick={() => openQuickAccess(item.title)}
               >
                 {item.badge && <span className="badge">{item.badge}</span>}
                 <span className="quick-icon">
@@ -491,7 +513,10 @@ export default function Home() {
             </div>
             <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/home") }} type="button">Home</button>
             <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/health") }} type="button">Health</button>
-            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("AI Chat coming soon") }} type="button">AI Chat</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/ai-chat") }} type="button">AI Chat</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/stress-relief") }} type="button">Stress Relief</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/lab-tests") }} type="button">Lab Tests</button>
+            <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); navigate("/wallet") }} type="button">Wallet</button>
             <button className="drawer-link app-pressable" onClick={() => { setShowNav(false); setLastAction("Profile coming soon") }} type="button">Profile</button>
           </aside>
         </div>

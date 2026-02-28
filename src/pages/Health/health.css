@@ -1,8 +1,8 @@
-﻿.health-screen {
+.health-screen {
   height: 100dvh;
   padding: 16px;
-  padding-top: 74px;
-  padding-bottom: 98px;
+  padding-top: 84px;
+  padding-bottom: calc(108px + env(safe-area-inset-bottom));
   font-family: "Manrope", sans-serif;
   background: #f3f4f6;
   overflow-y: auto;
@@ -18,10 +18,10 @@
   left: 0;
   right: 0;
   margin: 0 auto;
-  width: var(--app-frame-width);
-  max-width: 100%;
-  z-index: 12;
-  padding: 6px 12px 8px;
+  width: min(100%, var(--app-frame-width));
+  z-index: 16;
+  padding: 10px 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
   background: rgba(243, 244, 246, 0.88);
   backdrop-filter: blur(12px);
 }
@@ -231,14 +231,14 @@
   left: 0;
   right: 0;
   margin: 0 auto;
-  width: var(--app-frame-width);
-  max-width: 100%;
+  width: min(100%, var(--app-frame-width));
   display: flex;
   gap: 12px;
-  padding: 12px 16px 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: rgba(243, 244, 246, 0.92);
   backdrop-filter: blur(12px);
   border-top: 1px solid #e5e7eb;
+  z-index: 16;
 }
 
 .chat-btn,
@@ -263,5 +263,3 @@
   border: 1px solid #e5e7eb;
   color: #1f2937;
 }
-
-

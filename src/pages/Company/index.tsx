@@ -50,8 +50,8 @@ export default function Company() {
           <span className="company-chip">
             <FiShield aria-hidden="true" /> Secure Sign-In
           </span>
-          <h1>HCLTech</h1>
-          <p>Your Health Companion</p>
+          <h1>Welcome</h1>
+          <p>Enter your organization code to continue</p>
         </header>
 
         <div className="company-card animate-in app-fade-stagger">

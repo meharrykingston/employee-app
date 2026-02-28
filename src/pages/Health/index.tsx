@@ -106,13 +106,13 @@ export default function Health() {
       </Section>
 
       <footer className="bottom-actions app-fade-stagger">
-        <button className="chat-btn app-pressable">
+        <button className="chat-btn app-pressable" onClick={() => navigate("/ai-chat")} type="button">
           <Icon name="chat" className="h-icon" />
           AI Health Chat
         </button>
-        <button className="book-btn app-pressable">
+        <button className="book-btn app-pressable" onClick={() => navigate("/lab-tests")} type="button">
           <Icon name="calendar" className="h-icon" />
-          Book Appointment
+          Book Lab Test
         </button>
       </footer>
     </main>
@@ -163,4 +163,3 @@ function Activity({ text, time, status }: ActivityProps) {
     </article>
   )
 }
-
