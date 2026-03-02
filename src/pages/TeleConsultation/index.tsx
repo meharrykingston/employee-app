@@ -19,6 +19,7 @@ import {
 import type { ReactElement } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { goBackOrFallback } from "../../utils/navigation"
+import { playAppSound } from "../../utils/sound"
 import "./teleconsultation.css"
 
 type Doctor = {
@@ -290,21 +291,25 @@ export default function TeleConsultation() {
       setMediaPermission("granted")
       setMicOn(true)
       setCamOn(true)
+      playAppSound("tap")
       return true
     } catch {
       setMediaPermission("denied")
       setMediaError("Camera and microphone permission is required to start this consultation call.")
+      playAppSound("error")
       return false
     }
   }
 
   function startVideoCall() {
     if (!selectedDoctorInfo || callState === "connecting") return
+    playAppSound("tap")
     if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
     setElapsedSeconds(0)
     setCallState("connecting")
     connectTimerRef.current = window.setTimeout(() => {
       setCallState("live")
+      playAppSound("notify")
       if (callClockRef.current) window.clearInterval(callClockRef.current)
       callClockRef.current = window.setInterval(() => {
         setElapsedSeconds((prev) => prev + 1)
@@ -329,6 +334,7 @@ export default function TeleConsultation() {
     stopLocalStream()
     setMediaPermission("idle")
     setMediaError("")
+    playAppSound("error")
   }
 
   const liveMinutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")

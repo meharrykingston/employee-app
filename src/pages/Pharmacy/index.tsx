@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom"
 import { medicines } from "./medicineData"
 import { goBackOrFallback } from "../../utils/navigation"
 import { useCart } from "../../app/cart"
+import { playAppSound } from "../../utils/sound"
 import "./pharmacy.css"
 
 const categories = [
@@ -71,7 +72,15 @@ export default function Pharmacy() {
 
         <h1>MEDICINE</h1>
 
-        <button className="cart-btn app-pressable" type="button" aria-label="Cart" onClick={() => navigate("/cart")}>
+        <button
+          className="cart-btn app-pressable"
+          type="button"
+          aria-label="Cart"
+          onClick={() => {
+            playAppSound("tap")
+            navigate("/cart")
+          }}
+        >
           <FiShoppingCart />
           {totalItems > 0 && <span>{totalItems}</span>}
         </button>

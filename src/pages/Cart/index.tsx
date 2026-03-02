@@ -3,11 +3,12 @@ import { useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../app/cart"
 import { medicines } from "../Pharmacy/medicineData"
+import { playAppSound } from "../../utils/sound"
 import "./cart.css"
 
 export default function CartPage() {
   const navigate = useNavigate()
-  const { items, totalItems, removeItem, updateQty, addItem } = useCart()
+  const { items, totalItems, removeItem, updateQty, addItem, clearCart } = useCart()
 
   const upsells = useMemo(() => {
     const ids = new Set(items.map((item) => item.id))
@@ -40,7 +41,16 @@ export default function CartPage() {
             <FiShoppingBag />
             <h2>Your cart is empty</h2>
             <p>Add medicines and health essentials to continue.</p>
-            <button className="app-pressable" type="button" onClick={() => navigate("/pharmacy")}>Browse Pharmacy</button>
+            <button
+              className="app-pressable"
+              type="button"
+              onClick={() => {
+                playAppSound("tap")
+                navigate("/pharmacy")
+              }}
+            >
+              Browse Pharmacy
+            </button>
           </article>
         )}
 
@@ -58,15 +68,39 @@ export default function CartPage() {
                 </button>
 
                 <div className="cart-item-right">
-                  <button type="button" className="cart-remove app-pressable" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}>
+                  <button
+                    type="button"
+                    className="cart-remove app-pressable"
+                    onClick={() => {
+                      playAppSound("error")
+                      removeItem(item.id)
+                    }}
+                    aria-label={`Remove ${item.name}`}
+                  >
                     <FiTrash2 />
                   </button>
                   <div className="qty-box">
-                    <button type="button" className="app-pressable" onClick={() => updateQty(item.id, item.qty - 1)} aria-label={`Decrease ${item.name}`}>
+                    <button
+                      type="button"
+                      className="app-pressable"
+                      onClick={() => {
+                        playAppSound("tap")
+                        updateQty(item.id, item.qty - 1)
+                      }}
+                      aria-label={`Decrease ${item.name}`}
+                    >
                       <FiMinus />
                     </button>
                     <strong>{item.qty}</strong>
-                    <button type="button" className="app-pressable" onClick={() => updateQty(item.id, item.qty + 1)} aria-label={`Increase ${item.name}`}>
+                    <button
+                      type="button"
+                      className="app-pressable"
+                      onClick={() => {
+                        playAppSound("tap")
+                        updateQty(item.id, item.qty + 1)
+                      }}
+                      aria-label={`Increase ${item.name}`}
+                    >
                       <FiPlus />
                     </button>
                   </div>
@@ -91,7 +125,15 @@ export default function CartPage() {
                     <p>{item.dose}</p>
                   </div>
                 </button>
-                <button type="button" className="upsell-add app-pressable" onClick={() => addItem(item)} disabled={!item.inStock}>
+                <button
+                  type="button"
+                  className="upsell-add app-pressable"
+                  onClick={() => {
+                    addItem(item)
+                    playAppSound("success")
+                  }}
+                  disabled={!item.inStock}
+                >
                   {item.inStock ? "Add" : "Out"}
                 </button>
               </article>
@@ -111,7 +153,16 @@ export default function CartPage() {
             <p><span>Quality assurance check</span><strong>Included</strong></p>
             <p><span>Doorstep delivery</span><strong>Enabled</strong></p>
           </div>
-          <button type="button" className="checkout-btn app-pressable" onClick={() => navigate("/wallet")}>
+          <button
+            type="button"
+            className="checkout-btn app-pressable"
+            onClick={() => {
+              playAppSound("notify")
+              const orderedItems = totalItems
+              clearCart()
+              navigate("/pharmacy/booking-success", { state: { orderedItems } })
+            }}
+          >
             Confirm Order
           </button>
         </footer>

@@ -13,6 +13,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom"
 import { medicines, type MedicineItem } from "../Pharmacy/medicineData"
 import { useCart } from "../../app/cart"
+import { playAppSound } from "../../utils/sound"
 import "./medicine-detail.css"
 
 type PanelId = "about" | "uses" | "dose" | "safety"
@@ -66,6 +67,7 @@ export default function MedicineDetail() {
   function addToCart(item: MedicineItem) {
     if (!item.inStock) return
     addItem(item)
+    playAppSound("success")
     setLastAddedName(item.name)
     setShowCartPopup(true)
   }
@@ -73,6 +75,7 @@ export default function MedicineDetail() {
   function handleBuyNow() {
     if (!currentMedicine.inStock) return
     addItem(currentMedicine)
+    playAppSound("notify")
     navigate("/cart")
   }
 
@@ -87,7 +90,10 @@ export default function MedicineDetail() {
           className="medicine-cart-btn app-pressable"
           type="button"
           aria-label="Open cart"
-          onClick={() => navigate("/cart")}
+          onClick={() => {
+            playAppSound("tap")
+            navigate("/cart")
+          }}
         >
           <FiShoppingCart />
           {totalItems > 0 && <span>{totalItems}</span>}
@@ -226,7 +232,14 @@ export default function MedicineDetail() {
       </section>
 
       {showCartPopup && (
-        <button type="button" className="cart-added-popup app-page-enter" onClick={() => navigate("/cart")}>
+        <button
+          type="button"
+          className="cart-added-popup app-page-enter"
+          onClick={() => {
+            playAppSound("tap")
+            navigate("/cart")
+          }}
+        >
           {lastAddedName} added to cart
         </button>
       )}

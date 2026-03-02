@@ -1,0 +1,115 @@
+.pharmacy-success-page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 15% 0%, #e5ffe8 0%, transparent 36%),
+    radial-gradient(circle at 86% 14%, #e5f5ff 0%, transparent 40%),
+    #f7faf8;
+  color: #1f2c41;
+  font-family: "Manrope", sans-serif;
+}
+
+.pharmacy-success-shell {
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 28px 18px;
+}
+
+.pharmacy-success-badge {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 1px solid #bde6c2;
+  background: linear-gradient(145deg, #1ac97d, #14a76f);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(20, 129, 86, 0.25);
+}
+
+.pharmacy-success-badge svg {
+  width: 42px;
+  height: 42px;
+}
+
+.pharmacy-success-shell h1 {
+  margin: 16px 0 0;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  font-family: "Satoshi", sans-serif;
+}
+
+.pharmacy-success-shell p {
+  max-width: 360px;
+  margin: 8px 0 0;
+  color: #5d6f87;
+  font-size: 0.95rem;
+  line-height: 1.42;
+}
+
+.pharmacy-success-card {
+  width: min(100%, 360px);
+  margin-top: 16px;
+  border: 1px solid #d8e3ef;
+  border-radius: 16px;
+  background: #fff;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.pharmacy-success-card div {
+  border: 1px solid #e2eaf4;
+  border-radius: 11px;
+  background: #f6fbff;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.pharmacy-success-card svg {
+  color: #385f9a;
+}
+
+.pharmacy-success-card span {
+  color: #344866;
+  font-size: 0.84rem;
+}
+
+.pharmacy-success-actions {
+  width: min(100%, 360px);
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.pharmacy-success-actions button {
+  border-radius: 12px;
+  min-height: 48px;
+  border: 0;
+  font-weight: 700;
+}
+
+.pharmacy-success-actions .success-primary {
+  background: linear-gradient(125deg, #18bc79, #0fa56a);
+  color: #fff;
+}
+
+.pharmacy-success-actions .success-secondary {
+  border: 1px solid #d6dfef;
+  background: #fff;
+  color: #30425f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+

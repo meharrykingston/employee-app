@@ -11,6 +11,7 @@ import {
   FiVideo,
 } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
+import { playAppSound } from "../../utils/sound"
 import "./notifications.css"
 
 type NoticeItem = {
@@ -97,6 +98,7 @@ export default function Notifications() {
   async function sendTestNotification() {
     if (!("Notification" in window)) {
       setNotifyState("Notifications are not supported in this browser")
+      playAppSound("error")
       return
     }
 
@@ -107,6 +109,7 @@ export default function Notifications() {
 
     if (permission !== "granted") {
       setNotifyState("Notification permission not granted")
+      playAppSound("error")
       return
     }
 
@@ -123,16 +126,19 @@ export default function Notifications() {
       if (reg) {
         await reg.showNotification(title, options)
         setNotifyState("Live test notification sent")
+        playAppSound("notify")
         return
       }
     }
 
     new Notification(title, options)
     setNotifyState("Live test notification sent")
+    playAppSound("notify")
   }
 
   function markAllRead() {
     setItems((prev) => prev.map((item) => ({ ...item, unread: false })))
+    playAppSound("success")
   }
 
   return (
@@ -179,7 +185,14 @@ export default function Notifications() {
                   </div>
                   <p>{item.body}</p>
                   {item.cta && (
-                    <button className="notif-cta app-pressable" type="button" onClick={() => navigate(item.cta!.route)}>
+                    <button
+                      className="notif-cta app-pressable"
+                      type="button"
+                      onClick={() => {
+                        playAppSound("tap")
+                        navigate(item.cta!.route)
+                      }}
+                    >
                       {item.cta.label}
                     </button>
                   )}
@@ -205,7 +218,14 @@ export default function Notifications() {
                   </div>
                   <p>{item.body}</p>
                   {item.cta && (
-                    <button className="notif-cta app-pressable" type="button" onClick={() => navigate(item.cta!.route)}>
+                    <button
+                      className="notif-cta app-pressable"
+                      type="button"
+                      onClick={() => {
+                        playAppSound("tap")
+                        navigate(item.cta!.route)
+                      }}
+                    >
                       {item.cta.label}
                     </button>
                   )}
