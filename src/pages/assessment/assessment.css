@@ -281,6 +281,36 @@
   font-family: "Manrope", sans-serif;
 }
 
+.activity-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.activity-option-card {
+  text-align: left;
+  min-height: 132px;
+}
+
+.activity-option-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1f6cb8, #35a2e8);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.activity-option-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.activity-option-card h3 {
+  margin-top: 10px;
+}
+
 .completion-screen {
   justify-content: center;
   align-items: center;

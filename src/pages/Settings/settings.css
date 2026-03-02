@@ -1,0 +1,174 @@
+.account-page {
+  min-height: 100dvh;
+  background: #f5f7fb;
+  color: #1f2940;
+  font-family: "Manrope", sans-serif;
+}
+
+.account-shell {
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  padding: 84px 14px 24px;
+}
+
+.account-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: min(100%, var(--app-frame-width));
+  z-index: 10;
+  min-height: 70px;
+  border-bottom: 1px solid #e4e8f0;
+  background: rgba(245, 247, 251, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-back {
+  border: 0;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  background: #e9edf5;
+  color: #2f3750;
+  font-size: 18px;
+}
+
+.account-header h1 {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.3rem;
+}
+
+.account-card {
+  border: 1px solid #dce3ef;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.account-card h3 {
+  margin: 0 0 8px;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1rem;
+}
+
+.account-card p {
+  margin: 0;
+  color: #5f6880;
+  font-size: 0.9rem;
+}
+
+.setting-list {
+  display: grid;
+  gap: 10px;
+}
+
+.setting-item {
+  width: 100%;
+  border: 1px solid #dce3ef;
+  border-radius: 12px;
+  background: #fff;
+  color: #1f2940;
+  text-align: left;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.setting-item small {
+  color: #6c7387;
+  font-weight: 500;
+}
+
+.field-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.field-grid label {
+  font-size: 0.8rem;
+  color: #667086;
+}
+
+.field-grid input,
+.field-grid select,
+.field-grid textarea {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d5deed;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.tab-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tab-btn {
+  border: 1px solid #d6deeb;
+  border-radius: 11px;
+  background: #fff;
+  color: #4b556d;
+  font-weight: 600;
+}
+
+.tab-btn.active {
+  background: #ece6f3;
+  color: #6b2d70;
+  border-color: #d3c0e0;
+}
+
+.notice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notice-item {
+  border: 1px solid #dce3ef;
+  border-radius: 13px;
+  padding: 12px;
+  background: #fff;
+}
+
+.notice-item h4 {
+  margin: 0 0 4px;
+  font-size: 0.96rem;
+}
+
+.notice-item p {
+  margin: 0;
+  color: #5d667e;
+  font-size: 0.86rem;
+}
+
+.notice-item small {
+  display: block;
+  margin-top: 6px;
+  color: #8690a8;
+  font-size: 0.75rem;
+}
+
+.notify-test-btn {
+  margin-top: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 11px;
+  min-height: 44px;
+  background: #6b2d70;
+  color: #fff;
+  font-weight: 700;
+}

@@ -1,0 +1,235 @@
+.metric-detail-page {
+  min-height: 100dvh;
+  background: #f5f7fb;
+  color: #1f2940;
+  font-family: "Manrope", sans-serif;
+}
+
+.metric-detail-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: min(100%, 430px);
+  margin: 0 auto;
+  z-index: 10;
+  min-height: 72px;
+  border-bottom: 1px solid #dfe5f0;
+  background: rgba(245, 247, 251, 0.96);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.metric-back {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: #e9edf5;
+  color: #2f3750;
+}
+
+.metric-detail-header h1 {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.15rem;
+}
+
+.metric-detail-shell {
+  width: min(100%, 430px);
+  margin: 0 auto;
+  padding: 84px 14px 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.metric-hero {
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.hero-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.hero-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.metric-hero h2 {
+  margin: 0;
+  font-size: 1.62rem;
+  color: #213149;
+}
+
+.metric-hero small {
+  font-size: 0.88rem;
+  color: #5f6980;
+}
+
+.metric-hero p {
+  margin: 4px 0 0;
+  color: #5f6980;
+  font-size: 0.9rem;
+}
+
+.metric-hero.red { background: #fff3f5; }
+.metric-hero.red .hero-icon { background: linear-gradient(130deg, #ff6262, #f40020); }
+.metric-hero.blue { background: #f1f6ff; }
+.metric-hero.blue .hero-icon { background: linear-gradient(130deg, #52a0ff, #155fe7); }
+.metric-hero.orange { background: #fff6ec; }
+.metric-hero.orange .hero-icon { background: linear-gradient(130deg, #ff9200, #ff6800); }
+.metric-hero.green { background: #f2fcf5; }
+.metric-hero.green .hero-icon { background: linear-gradient(130deg, #1ac86a, #0ba95d); }
+
+.metric-chart-card,
+.metric-insight-card {
+  border: 1px solid #dce3ef;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+
+.metric-window-card {
+  border: 1px solid #dce3ef;
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px;
+}
+
+.metric-window-card h3 {
+  margin: 0 0 10px;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1rem;
+}
+
+.window-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.window-btn {
+  min-height: 38px;
+  border-radius: 11px;
+  border: 1px solid #d8dfec;
+  background: #f5f8ff;
+  color: #4f5c77;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.window-btn.active {
+  border-color: #6f2d70;
+  background: #efe8ff;
+  color: #5d2b83;
+}
+
+.metric-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.summary-item {
+  border: 1px solid #dce3ef;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+}
+
+.summary-item span {
+  display: block;
+  color: #667186;
+  font-size: 0.76rem;
+}
+
+.summary-item strong {
+  margin-top: 5px;
+  display: block;
+  color: #1f2940;
+  font-size: 0.96rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.summary-item.trend strong {
+  color: #2b8f5b;
+}
+
+.metric-chart-card h3,
+.metric-insight-card h3 {
+  margin: 0 0 10px;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.02rem;
+}
+
+.metric-chart {
+  height: 160px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 7px;
+}
+
+.bar-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 8px;
+  animation: barRise 620ms ease both;
+}
+
+.bar.red { background: #f67f88; }
+.bar.blue { background: #75a6f1; }
+.bar.orange { background: #f0a15f; }
+.bar.green { background: #58cb91; }
+
+.bar-wrap small {
+  font-size: 0.7rem;
+  color: #74819b;
+}
+
+.metric-insight-card p {
+  margin: 0 0 8px;
+  color: #55627d;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.metric-insight-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #5f6980;
+  font-size: 0.85rem;
+}
+
+@keyframes barRise {
+  from {
+    transform: scaleY(0.35);
+    transform-origin: bottom;
+    opacity: 0.3;
+  }
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+}

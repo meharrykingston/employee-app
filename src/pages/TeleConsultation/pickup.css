@@ -1,0 +1,252 @@
+.opd-pickup-page {
+  height: 100dvh;
+  background: #f4f6fb;
+  color: #1f2940;
+  font-family: "Manrope", sans-serif;
+  overflow: hidden;
+}
+
+.opd-pickup-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e1e6f0;
+  background: rgba(244, 246, 251, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.pickup-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #d8dfee;
+  background: #eef2fb;
+  color: #25304a;
+  display: grid;
+  place-items: center;
+}
+
+.pickup-back svg {
+  width: 20px;
+  height: 20px;
+}
+
+.opd-pickup-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.opd-pickup-header p {
+  margin: 2px 0 0;
+  color: #607086;
+  font-size: 13px;
+}
+
+.opd-pickup-content {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 84px 14px calc(122px + env(safe-area-inset-bottom));
+}
+
+.selected-doctor {
+  border: 1px solid #d8dfeb;
+  border-radius: 16px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.selected-doctor img {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2px solid #7443c7;
+}
+
+.selected-doctor h2 {
+  margin: 0;
+  font-size: 18px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.selected-doctor p {
+  margin: 2px 0 0;
+  color: #5f697f;
+  font-size: 14px;
+}
+
+.selected-doctor span {
+  display: inline-block;
+  margin-top: 4px;
+  color: #5e6ca0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pickup-block {
+  margin-top: 14px;
+}
+
+.pickup-block h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.pickup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pickup-card {
+  border: 1px solid #d8deeb;
+  border-radius: 18px;
+  background: #fff;
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.pickup-card.active {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 1px #7c3aed inset;
+}
+
+.pickup-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  color: #949fb3;
+  background: #f2f5fb;
+}
+
+.pickup-card.active .pickup-icon {
+  color: #7c3aed;
+}
+
+.pickup-icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+.pickup-card h4 {
+  margin: 10px 0 0;
+  font-size: 17px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.pickup-card p {
+  margin: 7px 0 8px;
+  color: #5d697f;
+  font-size: 13px;
+}
+
+.pickup-pill {
+  border-radius: 10px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pickup-pill.green {
+  background: #d8f5e3;
+  color: #0f7b48;
+}
+
+.pickup-pill.blue {
+  background: #dfeeff;
+  color: #2c57d6;
+}
+
+.pickup-map {
+  margin-top: 14px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #d8deeb;
+  background: #fff;
+}
+
+.pickup-map iframe {
+  width: 100%;
+  height: 220px;
+  border: 0;
+  display: block;
+}
+
+.pickup-address {
+  margin: 12px 2px 0;
+  display: flex;
+  gap: 7px;
+  color: #4c596f;
+  font-size: 14px;
+}
+
+.pickup-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  z-index: 20;
+  border-top: 1px solid #dce3ef;
+  background: rgba(244, 246, 251, 0.97);
+  backdrop-filter: blur(10px);
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pickup-secondary,
+.pickup-primary {
+  min-height: 54px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pickup-secondary {
+  border: 1px solid #d4daea;
+  background: #fff;
+  color: #2d3a54;
+}
+
+.pickup-primary {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #7a2d75, #9a4b93);
+}
+
+.pickup-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: #374151;
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}

@@ -1,7 +1,22 @@
-import { FiArrowLeft, FiClock, FiFileText, FiFilter } from "react-icons/fi"
 import { useMemo, useState } from "react"
+import {
+  FiActivity,
+  FiArrowLeft,
+  FiArrowRight,
+  FiClock,
+  FiDroplet,
+  FiFileText,
+  FiFilter,
+  FiHeart,
+  FiSearch,
+  FiShield,
+  FiSun,
+  FiZap,
+} from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import "./labtest.css"
+
+type TestIcon = "blood" | "heart" | "hormone" | "sugar" | "vitamin" | "liver"
 
 type LabTestItem = {
   id: string
@@ -11,6 +26,7 @@ type LabTestItem = {
   tag: string
   duration: string
   fasting: string
+  icon: TestIcon
   quick?: string
 }
 
@@ -23,6 +39,7 @@ const TESTS: LabTestItem[] = [
     tag: "Blood Test",
     duration: "4-6 hours",
     fasting: "No fasting required",
+    icon: "blood",
     quick: "in 5 Mins",
   },
   {
@@ -33,6 +50,7 @@ const TESTS: LabTestItem[] = [
     tag: "Blood Test",
     duration: "6-8 hours",
     fasting: "12 hours fasting required",
+    icon: "heart",
   },
   {
     id: "thyroid",
@@ -42,6 +60,7 @@ const TESTS: LabTestItem[] = [
     tag: "Hormone Test",
     duration: "8-12 hours",
     fasting: "No special preparation",
+    icon: "hormone",
   },
   {
     id: "diabetes",
@@ -51,6 +70,7 @@ const TESTS: LabTestItem[] = [
     tag: "Blood Test",
     duration: "6-8 hours",
     fasting: "8 hours fasting",
+    icon: "sugar",
   },
   {
     id: "vitaminD",
@@ -60,6 +80,7 @@ const TESTS: LabTestItem[] = [
     tag: "Vitamin Test",
     duration: "12-24 hours",
     fasting: "No fasting required",
+    icon: "vitamin",
   },
   {
     id: "liver",
@@ -69,8 +90,30 @@ const TESTS: LabTestItem[] = [
     tag: "Blood Test",
     duration: "6-8 hours",
     fasting: "8 hours fasting",
+    icon: "liver",
   },
 ]
+
+const SYMPTOM_CHIPS = ["Fatigue", "Weight gain", "Low energy", "Hair fall", "High sugar"]
+
+function renderTestIcon(icon: TestIcon) {
+  switch (icon) {
+    case "blood":
+      return <FiDroplet />
+    case "heart":
+      return <FiHeart />
+    case "hormone":
+      return <FiActivity />
+    case "sugar":
+      return <FiZap />
+    case "vitamin":
+      return <FiSun />
+    case "liver":
+      return <FiShield />
+    default:
+      return <FiActivity />
+  }
+}
 
 export default function LabTestsStep1() {
   const navigate = useNavigate()
@@ -92,8 +135,15 @@ export default function LabTestsStep1() {
     })
   }, [activeFilter, onlyQuick, query])
 
+  const aiPrefill = useMemo(() => {
+    const base = query.trim() ? `I have ${query.trim()}.` : "Help me choose the right lab test."
+    const tagHint = activeFilter !== "All" ? ` Focus on ${activeFilter.toLowerCase()} options.` : ""
+    const quickHint = onlyQuick ? " Prioritize quick report tests." : ""
+    return `${base}${tagHint}${quickHint} Suggest top 3 tests with reason and preparation.`
+  }, [activeFilter, onlyQuick, query])
+
   return (
-    <div className="lab-page">
+    <div className="lab-page lab-page--catalog">
       <div className="lab-header">
         <button className="lab-back" onClick={() => navigate(-1)} type="button" aria-label="Back">
           <FiArrowLeft />
@@ -114,9 +164,32 @@ export default function LabTestsStep1() {
         <div className="step pending">4. Confirm</div>
       </div>
 
-      <div className="lab-search-box">
+      <section className="lab-ai-finder">
+        <div className="lab-ai-finder-top">
+          <span className="finder-badge">AI smart finder</span>
+          <button
+            type="button"
+            className="finder-btn"
+            onClick={() => navigate("/ai-chat", { state: { prefill: aiPrefill } })}
+          >
+            Find best test <FiArrowRight />
+          </button>
+        </div>
+        <h2>Not sure which test to book?</h2>
+        <p>Tell symptoms and AI suggests suitable tests with preparation guidance.</p>
+        <div className="lab-symptom-chips">
+          {SYMPTOM_CHIPS.map((chip) => (
+            <button key={chip} type="button" onClick={() => setQuery(chip)}>
+              {chip}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="lab-search-box lab-search-box--rich">
+        <FiSearch className="search-icon" />
         <input
-          placeholder="Search for tests.."
+          placeholder="Search test, condition, or symptom"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -139,6 +212,7 @@ export default function LabTestsStep1() {
 
       <div className="active-filter-line">
         <span>Filter: {activeFilter}</span>
+        <span>{filteredTests.length} results</span>
         {onlyQuick && <span className="active-quick">Quick only</span>}
       </div>
 
@@ -150,7 +224,7 @@ export default function LabTestsStep1() {
             onClick={() => navigate("/lab-tests/readiness", { state: { selectedTest: test } })}
             type="button"
           >
-            <div className={`lab-icon ${test.color}`} />
+            <div className={`lab-icon ${test.color}`}>{renderTestIcon(test.icon)}</div>
 
             <div className="lab-info">
               <h3>{test.name}</h3>
@@ -158,15 +232,24 @@ export default function LabTestsStep1() {
 
               <div className="lab-meta-row">
                 <span className="pill">{test.tag}</span>
-                <span><FiClock /> {test.duration}</span>
+                <span>
+                  <FiClock /> {test.duration}
+                </span>
               </div>
 
               <div className="lab-meta-row muted">
-                <span><FiFileText /> {test.fasting}</span>
+                <span>
+                  <FiFileText /> {test.fasting}
+                </span>
               </div>
             </div>
 
-            {test.quick && <span className="quick-chip">{test.quick}</span>}
+            <div className="lab-card-right">
+              {test.quick && <span className="quick-chip">{test.quick}</span>}
+              <span className="go-chip">
+                <FiArrowRight />
+              </span>
+            </div>
           </button>
         ))}
 
@@ -178,9 +261,13 @@ export default function LabTestsStep1() {
               onClick={() => {
                 setActiveFilter("All")
                 setQuery("")
+                setOnlyQuick(false)
               }}
             >
               Reset Filters
+            </button>
+            <button type="button" onClick={() => navigate("/ai-chat", { state: { prefill: aiPrefill } })}>
+              Ask AI to suggest tests
             </button>
           </div>
         )}

@@ -41,6 +41,13 @@
 /* ---------- Global Rules ---------- */
 :root {
   --app-frame-width: 100vw;
+  --bg-page: #f5f7fb;
+  --bg-card: #ffffff;
+  --text-primary: #1f2940;
+  --text-secondary: #657089;
+  --brand-primary: #6b2d70;
+  --brand-soft: #ece6f3;
+  --line-soft: #dce3ef;
 }
 
 html,

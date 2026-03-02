@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react"
-import { FiArrowLeft, FiImage, FiSend } from "react-icons/fi"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { FiArrowLeft, FiImage, FiMic, FiSend } from "react-icons/fi"
+import { useLocation, useNavigate } from "react-router-dom"
 import "./aichat.css"
 
 type Message = {
@@ -28,7 +28,9 @@ function nowTime() {
 
 export default function AIChat() {
   const navigate = useNavigate()
+  const location = useLocation()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const prefillHandled = useRef(false)
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -52,6 +54,8 @@ export default function AIChat() {
   ])
   const [draft, setDraft] = useState("")
   const [attachedName, setAttachedName] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
+  const [isListening, setIsListening] = useState(false)
 
   const suggestions = useMemo(() => {
     if (!draft.trim()) {
@@ -73,16 +77,30 @@ export default function AIChat() {
       time: nowTime(),
     }
 
-    const aiMessage: Message = {
-      id: `${Date.now()}-a`,
-      from: "ai",
-      text: "Noted. I suggest hydration, rest for 10-15 mins, and monitoring symptoms. If this persists, book a doctor consultation.",
-      time: nowTime(),
-    }
-
-    setMessages((prev) => [...prev, userMessage, aiMessage])
+    setMessages((prev) => [...prev, userMessage])
     setDraft("")
+    setIsTyping(true)
+
+    window.setTimeout(() => {
+      const aiMessage: Message = {
+        id: `${Date.now()}-a`,
+        from: "ai",
+        text: "I understand. I am checking your symptoms. Please sit down, hydrate slowly, and tell me if you also have nausea or blurred vision.",
+        time: nowTime(),
+      }
+      setMessages((prev) => [...prev, aiMessage])
+      setIsTyping(false)
+    }, 850)
   }
+
+  useEffect(() => {
+    const state = location.state as { prefill?: string } | undefined
+    if (prefillHandled.current || !state?.prefill) {
+      return
+    }
+    prefillHandled.current = true
+    sendMessage(state.prefill)
+  }, [location.state])
 
   function openPicker() {
     fileInputRef.current?.click()
@@ -100,14 +118,14 @@ export default function AIChat() {
   return (
     <div className="ai-chat-page">
       <header className="ai-chat-header">
-        <button className="back-btn" onClick={() => navigate(-1)} type="button" aria-label="Back">
+        <button className="ai-chat-back app-pressable" onClick={() => navigate(-1)} type="button" aria-label="Back">
           <FiArrowLeft />
         </button>
 
-        <div className="header-info">
-          <div className="title">AI Chat</div>
-          <div className="status">
-            <span className="dot" /> Online and Ready to Help
+        <div className="ai-chat-header-info">
+          <h1 className="ai-chat-title">AI Chat</h1>
+          <div className="ai-chat-status">
+            <span className="ai-chat-dot" /> Online and Ready to Help
           </div>
         </div>
       </header>
@@ -121,6 +139,15 @@ export default function AIChat() {
             </div>
           </div>
         ))}
+        {isTyping && (
+          <div className="message-row ai">
+            <div className="message-bubble typing-bubble">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="composer-wrap">
@@ -137,6 +164,9 @@ export default function AIChat() {
         <div className="ai-chat-input">
           <button className="icon-btn" onClick={openPicker} type="button" aria-label="Add image">
             <FiImage />
+          </button>
+          <button className="icon-btn" onClick={() => setIsListening(true)} type="button" aria-label="Voice input">
+            <FiMic />
           </button>
 
           <input
@@ -163,6 +193,23 @@ export default function AIChat() {
         className="hidden-file"
         onChange={onPickFile}
       />
+
+      {isListening && (
+        <div className="voice-overlay" onClick={() => setIsListening(false)}>
+          <div className="voice-sheet app-page-enter" onClick={(e) => e.stopPropagation()}>
+            <h4>Listening...</h4>
+            <p>Speak your symptoms clearly.</p>
+            <div className="voice-bars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <button className="stop-voice app-pressable" onClick={() => setIsListening(false)} type="button">Stop</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

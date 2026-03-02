@@ -18,9 +18,24 @@ import LabBookNow from "../pages/LabTest/booknow"
 import LabSchedule from "../pages/LabTest/schedule"
 import LabConfirm from "../pages/LabTest/confirm"
 import TeleConsultation from "../pages/TeleConsultation"
+import OpdPickup from "../pages/TeleConsultation/pickup"
+import TeleSchedule from "../pages/TeleConsultation/schedule"
+import AISymptomAnalyser from "../pages/AISymptomAnalyser"
 import Pharmacy from "../pages/Pharmacy"
+import PharmacyCategories from "../pages/PharmacyCategories"
+import MedicineDetail from "../pages/MedicineDetail"
+import MedicineTracking from "../pages/MedicineTracking"
 import Wallet from "../pages/Wallet"
+import Badges from "../pages/Badges"
 import WeekendTasks from "../pages/WeekendTasks"
+import Settings from "../pages/Settings"
+import Address from "../pages/Address"
+import ProfileInfo from "../pages/ProfileInfo"
+import HealthInfo from "../pages/HealthInfo"
+import Bookings from "../pages/Bookings"
+import Reports from "../pages/Reports"
+import Notifications from "../pages/Notifications"
+import MetricDetails from "../pages/MetricDetails"
 import RouteTransitionLayout from "./RouteTransitionLayout"
 
 export const router = createBrowserRouter([
@@ -44,9 +59,24 @@ export const router = createBrowserRouter([
       { path: "lab-tests/schedule", element: <LabSchedule /> },
       { path: "lab-tests/confirm", element: <LabConfirm /> },
       { path: "teleconsultation", element: <TeleConsultation /> },
+      { path: "teleconsultation/pickup", element: <OpdPickup /> },
+      { path: "teleconsultation/schedule", element: <TeleSchedule /> },
+      { path: "ai-symptom-analyser", element: <AISymptomAnalyser /> },
       { path: "pharmacy", element: <Pharmacy /> },
+      { path: "pharmacy/categories", element: <PharmacyCategories /> },
+      { path: "pharmacy/tracking", element: <MedicineTracking /> },
+      { path: "pharmacy/medicine/:medicineId", element: <MedicineDetail /> },
       { path: "weekend-tasks", element: <WeekendTasks /> },
       { path: "wallet", element: <Wallet /> },
+      { path: "badges", element: <Badges /> },
+      { path: "settings", element: <Settings /> },
+      { path: "address", element: <Address /> },
+      { path: "profile-info", element: <ProfileInfo /> },
+      { path: "health-info", element: <HealthInfo /> },
+      { path: "bookings", element: <Bookings /> },
+      { path: "reports", element: <Reports /> },
+      { path: "notifications", element: <Notifications /> },
+      { path: "metric/:metricId", element: <MetricDetails /> },
       { path: "terms", element: <Terms /> },
       { path: "privacy", element: <Privacy /> },
     ],

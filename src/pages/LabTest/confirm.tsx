@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { FiArrowLeft, FiCalendar, FiCheck, FiMapPin } from "react-icons/fi"
 import { RiTestTubeLine } from "react-icons/ri"
 import { useLocation, useNavigate } from "react-router-dom"
+import { goBackOrFallback } from "../../utils/navigation"
 import "./labtest.css"
 
 type LabTestItem = {
@@ -39,7 +40,7 @@ export default function LabConfirm() {
   return (
     <div className="lab-page">
       <div className="lab-header">
-        <button className="lab-back" onClick={() => navigate("/home")} type="button" aria-label="Back">
+        <button className="lab-back" onClick={() => goBackOrFallback(navigate)} type="button" aria-label="Back">
           <FiArrowLeft />
         </button>
         <div>

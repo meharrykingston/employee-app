@@ -1,165 +1,196 @@
-﻿import { type ReactNode, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useMemo, useState } from "react"
+import {
+  FiActivity,
+  FiArrowLeft,
+  FiBatteryCharging,
+  FiClock,
+  FiCreditCard,
+  FiDroplet,
+  FiHeart,
+  FiHome,
+  FiMapPin,
+  FiMessageCircle,
+  FiMoon,
+  FiSmile,
+  FiZap,
+} from "react-icons/fi"
+import { useLocation, useNavigate } from "react-router-dom"
+import { goBackOrFallback } from "../../utils/navigation"
 import "./health.css"
 
 type Range = "Day" | "Week" | "Month" | "Year"
+type HealthTab = "Home" | "Health" | "AI Chat" | "Stress Relief" | "Wallet"
 
-type MetricProps = {
-  title: string
-  value: string
-  suffix: string
-  delta: string
-  color: "red" | "blue" | "purple" | "green"
+const tabs: Array<{ id: HealthTab; icon: "home" | "health" | "chat" | "stress" | "wallet" }> = [
+  { id: "Home", icon: "home" },
+  { id: "Health", icon: "health" },
+  { id: "AI Chat", icon: "chat" },
+  { id: "Stress Relief", icon: "stress" },
+  { id: "Wallet", icon: "wallet" },
+]
+
+const tabRoutes: Record<HealthTab, string> = {
+  Home: "/home",
+  Health: "/health",
+  "AI Chat": "/ai-chat",
+  "Stress Relief": "/stress-relief",
+  Wallet: "/wallet",
 }
 
-type SectionProps = {
-  title: string
-  children: ReactNode
-}
+const metrics = [
+  { title: "Health Score", value: "92", suffix: "/100", trend: "+5", tone: "red", icon: <FiHeart /> },
+  { title: "Daily Activity", value: "8.5", suffix: "k steps", trend: "+12%", tone: "blue", icon: <FiActivity /> },
+  { title: "Stress Balance", value: "87", suffix: "/100", trend: "+3", tone: "purple", icon: <FiSmile /> },
+  { title: "Recovery", value: "95", suffix: "%", trend: "+8%", tone: "green", icon: <FiBatteryCharging /> },
+]
 
-type ActivityProps = {
-  text: string
-  time: string
-  status: "completed" | "pending"
-}
+const activities = [
+  { title: "Checkup with Dr. Riza", time: "2 hours ago", status: "completed" },
+  { title: "Hydration goal reached", time: "4 hours ago", status: "completed" },
+  { title: "Lab report sync pending", time: "1 day ago", status: "pending" },
+  { title: "Sleep quality improved", time: "2 days ago", status: "completed" },
+]
 
-type IconName = "back" | "chat" | "calendar" | "heart" | "steps" | "mind" | "pill"
-
-function Icon({ name, className }: { name: IconName; className?: string }) {
-  const common = { viewBox: "0 0 24 24", "aria-hidden": true, className }
-
-  switch (name) {
-    case "back":
-      return <svg {...common}><path d="M14 6 8 12l6 6" /><path d="M9 12h7" /></svg>
-    case "chat":
-      return <svg {...common}><path d="M4 5h16v10H8l-4 4V5z" /></svg>
-    case "calendar":
-      return <svg {...common}><path d="M7 3v4M17 3v4M4 9h16M5 6h14a1 1 0 0 1 1 1v12H4V7a1 1 0 0 1 1-1z" /></svg>
-    case "heart":
-      return <svg {...common}><path d="M12 20s-6.7-4.3-9-8c-2-3.2.2-7 3.9-7 2 0 3.5 1 4.3 2.3C12 6 13.5 5 15.5 5c3.7 0 6 3.8 3.9 7-2.3 3.7-9 8-9 8z" /></svg>
-    case "steps":
-      return <svg {...common}><path d="M8 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm8 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM6 16c2 0 2 3 4 3h2M14 5c0 2 3 2 3 4v2" /></svg>
-    case "mind":
-      return <svg {...common}><path d="M8 6a3 3 0 0 1 5-2 3.5 3.5 0 0 1 5 3v1a3 3 0 0 1 1 5v2a3 3 0 0 1-3 3h-1a3 3 0 0 1-6 0H8a3 3 0 0 1-3-3v-2a3 3 0 0 1 1-5V7a3 3 0 0 1 2-1z" /></svg>
-    case "pill":
-      return <svg {...common}><path d="M8 16a4 4 0 1 1-6-5l6-6a4 4 0 0 1 6 5l-6 6zm4-8 6 6" /></svg>
-    default:
-      return <svg {...common}><circle cx="12" cy="12" r="2" /></svg>
-  }
+function tabIcon(icon: (typeof tabs)[number]["icon"]) {
+  if (icon === "home") return <FiHome />
+  if (icon === "health") return <FiActivity />
+  if (icon === "chat") return <FiMessageCircle />
+  if (icon === "stress") return <FiSmile />
+  return <FiCreditCard />
 }
 
 export default function Health() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [range, setRange] = useState<Range>("Day")
+  const [isMenuDocked, setIsMenuDocked] = useState(false)
+
+  const activeTab: HealthTab = useMemo(() => {
+    if (location.pathname.startsWith("/home")) return "Home"
+    if (location.pathname.startsWith("/ai-chat")) return "AI Chat"
+    if (location.pathname.startsWith("/stress-relief")) return "Stress Relief"
+    if (location.pathname.startsWith("/wallet")) return "Wallet"
+    return "Health"
+  }, [location.pathname])
+
+  function onPageScroll(e: React.UIEvent<HTMLElement>) {
+    const nextDocked = e.currentTarget.scrollTop > 40
+    setIsMenuDocked((prev) => (prev === nextDocked ? prev : nextDocked))
+  }
 
   return (
-    <main className="health-screen app-page-enter app-content-slide-rtl">
+    <main className="health-screen app-page-enter" onScroll={onPageScroll}>
       <header className="health-header app-fade-stagger">
-        <button className="back-btn app-pressable" onClick={() => navigate("/home")} aria-label="Back to home">
-          <Icon name="back" className="h-icon" />
+        <button className="health-back app-pressable" onClick={() => goBackOrFallback(navigate)} type="button" aria-label="Back">
+          <FiArrowLeft />
         </button>
         <div>
-          <h1>Your Health</h1>
+          <h1>HEALTH</h1>
           <p>Your complete health overview</p>
         </div>
       </header>
 
-      <nav className="tabs app-fade-stagger">
-        {(["Day", "Week", "Month", "Year"] as const).map((tab) => (
+      <nav className={`health-menu app-fade-stagger ${isMenuDocked ? "docked" : ""}`}>
+        {tabs.map((tab) => (
           <button
-            key={tab}
-            className={`app-pressable ${range === tab ? "active" : ""}`}
-            onClick={() => setRange(tab)}
+            key={tab.id}
+            className={`health-menu-item app-pressable ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => navigate(tabRoutes[tab.id])}
+            type="button"
           >
-            {tab}
+            <span className="health-menu-icon">{tabIcon(tab.icon)}</span>
+            <span>{tab.id}</span>
           </button>
         ))}
       </nav>
 
-      <section className="metrics app-fade-stagger">
-        <Metric title="Overall Health Score" value="92" suffix="/100" delta="+5" color="red" />
-        <Metric title="Activity Level" value="8.5" suffix="k steps" delta="+12%" color="blue" />
-        <Metric title="Mental Wellness" value="87" suffix="/100" delta="+3" color="purple" />
-        <Metric title="Medication Adhere" value="95" suffix="%" delta="+8%" color="green" />
+      <section className="health-content app-content-slide">
+        <section className="range-tabs app-fade-stagger">
+          {(["Day", "Week", "Month", "Year"] as const).map((tab) => (
+            <button key={tab} className={`app-pressable ${range === tab ? "active" : ""}`} onClick={() => setRange(tab)} type="button">
+              {tab}
+            </button>
+          ))}
+        </section>
+
+        <section className="health-metrics app-fade-stagger">
+          {metrics.map((item) => (
+            <article key={item.title} className={`health-metric-card ${item.tone} app-pressable`}>
+              <div className="health-metric-top">
+                <span className="metric-icon">{item.icon}</span>
+                <span className="metric-trend">{item.trend}</span>
+              </div>
+              <h2>
+                {item.value}
+                <span>{item.suffix}</span>
+              </h2>
+              <p>{item.title}</p>
+              <div className="metric-spark" aria-hidden="true">
+                {Array.from({ length: 7 }).map((_, index) => (
+                  <span key={`${item.title}-${index}`} style={{ animationDelay: `${index * 80}ms` }} />
+                ))}
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="health-section app-fade-stagger">
+          <h3>Recent Activities</h3>
+          <div className="activity-list">
+            {activities.map((item) => (
+              <article className="activity-card app-pressable" key={`${item.title}-${item.time}`}>
+                <div className="activity-copy">
+                  <strong>{item.title}</strong>
+                  <p><FiClock /> {item.time}</p>
+                </div>
+                <span className={`status-pill ${item.status}`}>{item.status}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="health-section app-fade-stagger">
+          <h3>Advanced Widgets</h3>
+          <div className="widget-grid">
+            <article className="widget-card app-pressable">
+              <div className="widget-head">
+                <span><FiDroplet /></span>
+                <strong>Hydration</strong>
+              </div>
+              <p>2.1L / 3.0L today</p>
+              <div className="widget-progress"><span /></div>
+            </article>
+            <article className="widget-card app-pressable">
+              <div className="widget-head">
+                <span><FiMoon /></span>
+                <strong>Sleep</strong>
+              </div>
+              <p>7h 25m quality sleep</p>
+              <div className="widget-bars" aria-hidden="true">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <span key={`sleep-${index}`} style={{ animationDelay: `${index * 120}ms` }} />
+                ))}
+              </div>
+            </article>
+            <article className="widget-card app-pressable">
+              <div className="widget-head">
+                <span><FiZap /></span>
+                <strong>Energy Curve</strong>
+              </div>
+              <p>Stable through afternoon</p>
+              <div className="widget-progress energy"><span /></div>
+            </article>
+            <article className="widget-card app-pressable">
+              <div className="widget-head">
+                <span><FiMapPin /></span>
+                <strong>Mobility</strong>
+              </div>
+              <p>5.8km movement logged</p>
+              <div className="widget-progress move"><span /></div>
+            </article>
+          </div>
+        </section>
       </section>
-
-      <Section title="Recent Activities">
-        <Activity text="Checkup with Dr. Riza" time="2 hours ago" status="completed" />
-        <Activity text="Took morning medication" time="4 hours ago" status="completed" />
-        <Activity text="Blood test results ready" time="1 day ago" status="pending" />
-        <Activity text="AI analysis: Feeling dizzy" time="2 days ago" status="completed" />
-      </Section>
-
-      <Section title="Recent Achievements">
-        <div className="achievements">
-          <article className="achievement app-fade-stagger app-pressable">
-            <Icon name="heart" className="h-icon big" />
-            <strong>7-Day Streak</strong>
-            <p>Medication adherence</p>
-          </article>
-          <article className="achievement app-fade-stagger app-pressable">
-            <Icon name="steps" className="h-icon big" />
-            <strong>Health Champion</strong>
-            <p>Monthly goals achieved</p>
-          </article>
-        </div>
-      </Section>
-
-      <footer className="bottom-actions app-fade-stagger">
-        <button className="chat-btn app-pressable" onClick={() => navigate("/ai-chat")} type="button">
-          <Icon name="chat" className="h-icon" />
-          AI Health Chat
-        </button>
-        <button className="book-btn app-pressable" onClick={() => navigate("/lab-tests")} type="button">
-          <Icon name="calendar" className="h-icon" />
-          Book Lab Test
-        </button>
-      </footer>
     </main>
-  )
-}
-
-function Metric({ title, value, suffix, delta, color }: MetricProps) {
-  const icon: Record<MetricProps["color"], IconName> = {
-    red: "heart",
-    blue: "steps",
-    purple: "mind",
-    green: "pill",
-  }
-
-  return (
-    <article className={`metric-card ${color} app-pressable`}>
-      <div className="metric-top">
-        <span className="metric-chip"><Icon name={icon[color]} className="h-icon" /></span>
-        <span className="delta">{delta}</span>
-      </div>
-      <h2>
-        {value}
-        <span>{suffix}</span>
-      </h2>
-      <p>{title}</p>
-      <div className="progress" />
-    </article>
-  )
-}
-
-function Section({ title, children }: SectionProps) {
-  return (
-    <section className="section app-fade-stagger">
-      <h3>{title}</h3>
-      {children}
-    </section>
-  )
-}
-
-function Activity({ text, time, status }: ActivityProps) {
-  return (
-    <article className="activity app-pressable">
-      <div>
-        <strong>{text}</strong>
-        <p>{time}</p>
-      </div>
-      <span className={`badge ${status}`}>{status}</span>
-    </article>
   )
 }

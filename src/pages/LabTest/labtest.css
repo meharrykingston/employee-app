@@ -841,3 +841,273 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Pharma-style Header Overrides for Lab Test */
+.lab-page {
+  background: #f6f6f2;
+  padding-top: 86px;
+}
+
+.lab-header {
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  min-height: 72px;
+  padding: 12px 14px;
+  gap: 10px;
+  background: rgba(246, 246, 242, 0.96);
+  border-bottom: 1px solid #e7e7de;
+  backdrop-filter: blur(8px);
+}
+
+.lab-back {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  border: 0;
+  background: #ecece3;
+  color: #2b3346;
+}
+
+.lab-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.lab-header h1 {
+  margin: 0;
+  font-size: 1.38rem;
+  font-family: "Satoshi", sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.lab-header p {
+  margin: 2px 0 0;
+  color: #6a7387;
+  font-size: 0.8rem;
+}
+
+/* Advanced Catalog Styling (Step 1 only) */
+.lab-page--catalog {
+  background: linear-gradient(180deg, #f6f6f2 0%, #f7f8fc 38%, #f4f6fa 100%);
+}
+
+.lab-page--catalog .lab-ai-finder {
+  margin: 14px 14px 0;
+  border-radius: 20px;
+  padding: 14px;
+  border: 1px solid #dedaf0;
+  background: linear-gradient(130deg, #ffffff 0%, #f1f4ff 70%, #f3eefe 100%);
+  box-shadow: 0 12px 24px rgba(51, 65, 85, 0.08);
+}
+
+.lab-page--catalog .lab-ai-finder-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lab-page--catalog .finder-badge {
+  border-radius: 999px;
+  border: 1px solid #d9d0f2;
+  background: #f8f3ff;
+  color: #5f2ca6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  padding: 6px 10px;
+  text-transform: uppercase;
+}
+
+.lab-page--catalog .finder-btn {
+  min-height: 36px;
+  border: 1px solid #cbb8ef;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #7d2de1, #9a43ef);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lab-page--catalog .lab-ai-finder h2 {
+  margin: 10px 0 0;
+  font-size: 1.1rem;
+  color: #24324a;
+  font-family: "Satoshi", sans-serif;
+}
+
+.lab-page--catalog .lab-ai-finder p {
+  margin: 6px 0 0;
+  color: #5f6b80;
+  font-size: 0.84rem;
+}
+
+.lab-page--catalog .lab-symptom-chips {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lab-page--catalog .lab-symptom-chips button {
+  min-height: 31px;
+  border-radius: 999px;
+  border: 1px solid #dce2ef;
+  background: #fff;
+  color: #425066;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 11px;
+}
+
+.lab-page--catalog .lab-search-box--rich {
+  margin-top: 8px;
+  padding-top: 8px;
+  position: relative;
+}
+
+.lab-page--catalog .lab-search-box--rich .search-icon {
+  position: absolute;
+  left: 34px;
+  top: 34px;
+  color: #8290a9;
+  width: 18px;
+  height: 18px;
+}
+
+.lab-page--catalog .lab-search-box--rich input {
+  padding-left: 48px;
+  border-color: #dfe5f4;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.05);
+}
+
+.lab-page--catalog .lab-section-head {
+  padding-top: 10px;
+}
+
+.lab-page--catalog .lab-section-head h2 {
+  font-size: 1.26rem;
+  letter-spacing: 0.1px;
+}
+
+.lab-page--catalog .active-filter-line {
+  gap: 10px;
+  font-size: 12px;
+}
+
+.lab-page--catalog .lab-list {
+  gap: 12px;
+}
+
+.lab-page--catalog .lab-test-card {
+  border: 1px solid #dbe2f0;
+  border-radius: 20px;
+  padding: 14px;
+  gap: 12px;
+  align-items: flex-start;
+  box-shadow: 0 10px 20px rgba(30, 41, 59, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.lab-page--catalog .lab-test-card:active {
+  transform: scale(0.994);
+}
+
+.lab-page--catalog .lab-test-card:hover {
+  transform: translateY(-1px);
+  border-color: #c9d5ed;
+  box-shadow: 0 14px 26px rgba(30, 41, 59, 0.1);
+}
+
+.lab-page--catalog .lab-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.lab-page--catalog .lab-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.lab-page--catalog .lab-icon.red { background: linear-gradient(140deg, #ff5d6b, #e11d48); }
+.lab-page--catalog .lab-icon.blue { background: linear-gradient(140deg, #4b9cff, #2563eb); }
+.lab-page--catalog .lab-icon.gray { background: linear-gradient(140deg, #98a2b8, #667085); }
+.lab-page--catalog .lab-icon.green { background: linear-gradient(140deg, #34d399, #059669); }
+.lab-page--catalog .lab-icon.outline {
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(140deg, #94a3b8, #64748b);
+}
+
+.lab-page--catalog .lab-info h3 {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.lab-page--catalog .lab-info p {
+  margin-top: 5px;
+}
+
+.lab-page--catalog .lab-meta-row {
+  gap: 12px;
+  margin-top: 9px;
+  font-size: 12px;
+}
+
+.lab-page--catalog .lab-meta-row svg {
+  width: 15px;
+  height: 15px;
+}
+
+.lab-page--catalog .pill {
+  border-color: #d7dfec;
+  background: #f8faff;
+  color: #344256;
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.lab-page--catalog .lab-card-right {
+  margin-left: auto;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.lab-page--catalog .quick-chip {
+  position: static;
+  border-color: #f3d6db;
+  background: #fff3f4;
+  color: #b42318;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.lab-page--catalog .go-chip {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid #d3dbe9;
+  background: #f8faff;
+  color: #37445b;
+  display: grid;
+  place-items: center;
+}
+
+.lab-page--catalog .go-chip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lab-page--catalog .empty-state button + button {
+  margin-top: 8px;
+}

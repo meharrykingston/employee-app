@@ -1,0 +1,102 @@
+.pharma-cat-page {
+  min-height: 100dvh;
+  background: #f6f6f2;
+  color: #171b27;
+  font-family: "Manrope", sans-serif;
+}
+
+.pharma-cat-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  z-index: 20;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e7e7de;
+  background: rgba(246, 246, 242, 0.96);
+  backdrop-filter: blur(8px);
+}
+
+.pharma-cat-back {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: #ecece3;
+  color: #2b3346;
+  display: grid;
+  place-items: center;
+}
+
+.pharma-cat-header h1 {
+  margin: 0;
+  font-size: 1.32rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.pharma-cat-header p {
+  margin: 2px 0 0;
+  color: #6a7387;
+  font-size: 0.8rem;
+}
+
+.pharma-cat-shell {
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  padding: 84px 14px 20px;
+}
+
+.pharma-cat-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pharma-cat-item {
+  width: 100%;
+  border: 1px solid #e7e8df;
+  border-radius: 14px;
+  background: #fff;
+  color: #1d2537;
+  text-align: left;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.pharma-cat-item.active {
+  border-color: #5a4dde;
+  box-shadow: 0 0 0 1px #5a4dde inset;
+}
+
+.pharma-cat-item svg {
+  color: #6f7890;
+}
+
+.pharma-cat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: #edf2ff;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+}
+
+.pharma-cat-copy h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.pharma-cat-copy p {
+  margin: 3px 0 0;
+  color: #677185;
+  font-size: 0.8rem;
+}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { FiArrowLeft, FiClock, FiLink, FiTarget } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
+import { goBackOrFallback } from "../../utils/navigation"
 import "./weekendtasks.css"
 
 type Task = {
@@ -42,7 +43,7 @@ export default function WeekendTasks() {
   return (
     <main className="weekend-page app-page-enter">
       <header className="weekend-header app-fade-stagger">
-        <button className="weekend-back app-pressable" type="button" onClick={() => navigate("/home")} aria-label="Back">
+        <button className="weekend-back app-pressable" type="button" onClick={() => goBackOrFallback(navigate)} aria-label="Back">
           <FiArrowLeft />
         </button>
         <div className="weekend-title">
@@ -115,4 +116,3 @@ export default function WeekendTasks() {
     </main>
   )
 }
-

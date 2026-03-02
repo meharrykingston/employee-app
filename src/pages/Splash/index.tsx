@@ -22,9 +22,9 @@ export default function Splash() {
           <FiHeart aria-hidden="true" />
           <FiActivity aria-hidden="true" />
         </div>
-        <h1>HCLTech</h1>
-        <p>Your Health Companion</p>
-        <small>Caring for you at work, every day</small>
+        <h1>Employee Health</h1>
+        <p>Secure health platform</p>
+        <small>Please validate company code to continue</small>
         <div className="splash-loader" aria-hidden="true">
           <span />
         </div>

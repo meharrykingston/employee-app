@@ -1,8 +1,9 @@
 .pharmacy-page {
   height: 100dvh;
-  background: linear-gradient(180deg, #f6f6fa 0%, #f4fbf7 100%);
-  color: #1b2334;
-  overflow: hidden;
+  background: #f6f6f2;
+  color: #171b27;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   font-family: "Manrope", sans-serif;
 }
 
@@ -14,492 +15,326 @@
   z-index: 24;
   width: min(100%, var(--app-frame-width));
   margin: 0 auto;
+  min-height: 72px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: rgba(246, 246, 250, 0.96);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e8e2ef;
+  background: rgba(246, 246, 242, 0.96);
+  border-bottom: 1px solid #e7e7de;
+  backdrop-filter: blur(8px);
 }
 
-.pharma-back {
-  width: 40px;
-  height: 40px;
+.pharma-back,
+.cart-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
   border: 0;
-  background: transparent;
-  color: #8928f4;
-  border-radius: 999px;
+  border-radius: 10px;
+  background: #ecece3;
+  color: #2b3346;
   display: grid;
   place-items: center;
-}
-
-.pharma-back svg {
-  width: 22px;
-  height: 22px;
-}
-
-.pharma-title h1 {
-  margin: 0;
-  font-size: 22px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.pharma-title p {
-  margin: 2px 0 0;
-  color: #6a7283;
-  font-size: 14px;
-}
-
-.cart-btn {
-  min-height: 40px;
-  border-radius: 11px;
-  border: 1px solid #dfc9ff;
-  background: #fff;
-  color: #1f2535;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
   position: relative;
 }
 
-.cart-btn svg {
-  width: 18px;
-  height: 18px;
+.pharma-header h1 {
+  margin: 0;
+  font-size: 1.38rem;
+  font-family: "Satoshi", sans-serif;
+  letter-spacing: 0.3px;
 }
 
 .cart-btn span {
   position: absolute;
-  right: -7px;
-  top: -7px;
-  min-width: 24px;
-  height: 24px;
+  right: -6px;
+  top: -6px;
+  min-width: 18px;
+  height: 18px;
   border-radius: 999px;
-  background: #8f22f6;
+  background: #0bb766;
   color: #fff;
+  font-size: 0.66rem;
   display: grid;
   place-items: center;
-  font-size: 12px;
   font-weight: 700;
-}
-
-.pharma-address {
-  margin-top: 74px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e8e2ef;
-}
-
-.pharma-address svg {
-  width: 18px;
-  height: 18px;
-  color: #8f22f6;
-  flex: 0 0 auto;
-}
-
-.pharma-address p {
-  margin: 0;
-  flex: 1;
-  color: #5c6478;
-  font-size: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pharma-address strong {
-  color: #1e2637;
-}
-
-.pharma-address button {
-  border: 0;
-  background: transparent;
-  color: #8f22f6;
-  font-weight: 700;
-  min-height: auto;
-  padding: 0;
 }
 
 .pharma-content {
-  height: calc(100dvh - 127px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 14px 16px 24px;
+  padding: 138px 14px calc(98px + env(safe-area-inset-bottom));
+}
+
+.pharma-menu {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  z-index: 23;
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  border-bottom: 1px solid #e7e7de;
+  background: rgba(246, 246, 242, 0.96);
+  backdrop-filter: blur(8px);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 8px 10px;
+  will-change: top, width, border-radius, box-shadow;
+  transition:
+    top 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pharma-menu.docked {
+  top: calc(100dvh - 70px - env(safe-area-inset-bottom) - 12px);
+  width: min(calc(100% - 24px), calc(var(--app-frame-width) - 24px));
+  border: 1px solid #dedfd5;
+  border-radius: 15px;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.18);
+  padding: 8px;
+}
+
+.pharma-menu-item {
+  border: 0;
+  border-radius: 9px;
+  min-height: 50px;
+  background: transparent;
+  color: #2f3a52;
+  font-size: 0.74rem;
+  font-weight: 700;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  line-height: 1.05;
+  padding: 4px 2px;
+}
+
+.pharma-menu-icon {
+  display: grid;
+  place-items: center;
+}
+
+.pharma-menu-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pharma-menu-item.active {
+  color: #3a2ba8;
+  background: #ddd6ff;
+  box-shadow: 0 0 0 1px #c7bcff inset;
+}
+
+.pharma-menu.docked .pharma-menu-item {
+  color: #243049;
+}
+
+.pharma-menu.docked .pharma-menu-item.active {
+  color: #2f2497;
+  background: #d9d0ff;
+}
+
+.medicine-search {
+  border: 1px solid #ecece4;
+  border-radius: 14px;
+  background: #fcfcfa;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.medicine-search svg {
+  color: #858d9d;
+  width: 18px;
+  height: 18px;
+}
+
+.medicine-search input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 0.95rem;
 }
 
 .rx-card {
-  border-radius: 20px;
-  border: 1px solid #e772ff;
-  color: #fff;
-  background: linear-gradient(140deg, #8520f2, #ef0085);
-  padding: 18px;
-  position: relative;
+  margin-top: 12px;
+  border-radius: 18px;
+  border: 1px solid #dfd3ff;
+  background: linear-gradient(145deg, #d5c8ff, #c4b4f8);
+  padding: 14px;
 }
 
 .rx-card h2 {
   margin: 0;
-  font-size: 39px;
+  font-size: 1.46rem;
   font-family: "Satoshi", sans-serif;
 }
 
 .rx-card p {
-  margin: 5px 0 0;
-  font-size: 17px;
-  color: #fce8ff;
-}
-
-.rx-badge {
-  position: absolute;
-  top: 20px;
-  right: 18px;
-  width: 40px;
-  height: 40px;
-  opacity: 0.82;
+  margin: 6px 0 0;
+  color: #33394a;
+  font-size: 0.9rem;
+  line-height: 1.35;
 }
 
 .rx-actions {
-  margin-top: 16px;
+  margin-top: 12px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .rx-actions button {
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 14px;
-  min-height: 48px;
-  background: rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 11px;
+  min-height: 40px;
+  background: #5a4dde;
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-}
-
-.medicine-search {
-  margin-top: 14px;
-}
-
-.medicine-search input {
-  width: 100%;
-  border: 1px solid #ddd3eb;
-  border-radius: 14px;
-  min-height: 54px;
-  background: #fff;
-  padding: 0 14px;
-  font-size: 17px;
-}
-
-.medicine-search input:focus {
-  outline: 2px solid #8b26f31f;
-}
-
-.medicine-list h3,
-.cart-section h3 {
-  margin: 16px 0 12px;
-  font-size: 23px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.medicine-card,
-.cart-card {
-  border: 1px solid #e2dfe9;
-  border-radius: 18px;
-  background: #fff;
-  padding: 14px;
-  display: flex;
-  gap: 14px;
-  margin-bottom: 12px;
-}
-
-.pill-icon {
-  width: 76px;
-  height: 76px;
-  border-radius: 14px;
-  background: #efe5fb;
-  color: #8f22f6;
-  display: grid;
-  place-items: center;
-  font-size: 52px;
-  line-height: 1;
-  transform: rotate(36deg);
-  flex: 0 0 auto;
-}
-
-.medicine-info h4,
-.cart-info h4 {
-  margin: 0;
-  font-size: 22px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.medicine-info p,
-.cart-info p {
-  margin: 4px 0 8px;
-  color: #647083;
-  font-size: 16px;
-}
-
-.medicine-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.medicine-tags span {
-  border-radius: 12px;
-  font-size: 14px;
-  padding: 5px 12px;
+  gap: 6px;
   font-weight: 700;
 }
 
-.medicine-tags .stock {
-  background: #c7f0d4;
-  color: #157b41;
+.category-section,
+.medicine-list {
+  margin-top: 16px;
 }
 
-.medicine-tags .out {
-  background: #fff;
-  color: #ec1f28;
-  border: 2px solid #ff3232;
-}
-
-.medicine-tags .rx {
-  background: #fff;
-  color: #f26422;
-  border: 2px solid #f26422;
-}
-
-.add-cart {
-  margin-top: 10px;
-  border: 0;
-  border-radius: 12px;
-  min-height: 48px;
-  padding: 0 16px;
-  color: #fff;
-  background: linear-gradient(145deg, #9b26f6, #701fff);
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.cart-list {
-  display: grid;
-  gap: 12px;
-}
-
-.cart-card {
-  align-items: center;
-}
-
-.qty-box {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.qty-box button {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid #dbdbe3;
-  background: #fff;
-  display: grid;
-  place-items: center;
-}
-
-.qty-box span {
-  min-width: 12px;
-  text-align: center;
-  font-size: 28px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.cart-actions {
-  margin-top: 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.add-more {
-  border: 1px solid #dbdbe3;
-  background: #fff;
-  border-radius: 12px;
-  min-height: 48px;
-}
-
-.place-order {
-  border: 0;
-  border-radius: 12px;
-  min-height: 48px;
-  background: linear-gradient(145deg, #9b26f6, #701fff);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.delivery-banner {
-  margin-top: 14px;
-  border-radius: 18px;
-  min-height: 200px;
-  color: #fff;
-  padding: 22px;
-  background: radial-gradient(circle at 90% 10%, #7f3fd2 0, #2e1167 60%);
-}
-
-.delivery-banner h4 {
-  margin: 0;
-  max-width: 190px;
-  font-size: 44px;
-  line-height: 1.14;
-  font-family: "Satoshi", sans-serif;
-}
-
-.placed-view {
-  padding-top: 18px;
-}
-
-.placed-icon {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto;
-  border-radius: 50%;
-  background: #caeed8;
-  color: #11a24a;
-  display: grid;
-  place-items: center;
-}
-
-.placed-icon svg {
-  width: 42px;
-  height: 42px;
-}
-
-.placed-view h2 {
-  margin: 16px 0 0;
-  text-align: center;
-  font-size: 46px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.placed-view > p {
-  margin: 7px 0 0;
-  text-align: center;
-  color: #5f677a;
-  font-size: 17px;
-}
-
-.order-detail {
-  margin-top: 18px;
-  border: 1px solid #dddbe5;
-  border-radius: 16px;
-  background: #fff;
-  padding: 14px;
-}
-
-.order-head {
+.section-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.order-head span {
-  color: #747d8f;
-  font-size: 14px;
-}
-
-.order-head strong {
-  display: block;
-  margin-top: 2px;
-  font-size: 26px;
+.section-row h3,
+.medicine-list h3 {
+  margin: 0;
+  font-size: 1.65rem;
   font-family: "Satoshi", sans-serif;
 }
 
-.order-head em {
-  border-radius: 999px;
-  padding: 5px 11px;
-  font-style: normal;
+.see-all {
+  border: 0;
+  background: transparent;
+  color: #20283b;
   font-weight: 700;
-  color: #1b8848;
-  background: #c9f1d6;
+  letter-spacing: 0.2px;
 }
 
-.order-row {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
+.category-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
-.order-row svg {
-  width: 18px;
-  height: 18px;
-  color: #8f22f6;
-}
-
-.order-row span {
-  font-size: 14px;
-  color: #747d8f;
-}
-
-.order-row strong {
-  display: block;
-  font-size: 17px;
-}
-
-.partner-card {
-  margin-top: 16px;
-  border: 1px solid #d8d8e7;
-  border-radius: 16px;
-  min-height: 158px;
-  background: linear-gradient(140deg, #c9f0df, #c6d1f4, #e2c9f0);
+.category-card {
+  border: 1px solid #ecece4;
+  border-radius: 14px;
+  background: #fff;
+  color: #171b27;
+  width: 100%;
+  min-height: 122px;
+  padding: 10px 8px;
   display: grid;
   align-content: center;
   justify-items: center;
+  text-align: center;
 }
 
-.partner-card svg {
-  width: 38px;
-  height: 38px;
-  color: #8f22f6;
-}
-
-.partner-card h3 {
-  margin: 7px 0 0;
-  font-size: 31px;
-  font-family: "Satoshi", sans-serif;
-}
-
-.partner-card p {
-  margin: 2px 0 0;
-  color: #5f677a;
-}
-
-.track-btn {
-  margin-top: 14px;
-  width: 100%;
-  min-height: 48px;
-  border: 1px solid #d7d6df;
+.category-thumb {
+  width: 58px;
+  height: 58px;
   border-radius: 12px;
+  background: #f2f5ff;
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+}
+
+.category-card h4 {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.medicine-list h3 {
+  margin-bottom: 12px;
+}
+
+.medicine-card {
+  border: 1px solid #e7e8df;
+  border-radius: 14px;
   background: #fff;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.pill-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: #eff3ff;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+}
+
+.medicine-info h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.medicine-info p {
+  margin: 2px 0 7px;
+  color: #687284;
+  font-size: 0.85rem;
+}
+
+.medicine-tags .stock,
+.medicine-tags .out {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.medicine-tags .stock {
+  background: #d8f3e3;
+  color: #0d7e46;
+}
+
+.medicine-tags .out {
+  background: #ffe8eb;
+  color: #c71f36;
+}
+
+.medicine-open {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #4f5de0;
+  font-size: 0.82rem;
 }
 
 .pharma-file {
   display: none;
-}
-
-@media (max-width: 540px) {
-  .rx-card h2 { font-size: 34px; }
-  .medicine-info h4, .cart-info h4 { font-size: 19px; }
-  .delivery-banner h4 { font-size: 28px; }
-  .placed-view h2 { font-size: 40px; }
-  .partner-card h3 { font-size: 31px; }
 }
