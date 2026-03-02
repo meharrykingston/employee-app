@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -6,11 +6,13 @@ import {
   FiChevronUp,
   FiMessageCircle,
   FiShield,
+  FiShoppingCart,
   FiStar,
   FiZap,
 } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
-import { medicines } from "../Pharmacy/medicineData"
+import { medicines, type MedicineItem } from "../Pharmacy/medicineData"
+import { useCart } from "../../app/cart"
 import "./medicine-detail.css"
 
 type PanelId = "about" | "uses" | "dose" | "safety"
@@ -20,8 +22,21 @@ export default function MedicineDetail() {
   const { medicineId } = useParams()
   const medicine = medicines.find((item) => item.id === medicineId)
   const [openPanel, setOpenPanel] = useState<PanelId>("about")
+  const [showCartPopup, setShowCartPopup] = useState(false)
+  const [lastAddedName, setLastAddedName] = useState("")
+  const { addItem, totalItems } = useCart()
 
   const safetyScore = useMemo(() => 92, [])
+  const upsells = useMemo(
+    () => medicines.filter((item) => item.id !== medicineId).slice(0, 3),
+    [medicineId],
+  )
+
+  useEffect(() => {
+    if (!showCartPopup) return
+    const timer = window.setTimeout(() => setShowCartPopup(false), 1800)
+    return () => window.clearTimeout(timer)
+  }, [showCartPopup])
 
   if (!medicine) {
     return (
@@ -42,8 +57,23 @@ export default function MedicineDetail() {
     )
   }
 
+  const currentMedicine = medicine
+
   function togglePanel(id: PanelId) {
     setOpenPanel((prev) => (prev === id ? "about" : id))
+  }
+
+  function addToCart(item: MedicineItem) {
+    if (!item.inStock) return
+    addItem(item)
+    setLastAddedName(item.name)
+    setShowCartPopup(true)
+  }
+
+  function handleBuyNow() {
+    if (!currentMedicine.inStock) return
+    addItem(currentMedicine)
+    navigate("/cart")
   }
 
   return (
@@ -53,29 +83,38 @@ export default function MedicineDetail() {
           <FiArrowLeft />
         </button>
         <h1>Product Overview</h1>
+        <button
+          className="medicine-cart-btn app-pressable"
+          type="button"
+          aria-label="Open cart"
+          onClick={() => navigate("/cart")}
+        >
+          <FiShoppingCart />
+          {totalItems > 0 && <span>{totalItems}</span>}
+        </button>
       </header>
 
       <section className="medicine-detail-shell app-content-slide">
         <article className="medicine-hero-card app-fade-stagger">
           <div className="medicine-hero-media">
-            <img src={medicine.image} alt={medicine.name} />
+            <img src={currentMedicine.image} alt={currentMedicine.name} />
             <span className="hero-pill"><FiStar /> Trusted medicine</span>
           </div>
           <div className="medicine-hero-copy">
-            <h2>{medicine.name}</h2>
-            <p>{medicine.dose} • {medicine.kind}</p>
-            <span className={medicine.inStock ? "availability in" : "availability out"}>
-              {medicine.inStock ? "Currently available" : "Currently unavailable"}
+            <h2>{currentMedicine.name}</h2>
+            <p>{currentMedicine.dose} • {currentMedicine.kind}</p>
+            <span className={currentMedicine.inStock ? "availability in" : "availability out"}>
+              {currentMedicine.inStock ? "Currently available" : "Currently unavailable"}
             </span>
 
             <div className="hero-facts">
               <article>
                 <small>Form</small>
-                <strong>{medicine.kind}</strong>
+                <strong>{currentMedicine.kind}</strong>
               </article>
               <article>
                 <small>Dose</small>
-                <strong>{medicine.dose}</strong>
+                <strong>{currentMedicine.dose}</strong>
               </article>
               <article>
                 <small>Safety</small>
@@ -95,7 +134,7 @@ export default function MedicineDetail() {
             <h3>About This Medicine</h3>
             {openPanel === "about" ? <FiChevronUp /> : <FiChevronDown />}
           </button>
-          {openPanel === "about" && <p>{medicine.overview}</p>}
+          {openPanel === "about" && <p>{currentMedicine.overview}</p>}
         </article>
 
         <article className={`medicine-section app-fade-stagger ${openPanel === "uses" ? "expanded" : "collapsed"}`}>
@@ -105,7 +144,7 @@ export default function MedicineDetail() {
           </button>
           {openPanel === "uses" && (
             <ul>
-              {medicine.uses.map((item) => (
+              {currentMedicine.uses.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -119,7 +158,7 @@ export default function MedicineDetail() {
           </button>
           {openPanel === "dose" && (
             <ul>
-              {medicine.doseGuide.map((item) => (
+              {currentMedicine.doseGuide.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -134,7 +173,7 @@ export default function MedicineDetail() {
           {openPanel === "safety" && (
             <>
               <ul>
-                {medicine.cautions.map((item) => (
+                {currentMedicine.cautions.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
@@ -145,13 +184,36 @@ export default function MedicineDetail() {
           )}
         </article>
 
+        <section className="upsell-section app-fade-stagger">
+          <div className="upsell-head">
+            <h3>You may also need</h3>
+            <p>Frequently bought with this medicine</p>
+          </div>
+          <div className="upsell-list">
+            {upsells.map((item) => (
+              <article key={item.id} className="upsell-card">
+                <button type="button" className="upsell-main app-pressable" onClick={() => navigate(`/pharmacy/medicine/${item.id}`)}>
+                  <img src={item.image} alt={item.name} loading="lazy" />
+                  <div>
+                    <h4>{item.name}</h4>
+                    <p>{item.dose} • {item.kind}</p>
+                  </div>
+                </button>
+                <button type="button" className="upsell-add app-pressable" onClick={() => addToCart(item)} disabled={!item.inStock}>
+                  {item.inStock ? "Add" : "Out of stock"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="medicine-action-grid app-fade-stagger">
           <button
             className="cta-secondary app-pressable"
             type="button"
             onClick={() =>
               navigate("/ai-chat", {
-                state: { prefill: `Can you explain ${medicine.name} ${medicine.dose} dose schedule and precautions for me?` },
+                state: { prefill: `Can you explain ${currentMedicine.name} ${currentMedicine.dose} dose schedule and precautions for me?` },
               })
             }
           >
@@ -162,6 +224,31 @@ export default function MedicineDetail() {
           </button>
         </section>
       </section>
+
+      {showCartPopup && (
+        <button type="button" className="cart-added-popup app-page-enter" onClick={() => navigate("/cart")}>
+          {lastAddedName} added to cart
+        </button>
+      )}
+
+      <footer className="buy-bar app-fade-stagger">
+        <button
+          type="button"
+          className="buy-bar-cart app-pressable"
+          onClick={() => addToCart(currentMedicine)}
+          disabled={!currentMedicine.inStock}
+        >
+          Add to Cart
+        </button>
+        <button
+          type="button"
+          className="buy-bar-buy app-pressable"
+          onClick={handleBuyNow}
+          disabled={!currentMedicine.inStock}
+        >
+          Buy Now
+        </button>
+      </footer>
     </main>
   )
 }

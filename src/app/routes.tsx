@@ -24,6 +24,7 @@ import AISymptomAnalyser from "../pages/AISymptomAnalyser"
 import Pharmacy from "../pages/Pharmacy"
 import PharmacyCategories from "../pages/PharmacyCategories"
 import MedicineDetail from "../pages/MedicineDetail"
+import CartPage from "../pages/Cart"
 import MedicineTracking from "../pages/MedicineTracking"
 import Wallet from "../pages/Wallet"
 import Badges from "../pages/Badges"
@@ -66,6 +67,7 @@ export const router = createBrowserRouter([
       { path: "pharmacy/categories", element: <PharmacyCategories /> },
       { path: "pharmacy/tracking", element: <MedicineTracking /> },
       { path: "pharmacy/medicine/:medicineId", element: <MedicineDetail /> },
+      { path: "cart", element: <CartPage /> },
       { path: "weekend-tasks", element: <WeekendTasks /> },
       { path: "wallet", element: <Wallet /> },
       { path: "badges", element: <Badges /> },

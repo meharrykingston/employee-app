@@ -15,6 +15,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { medicines } from "./medicineData"
 import { goBackOrFallback } from "../../utils/navigation"
+import { useCart } from "../../app/cart"
 import "./pharmacy.css"
 
 const categories = [
@@ -36,6 +37,7 @@ const pharmaTabs = [
 
 export default function Pharmacy() {
   const navigate = useNavigate()
+  const { totalItems } = useCart()
   const [query, setQuery] = useState("")
   const [uploadStatus, setUploadStatus] = useState("Upload a Prescription and tell us what you need. We do the rest.")
   const [isMenuDocked, setIsMenuDocked] = useState(false)
@@ -69,8 +71,9 @@ export default function Pharmacy() {
 
         <h1>MEDICINE</h1>
 
-        <button className="cart-btn app-pressable" type="button" aria-label="Cart">
+        <button className="cart-btn app-pressable" type="button" aria-label="Cart" onClick={() => navigate("/cart")}>
           <FiShoppingCart />
+          {totalItems > 0 && <span>{totalItems}</span>}
         </button>
       </header>
 

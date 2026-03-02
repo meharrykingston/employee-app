@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   FiActivity,
   FiArrowUpRight,
@@ -36,6 +36,7 @@ type Doctor = {
 type JourneyStep = "options" | "ride" | "video"
 type ConsultMode = "tele" | "opd"
 type CallState = "ready" | "connecting" | "live" | "ended"
+type MediaPermission = "idle" | "granted" | "denied"
 type TeleNavState = {
   fromAiAnalyser?: boolean
   preselectedSpecialty?: Doctor["specialty"]
@@ -119,7 +120,16 @@ export default function TeleConsultation() {
   const [callState, setCallState] = useState<CallState>("ready")
   const [micOn, setMicOn] = useState(true)
   const [camOn, setCamOn] = useState(true)
+  const [mediaPermission, setMediaPermission] = useState<MediaPermission>("idle")
+  const [mediaError, setMediaError] = useState("")
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [speakerVolume, setSpeakerVolume] = useState(65)
   const [showDoctors, setShowDoctors] = useState(false)
+
+  const localVideoRef = useRef<HTMLVideoElement | null>(null)
+  const localStreamRef = useRef<MediaStream | null>(null)
+  const connectTimerRef = useRef<number | null>(null)
+  const callClockRef = useRef<number | null>(null)
 
   const selectedDoctorInfo = doctors.find((doctor) => doctor.id === selectedDoctor) ?? null
 
@@ -226,6 +236,31 @@ export default function TeleConsultation() {
     }
   }, [step, selectedDoctorInfo])
 
+  useEffect(() => {
+    return () => {
+      if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
+      if (callClockRef.current) window.clearInterval(callClockRef.current)
+      localStreamRef.current?.getTracks().forEach((track) => track.stop())
+      localStreamRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const stream = localStreamRef.current
+    if (!stream) return
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = micOn
+    })
+  }, [micOn])
+
+  useEffect(() => {
+    const stream = localStreamRef.current
+    if (!stream) return
+    stream.getVideoTracks().forEach((track) => {
+      track.enabled = camOn
+    })
+  }, [camOn])
+
   function continueJourney() {
     if (!selectedDoctorInfo) return
     if (mode === "tele") {
@@ -236,15 +271,68 @@ export default function TeleConsultation() {
     navigate("/teleconsultation/pickup", { state: { doctor: selectedDoctorInfo, analysisQuery, selectedSymptoms } })
   }
 
+  function stopLocalStream() {
+    if (localVideoRef.current) localVideoRef.current.srcObject = null
+    localStreamRef.current?.getTracks().forEach((track) => track.stop())
+    localStreamRef.current = null
+  }
+
+  async function requestMediaAccess() {
+    try {
+      setMediaError("")
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      localStreamRef.current?.getTracks().forEach((track) => track.stop())
+      localStreamRef.current = stream
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream
+        localVideoRef.current.play().catch(() => undefined)
+      }
+      setMediaPermission("granted")
+      setMicOn(true)
+      setCamOn(true)
+      return true
+    } catch {
+      setMediaPermission("denied")
+      setMediaError("Camera and microphone permission is required to start this consultation call.")
+      return false
+    }
+  }
+
   function startVideoCall() {
     if (!selectedDoctorInfo || callState === "connecting") return
+    if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
+    setElapsedSeconds(0)
     setCallState("connecting")
-    window.setTimeout(() => setCallState("live"), 1400)
+    connectTimerRef.current = window.setTimeout(() => {
+      setCallState("live")
+      if (callClockRef.current) window.clearInterval(callClockRef.current)
+      callClockRef.current = window.setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1)
+      }, 1000)
+    }, 1400)
+  }
+
+  async function handleStartVideoCall() {
+    if (!selectedDoctorInfo || callState === "connecting") return
+    const canProceed = localStreamRef.current ? true : await requestMediaAccess()
+    if (!canProceed) return
+    startVideoCall()
   }
 
   function endVideoCall() {
+    if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
+    if (callClockRef.current) window.clearInterval(callClockRef.current)
+    connectTimerRef.current = null
+    callClockRef.current = null
     setCallState("ended")
+    setElapsedSeconds(0)
+    stopLocalStream()
+    setMediaPermission("idle")
+    setMediaError("")
   }
+
+  const liveMinutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")
+  const liveSeconds = String(elapsedSeconds % 60).padStart(2, "0")
 
   return (
     <main className="tele-page app-page-enter">
@@ -358,29 +446,71 @@ export default function TeleConsultation() {
         {step === "video" && selectedDoctorInfo && (
           <section className="video-stage app-fade-stagger">
             <div className="video-top">
-              <h3>Online Video Consultation</h3>
-              <p>{selectedDoctorInfo.name} • {selectedDoctorInfo.specialty}</p>
+              <h3>{selectedDoctorInfo.name}</h3>
+              <p>{selectedDoctorInfo.specialty}</p>
             </div>
 
-            <div className="video-screen remote">
-              {callState === "ready" && <span>Ready to connect with doctor</span>}
-              {callState === "connecting" && <span>Connecting call...</span>}
-              {callState === "live" && <span>Dr. {selectedDoctorInfo.name.split(" ")[1]} is live</span>}
-              {callState === "ended" && <span>Call ended</span>}
+            <div className="video-call-shell">
+              <div className="video-screen remote" style={{ backgroundImage: `url(${selectedDoctorInfo.avatar})` }}>
+                <div className="video-screen-overlay" />
+                {callState === "ready" && <span className="video-state-chip">Ready to connect</span>}
+                {callState === "connecting" && <span className="video-state-chip">Connecting call...</span>}
+                {callState === "live" && <span className="video-state-chip">Live with doctor</span>}
+                {callState === "ended" && <span className="video-state-chip">Call ended</span>}
+                {(callState === "live" || callState === "connecting") && (
+                  <div className="video-clock">
+                    <span>{liveMinutes}:{liveSeconds}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="video-screen local">
+                {camOn && mediaPermission === "granted" ? (
+                  <video ref={localVideoRef} autoPlay playsInline muted />
+                ) : (
+                  <span>{mediaPermission !== "granted" ? "Camera preview" : "Camera Off"}</span>
+                )}
+              </div>
+
+              <div className="speaker-strip" aria-label="Speaker volume">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={speakerVolume}
+                  onChange={(e) => setSpeakerVolume(Number(e.target.value))}
+                  aria-label="Speaker volume control"
+                />
+                <FiMic />
+              </div>
             </div>
-            <div className="video-screen local">
-              <span>{camOn ? "Your camera preview" : "Camera off"}</span>
-            </div>
+
+            {mediaError && <p className="video-permission-note">{mediaError}</p>}
+            {mediaPermission === "idle" && (
+              <p className="video-permission-note">Allow camera and microphone permission before starting the call.</p>
+            )}
 
             <div className="video-controls">
-              <button type="button" className="app-pressable" onClick={() => setMicOn((prev) => !prev)}>
+              <button
+                type="button"
+                className="app-pressable"
+                onClick={() => setMicOn((prev) => !prev)}
+                aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
+              >
                 {micOn ? <FiMic /> : <FiMicOff />}
               </button>
-              <button type="button" className="app-pressable" onClick={() => setCamOn((prev) => !prev)}>
+              <button
+                type="button"
+                className="app-pressable"
+                onClick={() => setCamOn((prev) => !prev)}
+                aria-label={camOn ? "Turn off camera" : "Turn on camera"}
+              >
                 {camOn ? <FiVideo /> : <FiVideoOff />}
               </button>
               {callState !== "live" && callState !== "connecting" && (
-                <button type="button" className="start-call app-pressable" onClick={startVideoCall}>Start Call</button>
+                <button type="button" className="start-call app-pressable" onClick={handleStartVideoCall}>
+                  Start Call
+                </button>
               )}
               {(callState === "live" || callState === "connecting") && (
                 <button type="button" className="end-call app-pressable" onClick={endVideoCall}>
