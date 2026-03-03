@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FiArrowLeft } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
+import { getAiLabReadinessQuestions, type ReadinessQuestion } from "../../services/aiApi"
 import "./labtest.css"
 
 type LabTestItem = {
@@ -15,43 +16,111 @@ type LabTestItem = {
 }
 
 type ReadinessState = {
-  feelingWell: "yes" | "no" | null
-  eatenLastHours: "yes" | "no" | null
+  [questionId: string]: "yes" | "no"
 }
 
 export default function LabReadinessStep() {
   const navigate = useNavigate()
-  const { state } = useLocation() as { state?: { selectedTest?: LabTestItem } }
-  const selectedTest = state?.selectedTest
-  const [slide, setSlide] = useState(0)
-  const [answers, setAnswers] = useState<ReadinessState>({
-    feelingWell: null,
-    eatenLastHours: null,
-  })
-
-  function setAnswer(key: keyof ReadinessState, value: "yes" | "no") {
-    setAnswers((prev) => ({ ...prev, [key]: value }))
+  const { state } = useLocation() as {
+    state?: {
+      selectedTest?: LabTestItem
+      readinessQuestions?: ReadinessQuestion[]
+    }
   }
+  const selectedTest = state?.selectedTest
+  const [questions, setQuestions] = useState<ReadinessQuestion[]>(state?.readinessQuestions ?? [])
+  const [answers, setAnswers] = useState<ReadinessState>({})
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-  function next() {
-    if (slide === 0) {
-      setSlide(1)
+  useEffect(() => {
+    let active = true
+    if (state?.readinessQuestions?.length === 3) {
+      setLoading(false)
+      return () => {
+        active = false
+      }
+    }
+    setLoading(true)
+
+    getAiLabReadinessQuestions({
+      testName: selectedTest?.name ?? "Lab Test",
+      fastingInfo: selectedTest?.fasting,
+    })
+      .then((data) => {
+        if (!active) return
+        setQuestions(data.questions)
+      })
+      .catch(() => {
+        if (!active) return
+        setQuestions([
+          {
+            id: "q1",
+            question: "Have you followed the preparation guidance for this test?",
+            options: [
+              { value: "yes", label: "Yes, I followed it" },
+              { value: "no", label: "No, not yet" },
+            ],
+          },
+          {
+            id: "q2",
+            question: "Did you take any medicine today that should be shared with the lab?",
+            options: [
+              { value: "yes", label: "Yes, I took medicine" },
+              { value: "no", label: "No, none today" },
+            ],
+          },
+          {
+            id: "q3",
+            question: "Are you comfortable and ready for collection now?",
+            options: [
+              { value: "yes", label: "Yes, ready now" },
+              { value: "no", label: "No, I need support" },
+            ],
+          },
+        ])
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedTest?.fasting, selectedTest?.name])
+
+  const currentQuestion = useMemo(
+    () => (questions.length > 0 ? questions[currentIndex] : null),
+    [currentIndex, questions]
+  )
+
+  function onAnswer(value: "yes" | "no") {
+    if (!currentQuestion) return
+    const nextAnswers = { ...answers, [currentQuestion.id]: value }
+    setAnswers(nextAnswers)
+
+    if (currentIndex >= questions.length - 1) {
+      navigate("/lab-tests/location", {
+        state: {
+          selectedTest,
+          readiness: nextAnswers,
+        },
+      })
       return
     }
-    navigate("/lab-tests/location", {
-      state: {
-        selectedTest,
-        readiness: answers,
-      },
-    })
-  }
 
-  const canContinue = slide === 0 ? answers.feelingWell !== null : answers.eatenLastHours !== null
+    setCurrentIndex((prev) => prev + 1)
+  }
 
   return (
     <div className="lab-page readiness-page">
       <div className="lab-header">
-        <button className="lab-back" onClick={() => (slide === 0 ? navigate(-1) : setSlide(0))} type="button" aria-label="Back">
+        <button
+          className="lab-back"
+          onClick={() => (currentIndex === 0 ? navigate(-1) : setCurrentIndex((prev) => Math.max(0, prev - 1)))}
+          type="button"
+          aria-label="Back"
+        >
           <FiArrowLeft />
         </button>
         <div>
@@ -73,57 +142,34 @@ export default function LabReadinessStep() {
       <section className="readiness-wrap">
         <p className="readiness-top-note">Just to help your test go smoothly</p>
 
-        <div className={`readiness-slider slide-${slide}`}>
-          <article className="readiness-slide">
-            <h2>Are you feeling well today?</h2>
-            <p>This helps us plan your collection experience better.</p>
-            <div className="choice-row">
-              <button
-                type="button"
-                className={`choice-btn ${answers.feelingWell === "yes" ? "active" : ""}`}
-                onClick={() => setAnswer("feelingWell", "yes")}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                className={`choice-btn ${answers.feelingWell === "no" ? "active" : ""}`}
-                onClick={() => setAnswer("feelingWell", "no")}
-              >
-                No
-              </button>
+        {loading ? (
+          <div className="lab-loading-wrap readiness-loading-shell" aria-live="polite" aria-label="Loading">
+            <span className="lab-loading-spinner" />
+          </div>
+        ) : currentQuestion ? (
+          <article className="readiness-slide readiness-single">
+            <h2>{currentQuestion.question}</h2>
+            <p>Step {currentIndex + 1} of {questions.length}</p>
+            <div className="choice-stack">
+              {currentQuestion.options.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`choice-btn choice-btn-lg ${answers[currentQuestion.id] === option.value ? "active" : ""}`}
+                  onClick={() => onAnswer(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           </article>
-
-          <article className="readiness-slide">
-            <h2>Have you eaten in the last 8-12 hours?</h2>
-            <p>Useful for fasting-related test preparation.</p>
-            <div className="choice-row">
-              <button
-                type="button"
-                className={`choice-btn ${answers.eatenLastHours === "yes" ? "active" : ""}`}
-                onClick={() => setAnswer("eatenLastHours", "yes")}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                className={`choice-btn ${answers.eatenLastHours === "no" ? "active" : ""}`}
-                onClick={() => setAnswer("eatenLastHours", "no")}
-              >
-                No
-              </button>
-            </div>
+        ) : (
+          <article className="readiness-slide readiness-single">
+            <h2>Could not load readiness questions</h2>
+            <p>Please go back and try again.</p>
           </article>
-        </div>
+        )}
       </section>
-
-      <div className="bottom-buttons single">
-        <button className="btn-primary" type="button" onClick={next} disabled={!canContinue}>
-          {slide === 0 ? "Next" : "Continue to Location"}
-        </button>
-      </div>
     </div>
   )
 }
-

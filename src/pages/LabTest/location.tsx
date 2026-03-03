@@ -20,7 +20,7 @@ export default function LabLocationStep2() {
   const { state } = useLocation() as {
     state?: {
       selectedTest?: LabTestItem
-      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+      readiness?: Record<string, "yes" | "no">
     }
   }
   const selectedTest = state?.selectedTest

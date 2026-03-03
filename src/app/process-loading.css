@@ -1,0 +1,34 @@
+.process-loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.74);
+  backdrop-filter: blur(3px);
+  z-index: 999;
+}
+
+.process-loading-card {
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+}
+
+.process-loading-spinner {
+  width: 44px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #d6deea;
+  border-top-color: #1f5da8;
+  animation: processSpin 760ms linear infinite;
+}
+
+@keyframes processSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

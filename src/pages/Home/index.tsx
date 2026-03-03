@@ -23,6 +23,7 @@ import {
   FiZap,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
+import { preloadLabCatalog } from "../../services/labApi"
 import "./home.css"
 
 type Tip = {
@@ -224,9 +225,19 @@ export default function Home() {
     navigate(tabRoutes[tab])
   }
 
-  function openQuickAccess(title: QuickAccessItem["title"]) {
+  async function openQuickAccess(title: QuickAccessItem["title"]) {
     const route = quickAccessRoutes[title]
     if (route) {
+      if (title === "Lab Test") {
+        try {
+          await Promise.race([
+            preloadLabCatalog("", 10, 0),
+            new Promise((resolve) => window.setTimeout(resolve, 1200)),
+          ])
+        } catch {
+          // Lab page has its own loader/error fallback.
+        }
+      }
       navigate(route)
       return
     }

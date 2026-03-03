@@ -21,7 +21,7 @@ export default function LabBookNowStep3() {
       selectedTest?: LabTestItem
       collectionType?: string
       address?: string
-      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+      readiness?: Record<string, "yes" | "no">
     }
   }
 

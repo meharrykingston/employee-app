@@ -23,7 +23,7 @@ export default function LabScheduleLater() {
       selectedTest?: LabTestItem
       collectionType?: string
       address?: string
-      readiness?: { feelingWell?: "yes" | "no" | null; eatenLastHours?: "yes" | "no" | null }
+      readiness?: Record<string, "yes" | "no">
     }
   }
   const [date, setDate] = useState("Tomorrow")

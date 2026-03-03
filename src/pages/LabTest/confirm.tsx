@@ -19,7 +19,7 @@ export default function LabConfirm() {
       collectionType?: string
       date?: string
       time?: string
-      readiness?: { eatenLastHours?: "yes" | "no" | null; feelingWell?: "yes" | "no" | null }
+      readiness?: Record<string, "yes" | "no">
     }
   }
 
