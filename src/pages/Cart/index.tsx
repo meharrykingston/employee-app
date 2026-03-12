@@ -1,24 +1,75 @@
 import { FiArrowLeft, FiGift, FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck } from "react-icons/fi"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../app/cart"
 import { ensureEmployeeActor } from "../../services/actorsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { createPharmacyOrder } from "../../services/pharmacyApi"
-import { medicines } from "../Pharmacy/medicineData"
+import { fetchPharmacyProducts, lookupPharmacyProducts } from "../../services/pharmacyApi"
+import { mapProductToMedicine, medicines, type MedicineItem } from "../Pharmacy/medicineData"
 import { playAppSound } from "../../utils/sound"
 import "./cart.css"
 
 export default function CartPage() {
   const navigate = useNavigate()
-  const { items, totalItems, removeItem, updateQty, addItem, clearCart } = useCart()
+  const { items, totalItems, removeItem, updateQty, addItem, clearCart, syncItems } = useCart()
+  const [catalog, setCatalog] = useState<MedicineItem[]>([])
+  const idsKey = useMemo(() => items.map((item) => item.id).sort().join("|"), [items])
+  const hasOutOfStock = items.some((item) => !item.inStock)
 
   const upsells = useMemo(() => {
     const ids = new Set(items.map((item) => item.id))
-    return medicines.filter((item) => !ids.has(item.id)).slice(0, 3)
-  }, [items])
+    const source = catalog.length ? catalog : medicines
+    return source.filter((item) => !ids.has(item.id)).slice(0, 3)
+  }, [items, catalog])
 
   const companySession = getEmployeeCompanySession()
+
+  useEffect(() => {
+    let active = true
+    async function loadCatalog() {
+      try {
+        const rows = await fetchPharmacyProducts({ limit: 24, audience: "employee" })
+        if (!active || !rows?.length) return
+        setCatalog(rows.map((row, index) => mapProductToMedicine(row, index)))
+      } catch {
+        if (active) setCatalog([])
+      }
+    }
+    loadCatalog()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    async function syncCart() {
+      if (!idsKey) return
+      try {
+        const rows = await lookupPharmacyProducts(idsKey.split("|").filter(Boolean), "employee")
+        if (!active || !rows?.length) return
+        const mapped = rows.map((row, index) => mapProductToMedicine(row, index))
+        syncItems(
+          mapped.map((item) => ({
+            id: item.id,
+            name: item.name,
+            dose: item.dose,
+            kind: item.kind,
+            image: item.image,
+            inStock: item.inStock,
+            price: item.price ?? 0,
+          }))
+        )
+      } catch {
+      // keep local cart if sync fails
+      }
+    }
+    syncCart()
+    return () => {
+      active = false
+    }
+  }, [idsKey, syncItems])
 
   return (
     <main className="cart-page app-page-enter">
@@ -68,7 +119,9 @@ export default function CartPage() {
                   <div>
                     <h3>{item.name}</h3>
                     <p>{item.dose} • {item.kind}</p>
-                    <span>Doctor-trusted care essential</span>
+                    <span className={`stock-pill ${item.inStock ? "in" : "out"}`}>
+                      {item.inStock ? "Doctor-trusted care essential" : "Out of stock — replace item"}
+                    </span>
                   </div>
                 </button>
 
@@ -153,6 +206,11 @@ export default function CartPage() {
             <FiGift />
             <span>Priority dispatch and secure packaging enabled</span>
           </div>
+          {hasOutOfStock && (
+            <div className="cart-stock-alert">
+              Some items are out of stock. Remove or replace them to continue.
+            </div>
+          )}
           <div className="bill">
             <p><span>Prescription validation</span><strong>Included</strong></p>
             <p><span>Quality assurance check</span><strong>Included</strong></p>
@@ -161,6 +219,7 @@ export default function CartPage() {
           <button
             type="button"
             className="checkout-btn app-pressable"
+            disabled={hasOutOfStock}
             onClick={async () => {
               playAppSound("notify")
               const employee = await ensureEmployeeActor({

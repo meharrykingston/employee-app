@@ -1,5 +1,5 @@
 import { type ReactNode } from "react"
-import { FiArrowRight, FiCheckCircle } from "react-icons/fi"
+import { FiArrowRight } from "react-icons/fi"
 import "./assessment.css"
 
 type Props = {
@@ -37,10 +37,6 @@ export default function AssessmentLayout({
             onClick={onNext}
             type="button"
           >
-            <FiCheckCircle
-              className="assessment-icon"
-              aria-hidden="true"
-            />
             <span>Continue</span>
             <FiArrowRight
               className="assessment-icon"

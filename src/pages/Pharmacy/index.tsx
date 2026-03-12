@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   FiActivity,
   FiArrowLeft,
@@ -12,8 +12,9 @@ import {
   FiUpload,
   FiUser,
 } from "react-icons/fi"
-import { useNavigate } from "react-router-dom"
-import { medicines } from "./medicineData"
+import { useLocation, useNavigate } from "react-router-dom"
+import { fetchPharmacyProducts } from "../../services/pharmacyApi"
+import { mapProductToMedicine, medicines, type MedicineItem } from "./medicineData"
 import { goBackOrFallback } from "../../utils/navigation"
 import { useCart } from "../../app/cart"
 import { playAppSound } from "../../utils/sound"
@@ -38,18 +39,50 @@ const pharmaTabs = [
 
 export default function Pharmacy() {
   const navigate = useNavigate()
+  const { state } = useLocation() as { state?: { selectedCategory?: string } }
   const { totalItems } = useCart()
   const [query, setQuery] = useState("")
   const [uploadStatus, setUploadStatus] = useState("Upload a Prescription and tell us what you need. We do the rest.")
   const [isMenuDocked, setIsMenuDocked] = useState(false)
+  const [catalog, setCatalog] = useState<MedicineItem[]>([])
+  const [loadingCatalog, setLoadingCatalog] = useState(true)
+  const [activeCategory, setActiveCategory] = useState(state?.selectedCategory ?? "")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    let active = true
+    async function loadCatalog() {
+      setLoadingCatalog(true)
+      try {
+        const rows = await fetchPharmacyProducts({ limit: 40, audience: "employee" })
+        if (!active) return
+        if (rows?.length) {
+          setCatalog(rows.map((row, index) => mapProductToMedicine(row, index)))
+        } else {
+          setCatalog([])
+        }
+      } catch {
+        if (active) setCatalog([])
+      } finally {
+        if (active) setLoadingCatalog(false)
+      }
+    }
+    loadCatalog()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const sourceItems = catalog.length ? catalog : medicines
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return medicines
-    return medicines.filter((item) => `${item.name} ${item.dose} ${item.kind}`.toLowerCase().includes(q))
-  }, [query])
+    return sourceItems.filter((item) => {
+      const matchesQuery = !q || `${item.name} ${item.dose} ${item.kind}`.toLowerCase().includes(q)
+      const matchesCategory = !activeCategory || item.kind === activeCategory
+      return matchesQuery && matchesCategory
+    })
+  }, [query, sourceItems, activeCategory])
 
   function onPrescriptionPicked(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -109,6 +142,12 @@ export default function Pharmacy() {
             placeholder="Search Medicine & Health Products"
           />
         </div>
+        {activeCategory && (
+          <div className="active-category-pill app-fade-stagger">
+            <span>{activeCategory}</span>
+            <button type="button" className="app-pressable" onClick={() => setActiveCategory("")}>Clear</button>
+          </div>
+        )}
 
         <article className="rx-card app-fade-stagger">
           <h2>UPLOAD PRESCRIPTION</h2>
@@ -142,7 +181,10 @@ export default function Pharmacy() {
                 key={item.name}
                 className="category-card app-pressable"
                 type="button"
-                onClick={() => navigate("/pharmacy/categories", { state: { selectedCategory: item.name } })}
+                onClick={() => {
+                  setActiveCategory(item.name)
+                  navigate("/pharmacy/categories", { state: { selectedCategory: item.name } })
+                }}
               >
                 <div className="category-thumb">{item.icon}</div>
                 <h4>{item.name}</h4>
@@ -153,6 +195,9 @@ export default function Pharmacy() {
 
         <section className="medicine-list app-fade-stagger">
           <h3>Popular Medicines</h3>
+          {loadingCatalog && (
+            <div className="pharmacy-loading">Loading live pharmacy catalog...</div>
+          )}
           {filtered.map((item) => (
             <button
               key={item.id}

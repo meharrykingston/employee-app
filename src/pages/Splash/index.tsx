@@ -1,18 +1,44 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { FiActivity, FiHeart } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import "./splash.css"
 
 export default function Splash() {
   const navigate = useNavigate()
+  const [showPermissions, setShowPermissions] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigate("/company")
-    }, 2300)
-
-    return () => clearTimeout(timer)
+    const hasPermissions = localStorage.getItem("astikan_permissions_done")
+    if (hasPermissions) {
+      const timer = setTimeout(() => {
+        navigate("/company")
+      }, 1800)
+      return () => clearTimeout(timer)
+    }
+    setShowPermissions(true)
+    return undefined
   }, [navigate])
+
+  async function requestPermissions() {
+    try {
+      if ("geolocation" in navigator) {
+        await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(true),
+            () => resolve(false),
+            { timeout: 6000 }
+          )
+        })
+      }
+      if ("Notification" in window) {
+        await Notification.requestPermission()
+      }
+    } finally {
+      localStorage.setItem("astikan_permissions_done", "1")
+      setShowPermissions(false)
+      navigate("/company")
+    }
+  }
 
   return (
     <div className="splash-container app-page-enter">
@@ -29,6 +55,22 @@ export default function Splash() {
           <span />
         </div>
       </section>
+
+      {showPermissions && (
+        <div className="permissions-overlay">
+          <div className="permissions-card">
+            <h2>Allow permissions</h2>
+            <p>We need location and notification access to deliver OPD pickup, lab, and ride updates.</p>
+            <ul>
+              <li>Location access for pickup and OPD routing</li>
+              <li>Notifications for ride and consultation updates</li>
+            </ul>
+            <button className="permissions-btn" type="button" onClick={requestPermissions}>
+              Allow & Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

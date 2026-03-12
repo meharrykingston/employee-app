@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react"
 import { FiMinus, FiPlus } from "react-icons/fi"
 import AssessmentLayout from "../layout"
+import { saveHealthMetrics } from "../../../services/healthMetricsApi"
 
 type Props = {
   onNext: () => void
@@ -21,8 +22,16 @@ export default function Weight({ onNext }: Props) {
     "--slider-fill": `${progress}%`,
   } as CSSProperties
 
+  async function handleNext() {
+    try {
+      await saveHealthMetrics({ weightKg: weight })
+    } finally {
+      onNext()
+    }
+  }
+
   return (
-    <AssessmentLayout step={3} totalSteps={7} onNext={onNext}>
+    <AssessmentLayout step={3} totalSteps={4} onNext={handleNext}>
       <div className="step-container animate-in">
         <h1>What's your weight?</h1>
         <p>This helps us calculate your health baseline</p>

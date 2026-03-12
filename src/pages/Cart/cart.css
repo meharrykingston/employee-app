@@ -163,12 +163,19 @@
   font-size: 0.78rem;
 }
 
-.cart-item-main span {
+.stock-pill {
   display: inline-block;
   margin-top: 6px;
-  color: #0d7f65;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.stock-pill.in {
+  color: #0d7f65;
+}
+
+.stock-pill.out {
+  color: #b41d2f;
 }
 
 .cart-item-right {
@@ -320,6 +327,17 @@
   padding: 0 10px;
 }
 
+.cart-stock-alert {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff1f3;
+  border: 1px solid #f0c7cf;
+  color: #9b1b32;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .bill {
   margin-top: 8px;
   border: 1px solid #dbe3ef;
@@ -352,7 +370,11 @@
   font-weight: 800;
 }
 
+.checkout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .upsell-add:disabled {
   opacity: 0.55;
 }
-

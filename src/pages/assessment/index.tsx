@@ -1,28 +1,31 @@
 import { useNavigate } from "react-router-dom"
-import { FiCheckCircle } from "react-icons/fi"
 import { useState, useEffect } from "react"
 
 import Welcome from "./steps/Welcome"
 import Height from "./steps/Height"
 import Weight from "./steps/Weight"
 import Waist from "./steps/Waist"
-import Activity from "./steps/Activity"
-import Workout from "./steps/Workout"
-import Sleep from "./steps/Sleep"
 import "./assessment.css"
 
-const FINAL_STEP = 7
+const FINAL_STEP = 4
+const ASSESSMENT_DONE_KEY = "astikan_assessment_done"
 
 export default function HealthAssessment() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
 
   useEffect(() => {
+    if (localStorage.getItem(ASSESSMENT_DONE_KEY)) {
+      navigate("/home")
+      return
+    }
+
     if (step < FINAL_STEP) return
 
     const timer = window.setTimeout(() => {
+      localStorage.setItem(ASSESSMENT_DONE_KEY, "1")
       navigate("/home")
-    }, 1800)
+    }, 1600)
 
     return () => window.clearTimeout(timer)
   }, [step, navigate])
@@ -40,38 +43,15 @@ export default function HealthAssessment() {
       return <Weight onNext={nextStep} />
     case 3:
       return <Waist onNext={nextStep} />
-    case 4:
-      return <Activity onNext={nextStep} />
-    case 5:
-      return <Workout onNext={nextStep} />
-    case 6:
-      return <Sleep onNext={nextStep} />
     default:
       return (
         <div className="assessment-screen completion-screen app-page-enter">
           <div className="completion-card app-fade-stagger">
-            <div className="completion-icon-wrap">
-              <FiCheckCircle className="completion-icon" />
-            </div>
-
-            <h1>Assessment Complete</h1>
-            <p>
-              Your baseline profile is ready. We are preparing your personalized health dashboard.
-            </p>
-
-            <div className="completion-progress">
+            <h1>All set</h1>
+            <p>Saving your health baseline and preparing your dashboard.</p>
+            <div className="welcome-loader" aria-hidden="true">
               <span />
             </div>
-
-            <small>Moving to Home automatically...</small>
-
-            <button
-              className="next-btn"
-              onClick={() => navigate("/home")}
-              type="button"
-            >
-              Continue Now
-            </button>
           </div>
         </div>
       )

@@ -57,6 +57,15 @@
   gap: 10px;
 }
 
+.pharma-cat-loading {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px dashed #d6def0;
+  background: #f3f6ff;
+  color: #5c6f88;
+  font-size: 0.86rem;
+}
+
 .pharma-cat-item {
   width: 100%;
   border: 1px solid #e7e8df;

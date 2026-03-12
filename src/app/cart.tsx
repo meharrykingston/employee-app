@@ -19,6 +19,7 @@ type CartContextType = {
   addItem: (item: MedicineItem, qty?: number) => void
   removeItem: (id: string) => void
   updateQty: (id: string, qty: number) => void
+  syncItems: (updates: Array<Partial<CartItem> & { id: string }>) => void
   clearCart: () => void
 }
 
@@ -45,6 +46,9 @@ function readInitialCart(): CartItem[] {
 }
 
 function estimateMedicinePrice(item: MedicineItem) {
+  if (typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0) {
+    return item.price
+  }
   if (item.kind.toLowerCase().includes("capsule")) return 249
   if (item.kind.toLowerCase().includes("syrup")) return 189
   return 149
@@ -94,6 +98,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     persist(items.map((line) => (line.id === id ? { ...line, qty: normalizeQty(qty) } : line)))
   }
 
+  function syncItems(updates: Array<Partial<CartItem> & { id: string }>) {
+    if (!updates.length) return
+    const updateMap = new Map(updates.map((item) => [item.id, item]))
+    persist(
+      items.map((line) => {
+        const update = updateMap.get(line.id)
+        if (!update) return line
+        return { ...line, ...update, qty: line.qty }
+      })
+    )
+  }
+
   function clearCart() {
     persist([])
   }
@@ -105,6 +121,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItem,
       removeItem,
       updateQty,
+      syncItems,
       clearCart,
     }),
     [items],

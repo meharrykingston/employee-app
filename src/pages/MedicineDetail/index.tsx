@@ -11,7 +11,8 @@ import {
   FiZap,
 } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
-import { medicines, type MedicineItem } from "../Pharmacy/medicineData"
+import { fetchPharmacyProducts } from "../../services/pharmacyApi"
+import { mapProductToMedicine, medicines, type MedicineItem } from "../Pharmacy/medicineData"
 import { useCart } from "../../app/cart"
 import { playAppSound } from "../../utils/sound"
 import "./medicine-detail.css"
@@ -21,17 +22,46 @@ type PanelId = "about" | "uses" | "dose" | "safety"
 export default function MedicineDetail() {
   const navigate = useNavigate()
   const { medicineId } = useParams()
-  const medicine = medicines.find((item) => item.id === medicineId)
+  const [catalog, setCatalog] = useState<MedicineItem[]>([])
+  const [loadingCatalog, setLoadingCatalog] = useState(true)
+  const medicine = useMemo(() => {
+    const source = catalog.length ? catalog : medicines
+    return source.find((item) => item.id === medicineId)
+  }, [catalog, medicineId])
   const [openPanel, setOpenPanel] = useState<PanelId>("about")
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [lastAddedName, setLastAddedName] = useState("")
   const { addItem, totalItems } = useCart()
 
   const safetyScore = useMemo(() => 92, [])
-  const upsells = useMemo(
-    () => medicines.filter((item) => item.id !== medicineId).slice(0, 3),
-    [medicineId],
-  )
+  const upsells = useMemo(() => {
+    const source = catalog.length ? catalog : medicines
+    return source.filter((item) => item.id !== medicineId).slice(0, 3)
+  }, [medicineId, catalog])
+
+  useEffect(() => {
+    let active = true
+    async function loadCatalog() {
+      setLoadingCatalog(true)
+      try {
+        const rows = await fetchPharmacyProducts({ limit: 40, audience: "employee" })
+        if (!active) return
+        if (rows?.length) {
+          setCatalog(rows.map((row, index) => mapProductToMedicine(row, index)))
+        } else {
+          setCatalog([])
+        }
+      } catch {
+        if (active) setCatalog([])
+      } finally {
+        if (active) setLoadingCatalog(false)
+      }
+    }
+    loadCatalog()
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!showCartPopup) return
@@ -50,8 +80,10 @@ export default function MedicineDetail() {
         </header>
         <section className="medicine-detail-shell">
           <article className="medicine-not-found">
-            <h2>Medicine not found</h2>
-            <button type="button" className="cta-primary app-pressable" onClick={() => navigate("/pharmacy")}>Back to Medicines</button>
+            <h2>{loadingCatalog ? "Loading medicine..." : "Medicine not found"}</h2>
+            {!loadingCatalog && (
+              <button type="button" className="cta-primary app-pressable" onClick={() => navigate("/pharmacy")}>Back to Medicines</button>
+            )}
           </article>
         </section>
       </main>

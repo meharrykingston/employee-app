@@ -23,7 +23,7 @@ import {
   FiZap,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
-import { getEmployeeCompanySession } from "../../services/authApi"
+import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import { preloadLabCatalog } from "../../services/labApi"
 import "./home.css"
 
@@ -269,6 +269,13 @@ export default function Home() {
   }
 
   const companySession = getEmployeeCompanySession()
+
+  useEffect(() => {
+    const session = getEmployeeAuthSession()
+    if (!session) {
+      navigate("/login")
+    }
+  }, [navigate])
 
   return (
     <main className="home-page app-page-enter" onScroll={handleScroll} ref={pageRef}>

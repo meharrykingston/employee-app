@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react"
 import { FiArrowLeft, FiChevronRight } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
+import { fetchPharmacyCategories, type PharmacyCategory } from "../../services/pharmacyApi"
 import "./pharmacy-categories.css"
 
 const categories = [
@@ -15,6 +17,37 @@ export default function PharmacyCategories() {
   const navigate = useNavigate()
   const { state } = useLocation() as { state?: { selectedCategory?: string } }
   const selected = state?.selectedCategory
+  const [liveCategories, setLiveCategories] = useState<PharmacyCategory[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function loadCategories() {
+      setLoading(true)
+      try {
+        const rows = await fetchPharmacyCategories("employee")
+        if (!active) return
+        setLiveCategories(rows)
+      } catch {
+        if (active) setLiveCategories([])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    loadCategories()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const visibleCategories = liveCategories.length
+    ? liveCategories.map((item) => ({
+        id: item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        name: item.name,
+        icon: "💊",
+        desc: `${item.count} items`,
+      }))
+    : categories
 
   return (
     <main className="pharma-cat-page app-page-enter">
@@ -30,11 +63,15 @@ export default function PharmacyCategories() {
 
       <section className="pharma-cat-shell app-content-slide">
         <div className="pharma-cat-list">
-          {categories.map((item) => (
+          {loading && (
+            <div className="pharma-cat-loading">Loading categories...</div>
+          )}
+          {visibleCategories.map((item) => (
             <button
               key={item.id}
               type="button"
               className={`pharma-cat-item app-pressable ${selected === item.name ? "active" : ""}`}
+              onClick={() => navigate("/pharmacy", { state: { selectedCategory: item.name } })}
             >
               <span className="pharma-cat-icon">{item.icon}</span>
               <div className="pharma-cat-copy">

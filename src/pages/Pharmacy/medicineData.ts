@@ -5,10 +5,72 @@ export type MedicineItem = {
   kind: string
   inStock: boolean
   image: string
+  price?: number
   overview: string
   uses: string[]
   doseGuide: string[]
   cautions: string[]
+}
+
+type PharmacyProduct = {
+  id: string
+  sku?: string | null
+  name: string
+  category?: string | null
+  description?: string | null
+  base_price_inr: number
+  image_urls_json?: string[]
+  available_qty?: number | null
+  in_stock?: boolean
+}
+
+const fallbackImages = [
+  "https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1626285861696-9f0bf5a49c6b?auto=format&fit=crop&w=900&q=80",
+]
+
+function extractDose(text?: string | null) {
+  if (!text) return "Standard"
+  const match = text.match(/(\d+\s?(mg|ml|g|mcg|iu|IU))/)
+  if (match?.[0]) return match[0].replace("IU", "IU")
+  return "Standard"
+}
+
+function buildFallbackUses(name: string) {
+  return [
+    `${name} daily support`,
+    "Doctor-guided usage",
+    "Symptom relief as advised",
+  ]
+}
+
+export function mapProductToMedicine(product: PharmacyProduct, index = 0): MedicineItem {
+  const image = product.image_urls_json?.[0] ?? fallbackImages[index % fallbackImages.length]
+  const overview = product.description ?? `${product.name} is curated for daily health support.`
+  const inStock = typeof product.in_stock === "boolean" ? product.in_stock : true
+
+  return {
+    id: product.id,
+    name: product.name,
+    dose: extractDose(product.description ?? product.name),
+    kind: product.category ?? "Tablet",
+    inStock,
+    image,
+    price: Number(product.base_price_inr ?? 0),
+    overview,
+    uses: buildFallbackUses(product.name),
+    doseGuide: [
+      "Follow the label directions or physician guidance.",
+      "Take with water after meals unless advised otherwise.",
+      "Do not exceed the recommended dosage.",
+    ],
+    cautions: [
+      "Consult your doctor if you are pregnant or on other medication.",
+      "Stop use and seek care if you notice unusual reactions.",
+    ],
+  }
 }
 
 export const medicines: MedicineItem[] = [

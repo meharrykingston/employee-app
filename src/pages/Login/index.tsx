@@ -90,7 +90,8 @@ export default function Login() {
       const session = await loginEmployee(email, password)
       saveEmployeeAuthSession(session)
       setLoading(false)
-      navigate("/assessment")
+      const done = localStorage.getItem("astikan_assessment_done")
+      navigate(done ? "/home" : "/assessment")
     } catch (error) {
       setLoading(false)
       setError(error instanceof Error ? error.message : "Unable to sign in")
