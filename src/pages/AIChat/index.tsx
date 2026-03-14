@@ -164,6 +164,7 @@ export default function AIChat() {
   const { addItem } = useCart()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const prefillHandled = useRef(false)
+  const chatBodyRef = useRef<HTMLDivElement>(null)
 
   const messagesRef = useRef<Message[]>([])
 
@@ -190,6 +191,7 @@ export default function AIChat() {
   const [draft, setDraft] = useState("")
   const [attachedName, setAttachedName] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [loadingStep, setLoadingStep] = useState(0)
   const [isListening, setIsListening] = useState(false)
   const [aiQuickReplies, setAiQuickReplies] = useState<string[]>(defaultSuggestions)
   const [bookingWidgetId, setBookingWidgetId] = useState<string | null>(null)
@@ -257,6 +259,23 @@ export default function AIChat() {
     if (!threadId) return
     localStorage.setItem(`${MESSAGE_STORAGE_PREFIX}${threadId}`, JSON.stringify(messages))
   }, [messages, threadId])
+
+  useEffect(() => {
+    const node = chatBodyRef.current
+    if (!node) return
+    node.scrollTo({ top: node.scrollHeight, behavior: "smooth" })
+  }, [messages, isTyping])
+
+  useEffect(() => {
+    if (!isTyping) {
+      setLoadingStep(0)
+      return
+    }
+    const interval = window.setInterval(() => {
+      setLoadingStep((prev) => (prev + 1) % 3)
+    }, 1400)
+    return () => window.clearInterval(interval)
+  }, [isTyping])
 
   useEffect(() => {
     setAiQuickReplies(contextualSuggestions(getLatestUserText(messages)))
@@ -568,7 +587,7 @@ export default function AIChat() {
         </div>
       </header>
 
-      <div className="ai-chat-body">
+      <div className="ai-chat-body" ref={chatBodyRef}>
         {messages.map((msg) => (
           <div key={msg.id} className={`message-row ${msg.from === "user" ? "user" : "ai"} bubble-enter`}>
             <div className="message-bubble">
@@ -650,6 +669,15 @@ export default function AIChat() {
               <span />
               <span />
               <span />
+            </div>
+          </div>
+        )}
+        {isTyping && (
+          <div className="message-row ai">
+            <div className="message-bubble typing-status">
+              {loadingStep === 0 && "Analyzing symptoms..."}
+              {loadingStep === 1 && "Since last night... hmm..."}
+              {loadingStep === 2 && "Checking the best next step for you..."}
             </div>
           </div>
         )}

@@ -430,6 +430,12 @@
   animation-delay: 240ms;
 }
 
+.typing-status {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #667085;
+}
+
 .voice-overlay {
   position: fixed;
   inset: 0;
