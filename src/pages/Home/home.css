@@ -380,6 +380,23 @@
   font-family: "Satoshi", sans-serif;
 }
 
+.daily-tips-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.daily-tips-city {
+  font-size: 0.78rem;
+  color: #5c687f;
+  background: #f1f5ff;
+  border: 1px solid #d8e3f6;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
 /* Keep Home section titles from being overridden by generic .section h3 rules */
 .home-page .section h3.section-title {
   margin: 0;

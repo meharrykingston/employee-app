@@ -212,6 +212,7 @@ export default function Home() {
 
   const weatherTag = useMemo(() => {
     if (!weather) return ""
+    if (weather.aqi && weather.aqi >= 4) return "Recovery"
     const cond = weather.condition.toLowerCase()
     if (weather.tempC >= 32) return "Hydration"
     if (weather.tempC <= 18) return "Sleep"
@@ -533,7 +534,14 @@ export default function Home() {
         </section>
 
         <section className="section app-fade-stagger">
-          <h3 className="section-title daily-tips-title">Daily Health Tips</h3>
+          <div className="daily-tips-head">
+            <h3 className="section-title daily-tips-title">Daily Health Tips</h3>
+            {weather?.location ? (
+              <span className="daily-tips-city">
+                {weather.location} · {Math.round(weather.tempC)}°C · {weather.condition}
+              </span>
+            ) : null}
+          </div>
           <article
             className="tip-swiper"
             onMouseEnter={() => setTipInteracting(true)}

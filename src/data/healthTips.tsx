@@ -27,6 +27,47 @@ export type HealthTip = {
 
 export const healthTips: HealthTip[] = [
   {
+    id: "air-quality-shield",
+    title: "Air Quality Shield",
+    summary: "Protect lungs and energy on high‑pollution days.",
+    tags: ["Recovery", "Air"],
+    moodTags: ["general", "stress"],
+    heroImage: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    icon: <FiActivity />,
+    sections: [
+      {
+        heading: "Reduce exposure",
+        body: "Limit outdoor intensity when pollution spikes. Prefer indoor exercise and keep windows closed during peak traffic hours.",
+        coach: "This is gentle protection, not panic. Clinically, reduced exposure lowers airway irritation on high AQI days.",
+        question: {
+          id: "air_exposure",
+          text: "How much time do you plan to stay outdoors today?",
+          options: ["Less than 30 mins", "About an hour", "Multiple hours"],
+        },
+      },
+      {
+        heading: "Hydrate and rinse",
+        body: "Drink extra water and rinse nose/throat after outdoor travel. It helps clear irritants from airways.",
+        coach: "Small habits make a big difference. Hydration helps the body clear pollutants more efficiently.",
+        question: {
+          id: "air_hydration",
+          text: "Would you like a hydration reminder?",
+          options: ["Yes, remind me", "No, I will remember", "Maybe later"],
+        },
+      },
+      {
+        heading: "Mask and monitor",
+        body: "If you go out, use a well‑fitting mask (N95 if available). Watch for cough, burning eyes, or chest tightness.",
+        coach: "Masks are a practical shield on poor air days. If symptoms feel intense, consider a medical consult.",
+        question: {
+          id: "air_mask",
+          text: "Do you have a protective mask available?",
+          options: ["Yes", "Not right now", "I can arrange"],
+        },
+      },
+    ],
+  },
+  {
     id: "hydration-reset",
     title: "Hydration Reset",
     summary: "A simple water rhythm that keeps dizziness, fatigue, and headaches away.",

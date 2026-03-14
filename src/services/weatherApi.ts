@@ -4,6 +4,9 @@
   humidity: number
   windKph: number
   location: string
+  aqi?: number | null
+  pm25?: number | null
+  pm10?: number | null
 }
 
 export async function fetchWeather(lat: number, lon: number) {
