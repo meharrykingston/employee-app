@@ -94,6 +94,42 @@ const DEMO_DOCTORS: Array<{
     eta: "18 mins",
     fee: 32,
   },
+  {
+    handle: "aisha",
+    fullName: "Dr. Aisha Qureshi",
+    specialization: "Internal Medicine",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=160&q=80",
+    distance: "2.1 km away",
+    eta: "14 mins",
+    fee: 28,
+  },
+  {
+    handle: "vivek",
+    fullName: "Dr. Vivek Menon",
+    specialization: "Cardiology",
+    avatar: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=160&q=80",
+    distance: "4.0 km away",
+    eta: "22 mins",
+    fee: 38,
+  },
+  {
+    handle: "isha",
+    fullName: "Dr. Isha Kapoor",
+    specialization: "Dermatology",
+    avatar: "https://images.unsplash.com/photo-1551836022-4c4c79ecde51?auto=format&fit=crop&w=160&q=80",
+    distance: "1.6 km away",
+    eta: "11 mins",
+    fee: 30,
+  },
+  {
+    handle: "naveen",
+    fullName: "Dr. Naveen Rao",
+    specialization: "Pulmonology",
+    avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=160&q=80",
+    distance: "3.4 km away",
+    eta: "19 mins",
+    fee: 33,
+  },
 ]
 const MAX_TELECONSULT_SECONDS = 5 * 60
 const MAX_JOIN_RETRIES = 3
@@ -309,12 +345,15 @@ export default function TeleConsultation() {
 
   const visibleDoctors = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return doctors.filter((doctor) => {
+    const filtered = doctors.filter((doctor) => {
       const bySpecialty = activeSpecialty === "All Specialties" || doctor.specialty === activeSpecialty
       const byText = !q || doctor.name.toLowerCase().includes(q) || doctor.specialty.toLowerCase().includes(q)
       return bySpecialty && byText
     })
-  }, [query, activeSpecialty])
+    if (filtered.length >= 2) return filtered
+    if (filtered.length > 0) return filtered.concat(doctors.filter((doc) => doc.id !== filtered[0].id)).slice(0, 2)
+    return doctors.slice(0, 2)
+  }, [query, activeSpecialty, doctors])
 
   const rideSteps = [
     "Ride is on the way to pick you up",
@@ -360,6 +399,12 @@ export default function TeleConsultation() {
     const timer = window.setTimeout(() => setShowDoctors(true), 280)
     return () => window.clearTimeout(timer)
   }, [mode, step])
+
+  useEffect(() => {
+    if (!selectedDoctor && visibleDoctors[0]) {
+      setSelectedDoctor(visibleDoctors[0].id)
+    }
+  }, [selectedDoctor, visibleDoctors])
 
   useEffect(() => {
     if (step !== "ride" || !selectedDoctorInfo) return
