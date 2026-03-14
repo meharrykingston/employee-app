@@ -3,7 +3,6 @@ import {
   FiActivity,
   FiArrowLeft,
   FiCamera,
-  FiChevronRight,
   FiHeart,
   FiHome,
   FiPackage,
@@ -13,7 +12,7 @@ import {
   FiUser,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
-import { fetchPharmacyProducts } from "../../services/pharmacyApi"
+import { fetchPharmacyCategories, fetchPharmacyProducts } from "../../services/pharmacyApi"
 import { parsePrescriptionImage } from "../../services/aiApi"
 import { mapProductToMedicine, medicines, type MedicineItem } from "./medicineData"
 import { goBackOrFallback } from "../../utils/navigation"
@@ -21,13 +20,19 @@ import { useCart } from "../../app/cart"
 import { playAppSound } from "../../utils/sound"
 import "./pharmacy.css"
 
-const categories = [
+const fallbackCategories = [
   { name: "Nutritional Drinks", icon: "🥤" },
   { name: "Ayurveda", icon: "🌿" },
   { name: "Vitamins & Supplement", icon: "💊" },
   { name: "Devices", icon: "🩺" },
   { name: "Skin Care", icon: "🧴" },
   { name: "Personal Care", icon: "🧼" },
+  { name: "Pain Relief", icon: "🩹" },
+  { name: "Cold & Flu", icon: "🤧" },
+  { name: "Diabetes Care", icon: "🧪" },
+  { name: "Heart Health", icon: "❤️" },
+  { name: "Digestive", icon: "🍽️" },
+  { name: "Baby Care", icon: "🍼" },
 ]
 
 const pharmaTabs = [
@@ -48,6 +53,7 @@ export default function Pharmacy() {
   const [catalog, setCatalog] = useState<MedicineItem[]>([])
   const [loadingCatalog, setLoadingCatalog] = useState(true)
   const [activeCategory, setActiveCategory] = useState(state?.selectedCategory ?? "")
+  const [liveCategories, setLiveCategories] = useState<Array<{ name: string; icon?: string }>>([])
   const [isProcessingRx, setIsProcessingRx] = useState(false)
   const [rxProcessingNote, setRxProcessingNote] = useState("Reading prescription...")
   const [rxMatches, setRxMatches] = useState<MedicineItem[]>([])
@@ -73,6 +79,24 @@ export default function Pharmacy() {
       }
     }
     loadCatalog()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    async function loadCategories() {
+      try {
+        const rows = await fetchPharmacyCategories("employee")
+        if (!active) return
+        const normalized = rows.map((row) => ({ name: row.name, icon: "💊" }))
+        setLiveCategories(normalized)
+      } catch {
+        if (active) setLiveCategories([])
+      }
+    }
+    loadCategories()
     return () => {
       active = false
     }
@@ -255,7 +279,7 @@ export default function Pharmacy() {
                 View Cart
               </button>
             </div>
-            <div className="rx-results-list">
+            <div className="medicine-grid">
               {rxMatches.map((item) => (
                 <button
                   key={item.id}
@@ -263,17 +287,15 @@ export default function Pharmacy() {
                   type="button"
                   onClick={() => navigate(`/pharmacy/medicine/${item.id}`)}
                 >
-                  <div className="pill-icon">💊</div>
+                  <div className="medicine-thumb">
+                    <img src={item.image} alt={item.name} loading="lazy" />
+                  </div>
                   <div className="medicine-info">
                     <h4>{item.name} {item.dose}</h4>
                     <p>{item.kind}</p>
                     <div className="medicine-tags">
-                      <span className={item.inStock ? "stock" : "out"}>{item.inStock ? "In Stock" : "Out of Stock"}</span>
+                      <span className="eta">In 5 mins</span>
                     </div>
-                    <span className="medicine-open">
-                      Product Overview
-                      <FiChevronRight />
-                    </span>
                   </div>
                 </button>
               ))}
@@ -293,14 +315,13 @@ export default function Pharmacy() {
             </button>
           </div>
           <div className="category-grid">
-            {categories.map((item) => (
+            {(liveCategories.length ? liveCategories : fallbackCategories).slice(0, 6).map((item) => (
               <button
                 key={item.name}
                 className="category-card app-pressable"
                 type="button"
                 onClick={() => {
                   setActiveCategory(item.name)
-                  navigate("/pharmacy/categories", { state: { selectedCategory: item.name } })
                 }}
               >
                 <div className="category-thumb">{item.icon}</div>
@@ -315,27 +336,27 @@ export default function Pharmacy() {
           {loadingCatalog && (
             <div className="pharmacy-loading">Loading live pharmacy catalog...</div>
           )}
-          {filtered.map((item) => (
-            <button
-              key={item.id}
-              className="medicine-card app-pressable"
-              type="button"
-              onClick={() => navigate(`/pharmacy/medicine/${item.id}`)}
-            >
-              <div className="pill-icon">💊</div>
-              <div className="medicine-info">
-                <h4>{item.name} {item.dose}</h4>
-                <p>{item.kind}</p>
-                <div className="medicine-tags">
-                  <span className={item.inStock ? "stock" : "out"}>{item.inStock ? "In Stock" : "Out of Stock"}</span>
+          <div className="medicine-grid">
+            {filtered.map((item) => (
+              <button
+                key={item.id}
+                className="medicine-card app-pressable"
+                type="button"
+                onClick={() => navigate(`/pharmacy/medicine/${item.id}`)}
+              >
+                <div className="medicine-thumb">
+                  <img src={item.image} alt={item.name} loading="lazy" />
                 </div>
-                <span className="medicine-open">
-                  Product Overview
-                  <FiChevronRight />
-                </span>
-              </div>
-            </button>
-          ))}
+                <div className="medicine-info">
+                  <h4>{item.name} {item.dose}</h4>
+                  <p>{item.kind}</p>
+                  <div className="medicine-tags">
+                    <span className="eta">In 5 mins</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
         </section>
       </section>
 
