@@ -165,8 +165,6 @@ export default function Home() {
   const [sosStatus, setSosStatus] = useState<"dialing" | "connecting" | "connected">("dialing")
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
   const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
-  const [dailyTopic, setDailyTopic] = useState("")
-  const [dailyCity, setDailyCity] = useState("")
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -439,13 +437,10 @@ export default function Home() {
       fetchWeather(parsed.lat, parsed.lon)
         .then((data) => {
           setWeather(data)
-          if (data.location) setDailyCity(data.location)
           return fetchDailyTips({ lat: parsed.lat, lon: parsed.lon, city: data.location })
         })
         .then((daily) => {
           if (daily?.tips?.length) setDailyTips(daily.tips)
-          if (daily?.topic) setDailyTopic(daily.topic)
-          if (daily?.city) setDailyCity(daily.city)
         })
         .catch(() => {
           // keep fallback tips
