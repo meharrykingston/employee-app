@@ -1,6 +1,11 @@
 ﻿import { useEffect, useMemo, useState } from "react"
 import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
+import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
+import { createAppointment } from "../../services/appointmentsApi"
+import { getEmployeeCompanySession } from "../../services/authApi"
+import { addNotification } from "../../services/notificationCenter"
+import { createTeleconsultSession } from "../../services/teleconsultApi"
 import { goBackOrFallback } from "../../utils/navigation"
 import "./tele-schedule.css"
 
@@ -10,6 +15,50 @@ type DoctorInfo = {
   specialty: string
   rating: number
   avatar: string
+}
+
+type TeleBooking = {
+  id: string
+  sessionId: string
+  doctorId: string
+  doctorName: string
+  specialty: string
+  scheduledAt: string
+  joinWindowStart: string
+}
+
+const TELE_BOOKINGS_KEY = "teleconsult_bookings"
+const DEFAULT_COMPANY_ID = "astikan-demo-company"
+
+function getEmployeeRtcId() {
+  const key = "astikan_employee_rtc_id"
+  const existing = localStorage.getItem(key)
+  if (existing) return existing
+  const generated = `emp-${Math.random().toString(36).slice(2, 10)}`
+  localStorage.setItem(key, generated)
+  return generated
+}
+
+async function ensureTeleconsultActors(doctor: DoctorInfo) {
+  const companySession = getEmployeeCompanySession()
+  const employeeHandle = getEmployeeRtcId()
+  const employee = await ensureEmployeeActor({
+    companyReference: companySession?.companyId ?? DEFAULT_COMPANY_ID,
+    companyName: companySession?.companyName ?? "Astikan",
+    email: `${employeeHandle}@employee.astikan.local`,
+    fullName: "Astikan Employee",
+    handle: employeeHandle,
+    employeeCode: employeeHandle.toUpperCase(),
+  })
+
+  const doctorActor = await ensureDoctorActor({
+    email: `${doctor.id}@doctor.astikan.local`,
+    fullName: doctor.name,
+    handle: doctor.id,
+    specialization: doctor.specialty,
+  })
+
+  return { employee, doctor: doctorActor }
 }
 
 function startOfDay(date: Date) {
@@ -40,6 +89,19 @@ function formatTime(minutes: number) {
   const h = h24 % 12 || 12
   const ampm = h24 >= 12 ? "PM" : "AM"
   return `${h.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")} ${ampm}`
+}
+
+function slotToDate(base: Date, slotLabel: string) {
+  const parts = slotLabel.trim().split(" ")
+  if (parts.length < 2) return null
+  const [timePart, ampm] = parts
+  const [rawHour, rawMinute] = timePart.split(":").map(Number)
+  if (!Number.isFinite(rawHour) || !Number.isFinite(rawMinute)) return null
+  let hour = rawHour % 12
+  if (ampm.toUpperCase() === "PM") hour += 12
+  const scheduled = new Date(base)
+  scheduled.setHours(hour, rawMinute, 0, 0)
+  return scheduled
 }
 
 function getWeekDays(anchor: Date) {
@@ -107,7 +169,7 @@ export default function TeleSchedule() {
     setSelectedDate((prev) => addDays(prev, direction === "next" ? 7 : -7))
   }
 
-  function bookAppointment() {
+  async function bookAppointment() {
     if (!selectedSlot) return
 
     if (mode === "opd") {
@@ -123,14 +185,64 @@ export default function TeleSchedule() {
       return
     }
 
-    navigate("/teleconsultation", {
-      state: {
-        selectedDoctorId: doctor.id,
-        startVideo: true,
-        scheduledDay: formatFullDate(selectedDate),
-        scheduledTime: selectedSlot,
-      },
-    })
+    const scheduled = slotToDate(selectedDate, selectedSlot)
+    if (!scheduled) return
+
+    try {
+      const actors = await ensureTeleconsultActors(doctor)
+      const end = new Date(scheduled.getTime() + 30 * 60 * 1000)
+      const appointment = await createAppointment({
+        companyId: actors.employee.companyId,
+        employeeId: actors.employee.employeeUserId,
+        doctorId: actors.doctor.userId,
+        createdByUserId: actors.employee.employeeUserId,
+        appointmentType: "teleconsult",
+        source: "employee_booked",
+        scheduledStart: scheduled.toISOString(),
+        scheduledEnd: end.toISOString(),
+        meetingJoinWindowStart: new Date(scheduled.getTime() - 60 * 1000).toISOString(),
+        meetingJoinWindowEnd: end.toISOString(),
+        status: "confirmed",
+        reason: doctor.specialty,
+        patientSummary: "Scheduled consultation",
+        symptomSnapshot: { scheduled: true },
+      })
+      const created = await createTeleconsultSession({
+        companyId: actors.employee.companyId,
+        employeeId: actors.employee.employeeUserId,
+        doctorId: actors.doctor.userId,
+        appointmentId: appointment.appointmentId,
+        preferredProvider: "zego",
+        scheduledAt: scheduled.toISOString(),
+      })
+
+      const booking: TeleBooking = {
+        id: appointment.appointmentId,
+        sessionId: created.sessionId,
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        specialty: doctor.specialty,
+        scheduledAt: scheduled.toISOString(),
+        joinWindowStart: new Date(scheduled.getTime() - 60 * 1000).toISOString(),
+      }
+      const existing = JSON.parse(localStorage.getItem(TELE_BOOKINGS_KEY) || "[]") as TeleBooking[]
+      localStorage.setItem(TELE_BOOKINGS_KEY, JSON.stringify([booking, ...existing].slice(0, 20)))
+
+      await addNotification({
+        title: "Teleconsultation booked",
+        body: `Your call with ${doctor.name} is booked. Join will open 1 minute before time.`,
+        channel: "consult",
+        cta: { label: "Join Call", route: "/teleconsultation" },
+        joinWindowStart: booking.joinWindowStart,
+        teleconsultSessionId: booking.sessionId,
+        doctorId: booking.doctorId,
+        scheduledAt: booking.scheduledAt,
+      })
+    } catch {
+      // Keep UI responsive if backend is unavailable.
+    }
+
+    navigate("/bookings")
   }
 
   return (

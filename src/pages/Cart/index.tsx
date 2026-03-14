@@ -10,6 +10,7 @@ import "./cart.css"
 export default function CartPage() {
   const navigate = useNavigate()
   const { items, totalItems, removeItem, updateQty, addItem, syncItems } = useCart()
+  const primaryAddress = localStorage.getItem("employee_primary_address") ?? "Home"
   const [catalog, setCatalog] = useState<MedicineItem[]>([])
   const idsKey = useMemo(() => items.map((item) => item.id).sort().join("|"), [items])
   const hasOutOfStock = items.some((item) => !item.inStock)
@@ -208,9 +209,13 @@ export default function CartPage() {
             </div>
           )}
           <div className="bill">
-            <p><span>Prescription validation</span><strong>Included</strong></p>
-            <p><span>Quality assurance check</span><strong>Included</strong></p>
-            <p><span>Doorstep delivery</span><strong>Enabled</strong></p>
+            <div className="cart-delivery-banner">
+              <div>
+                <h4>Delivery in 15 mins</h4>
+                <p>Delivering to {primaryAddress}</p>
+              </div>
+              <span className="delivery-badge">Fast</span>
+            </div>
           </div>
           <button
             type="button"

@@ -1,7 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react"
 import {
   FiArrowLeft,
-  FiCheckCircle,
   FiChevronDown,
   FiChevronUp,
   FiMessageCircle,
@@ -31,6 +30,7 @@ export default function MedicineDetail() {
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [lastAddedName, setLastAddedName] = useState("")
   const { addItem, totalItems } = useCart()
+  const doseRef = useRef<HTMLDivElement | null>(null)
 
   const upsells = useMemo(() => {
     const source = catalog.length ? catalog : medicines
@@ -89,6 +89,7 @@ export default function MedicineDetail() {
   }
 
   const currentMedicine = medicine
+  const primaryAddress = localStorage.getItem("employee_primary_address") ?? "Home"
   const gallery = [currentMedicine.image, ...(currentMedicine.images ?? [])].filter(Boolean)
   const [activeImage, setActiveImage] = useState(0)
 
@@ -111,13 +112,23 @@ export default function MedicineDetail() {
     navigate("/cart")
   }
 
+  function focusDose() {
+    setOpenPanel("dose")
+    window.setTimeout(() => {
+      doseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 50)
+  }
+
   return (
     <main className="medicine-detail-page app-page-enter">
       <header className="medicine-detail-header app-fade-stagger">
         <button className="medicine-detail-back app-pressable" onClick={() => navigate(-1)} type="button" aria-label="Back">
           <FiArrowLeft />
         </button>
-        <h1>Product Overview</h1>
+        <div className="medicine-header-title">
+          <h1>{currentMedicine.name}</h1>
+          <p>{currentMedicine.dose}</p>
+        </div>
         <button
           className="medicine-cart-btn app-pressable"
           type="button"
@@ -151,7 +162,8 @@ export default function MedicineDetail() {
             ))}
           </div>
           <div className="medicine-hero-copy">
-            <h2>{currentMedicine.name} {currentMedicine.dose}</h2>
+            <h2>{currentMedicine.name}</h2>
+            <span className="medicine-title-dose">{currentMedicine.dose}</span>
             <p>{currentMedicine.kind}</p>
             <span className="availability in">In 5 mins</span>
 
@@ -173,7 +185,13 @@ export default function MedicineDetail() {
         </article>
 
         <section className="insight-strip app-fade-stagger">
-          <span><FiZap /> Best with water after food</span>
+          <div className="delivery-banner">
+            <div>
+              <h4>Delivery in 15 mins</h4>
+              <p>Delivering to {primaryAddress}</p>
+            </div>
+            <span className="delivery-badge">Fast</span>
+          </div>
         </section>
 
         <article className={`medicine-section app-fade-stagger ${openPanel === "about" ? "expanded" : "collapsed"}`}>
@@ -198,7 +216,7 @@ export default function MedicineDetail() {
           )}
         </article>
 
-        <article className={`medicine-section app-fade-stagger ${openPanel === "dose" ? "expanded" : "collapsed"}`}>
+        <article ref={doseRef} className={`medicine-section app-fade-stagger ${openPanel === "dose" ? "expanded" : "collapsed"}`}>
           <button className="section-toggle app-pressable" type="button" onClick={() => togglePanel("dose")}>
             <h3>Dose Guidance</h3>
             {openPanel === "dose" ? <FiChevronUp /> : <FiChevronDown />}
@@ -248,11 +266,25 @@ export default function MedicineDetail() {
           >
             <FiMessageCircle /> Ask AI About This Medicine & Dose
           </button>
-          <button className="cta-primary app-pressable" type="button" onClick={() => navigate("/teleconsultation")}>
-            <FiCheckCircle /> Book Doctor Consultation
-          </button>
         </section>
       </section>
+
+      <div className="medicine-chat-bar app-fade-stagger">
+        <button
+          className="chat-bar-btn app-pressable"
+          type="button"
+          onClick={() =>
+            navigate("/ai-chat", {
+              state: { prefill: `Can you explain ${currentMedicine.name} ${currentMedicine.dose} dose schedule and precautions for me?` },
+            })
+          }
+        >
+          <FiMessageCircle /> Ask AI
+        </button>
+        <button className="chat-bar-btn ghost app-pressable" type="button" onClick={focusDose}>
+          Dose guidance
+        </button>
+      </div>
 
       {showCartPopup && (
         <button

@@ -38,7 +38,27 @@
   margin: 0;
   font-size: 1.25rem;
   font-family: "Satoshi", sans-serif;
+}
+
+.medicine-detail-page .medicine-header-title {
   flex: 1;
+  display: grid;
+}
+
+.medicine-detail-page .medicine-header-title h1 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: "Satoshi", sans-serif;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.medicine-detail-page .medicine-header-title p {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: #6b7892;
 }
 
 .medicine-detail-page .medicine-cart-btn {
@@ -85,11 +105,14 @@
 
 .medicine-detail-page .medicine-hero-media {
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
 }
 
 .medicine-detail-page .medicine-hero-card img {
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -99,6 +122,7 @@
   gap: 8px;
   padding: 10px 12px 0;
   overflow-x: auto;
+  align-items: center;
 }
 
 .medicine-detail-page .gallery-thumb {
@@ -150,6 +174,13 @@
   margin: 0;
   font-size: 1.45rem;
   font-family: "Satoshi", sans-serif;
+}
+
+.medicine-detail-page .medicine-title-dose {
+  display: inline-flex;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: #51607b;
 }
 
 .medicine-detail-page .medicine-hero-copy p {
@@ -219,6 +250,38 @@
   padding: 0 10px;
   font-size: 0.84rem;
   color: #3d4b66;
+}
+
+.medicine-detail-page .delivery-banner {
+  border: 1px solid #dbe3f2;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.medicine-detail-page .delivery-banner h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.medicine-detail-page .delivery-banner p {
+  margin: 3px 0 0;
+  color: #6b7892;
+  font-size: 0.78rem;
+}
+
+.medicine-detail-page .delivery-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e8f6ff;
+  color: #2f6e9b;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .medicine-detail-page .medicine-section {
@@ -493,6 +556,38 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.medicine-detail-page .medicine-chat-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  width: min(100%, var(--app-frame-width));
+  padding: 8px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  z-index: 24;
+}
+
+.medicine-detail-page .chat-bar-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #d8e2f2;
+  background: #ffffff;
+  color: #2c3a55;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.medicine-detail-page .chat-bar-btn.ghost {
+  background: #eef3ff;
+  color: #314f8a;
 }
 
 .medicine-detail-page .buy-bar button {

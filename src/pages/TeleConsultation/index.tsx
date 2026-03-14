@@ -3,6 +3,7 @@ import {
   FiActivity,
   FiArrowUpRight,
   FiArrowLeft,
+  FiClock,
   FiDroplet,
   FiCheckCircle,
   FiHeart,
@@ -21,6 +22,7 @@ import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { fetchDoctors as fetchDoctorDirectory } from "../../services/doctorsApi"
 import { createTeleconsultSession, joinTeleconsultSession, type TeleconsultRtcPayload } from "../../services/teleconsultApi"
+import { addNotification } from "../../services/notificationCenter"
 import "./teleconsultation.css"
 
 type Doctor = {
@@ -45,9 +47,23 @@ type TeleNavState = {
   analysisQuery?: string
   recommendedMode?: ConsultMode
   selectedDoctorId?: string
+  teleconsultSessionId?: string
+  scheduledAt?: string
   startRide?: boolean
   startVideo?: boolean
 }
+
+type TeleBooking = {
+  id: string
+  sessionId: string
+  doctorId: string
+  doctorName: string
+  specialty: string
+  scheduledAt: string
+  joinWindowStart: string
+}
+
+const TELE_BOOKINGS_KEY = "teleconsult_bookings"
 
 const DEMO_DOCTORS: Array<{
   handle: string
@@ -265,6 +281,8 @@ export default function TeleConsultation() {
   const [showDoctors, setShowDoctors] = useState(false)
   const [isBookingNow, setIsBookingNow] = useState(false)
   const [teleconsultSessionId, setTeleconsultSessionId] = useState("")
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+  const [joinReady, setJoinReady] = useState(true)
   const [usingZegoTemplate, setUsingZegoTemplate] = useState(false)
   const [usingAgoraTemplate, setUsingAgoraTemplate] = useState(false)
   const [activeRtc, setActiveRtc] = useState<TeleconsultRtcPayload | null>(null)
@@ -280,6 +298,15 @@ export default function TeleConsultation() {
   const callExitHandledRef = useRef(false)
 
   const selectedDoctorInfo = doctors.find((doctor) => doctor.id === selectedDoctor) ?? null
+  const joinWindowStart = useMemo(() => {
+    if (!scheduledAt) return null
+    const scheduledMs = Date.parse(scheduledAt)
+    if (!Number.isFinite(scheduledMs)) return null
+    return new Date(scheduledMs - 60 * 1000)
+  }, [scheduledAt])
+  const joinWindowLabel = joinWindowStart
+    ? joinWindowStart.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+    : null
   const rideDoctor = selectedDoctorInfo ?? doctors[0] ?? {
     id: "assigned",
     name: "Assigned Doctor",
@@ -390,6 +417,8 @@ export default function TeleConsultation() {
     }
 
     if (state.selectedDoctorId) setSelectedDoctor(state.selectedDoctorId)
+    if (state.teleconsultSessionId) setTeleconsultSessionId(state.teleconsultSessionId)
+    if (state.scheduledAt) setScheduledAt(state.scheduledAt)
     if (state.startVideo) {
       setMode("tele")
       setStep("video")
@@ -464,6 +493,22 @@ export default function TeleConsultation() {
     }
   }, [step])
 
+  useEffect(() => {
+    if (step !== "video" || !joinWindowStart) {
+      setJoinReady(true)
+      return
+    }
+    const now = Date.now()
+    const openAt = joinWindowStart.getTime()
+    if (now >= openAt) {
+      setJoinReady(true)
+      return
+    }
+    setJoinReady(false)
+    const timer = window.setTimeout(() => setJoinReady(true), openAt - now)
+    return () => window.clearTimeout(timer)
+  }, [step, joinWindowStart])
+
   function exitCallToPreviousScreen() {
     if (callExitHandledRef.current) {
       return
@@ -473,7 +518,7 @@ export default function TeleConsultation() {
   }
 
   async function bootstrapZegoTemplateCall(preferredProvider?: "zego" | "agora") {
-    if (zegoBootstrapInProgressRef.current || usingZegoTemplate || usingAgoraTemplate || step !== "video" || mode !== "tele") {
+    if (zegoBootstrapInProgressRef.current || usingZegoTemplate || usingAgoraTemplate || step !== "video" || mode !== "tele" || !joinReady) {
       return
     }
     zegoBootstrapInProgressRef.current = true
@@ -519,11 +564,11 @@ export default function TeleConsultation() {
   }
 
   useEffect(() => {
-    if (step !== "video" || mode !== "tele" || usingZegoTemplate || usingAgoraTemplate) {
+    if (step !== "video" || mode !== "tele" || usingZegoTemplate || usingAgoraTemplate || !joinReady) {
       return
     }
     void bootstrapZegoTemplateCall()
-  }, [step, mode, usingZegoTemplate, usingAgoraTemplate, selectedDoctor])
+  }, [step, mode, usingZegoTemplate, usingAgoraTemplate, selectedDoctor, joinReady])
 
   async function ensureTeleconsultSession(doctorId: string) {
     if (teleconsultSessionId) {
@@ -571,14 +616,64 @@ export default function TeleConsultation() {
       setIsBookingNow(true)
       setMediaError("")
       try {
-        await ensureTeleconsultSession(selectedDoctorInfo.id)
+        const now = new Date()
+        const start = new Date(now.getTime() + 5 * 60 * 1000)
+        const end = new Date(start.getTime() + 30 * 60 * 1000)
+        const actors = await ensureTeleconsultActors(selectedDoctorInfo)
+        const appointment = await createAppointment({
+          companyId: actors.employee.companyId,
+          employeeId: actors.employee.employeeUserId,
+          doctorId: actors.doctor.userId,
+          createdByUserId: actors.employee.employeeUserId,
+          appointmentType: "teleconsult",
+          source: "employee_booked",
+          scheduledStart: start.toISOString(),
+          scheduledEnd: end.toISOString(),
+          meetingJoinWindowStart: new Date(start.getTime() - 60 * 1000).toISOString(),
+          meetingJoinWindowEnd: end.toISOString(),
+          status: "confirmed",
+          reason: analysisQuery || selectedDoctorInfo.specialty,
+          patientSummary: selectedSymptoms.join(", "),
+          symptomSnapshot: { selectedSymptoms },
+          aiTriageSummary: analysisQuery || undefined,
+        })
+        const created = await createTeleconsultSession({
+          companyId: actors.employee.companyId,
+          employeeId: actors.employee.employeeUserId,
+          doctorId: actors.doctor.userId,
+          appointmentId: appointment.appointmentId,
+          preferredProvider: "zego",
+          scheduledAt: start.toISOString(),
+        })
+        setTeleconsultSessionId(created.sessionId)
+        setScheduledAt(start.toISOString())
+        const booking: TeleBooking = {
+          id: appointment.appointmentId,
+          sessionId: created.sessionId,
+          doctorId: selectedDoctorInfo.id,
+          doctorName: selectedDoctorInfo.name,
+          specialty: selectedDoctorInfo.specialty,
+          scheduledAt: start.toISOString(),
+          joinWindowStart: new Date(start.getTime() - 60 * 1000).toISOString(),
+        }
+        const existing = JSON.parse(localStorage.getItem(TELE_BOOKINGS_KEY) || "[]") as TeleBooking[]
+        localStorage.setItem(TELE_BOOKINGS_KEY, JSON.stringify([booking, ...existing].slice(0, 20)))
+        await addNotification({
+          title: "Teleconsultation booked",
+          body: `Your call with ${selectedDoctorInfo.name} is booked. Join will open 1 minute before time.`,
+          channel: "consult",
+          cta: { label: "Join Call", route: "/teleconsultation" },
+          joinWindowStart: booking.joinWindowStart,
+          teleconsultSessionId: booking.sessionId,
+          doctorId: booking.doctorId,
+          scheduledAt: booking.scheduledAt,
+        })
       } catch {
         // Session can still be created during the call bootstrap path.
       } finally {
         setIsBookingNow(false)
       }
-      setStep("video")
-      setCallState("connecting")
+      navigate("/bookings")
       return
     }
     try {
@@ -747,7 +842,7 @@ export default function TeleConsultation() {
         }
 
         const actors = await ensureTeleconsultActors(selectedDoctorInfo)
-        const sessionId = await ensureTeleconsultSession(selectedDoctorInfo.id)
+        const sessionId = teleconsultSessionId || (await ensureTeleconsultSession(selectedDoctorInfo.id))
         const joined = await joinTeleconsultSession(sessionId, {
           participantType: "employee",
           participantId: actors.employee.employeeUserId,
@@ -885,6 +980,21 @@ export default function TeleConsultation() {
 
         {step === "video" && selectedDoctorInfo && (
           <section className={`video-stage tele-call-stage app-fade-stagger ${usingZegoTemplate || usingAgoraTemplate ? "video-stage-template" : ""}`}>
+            {!joinReady && (
+              <div className="tele-wait-card">
+                <div className="tele-wait-icon"><FiClock /></div>
+                <div className="tele-wait-copy">
+                  <h3>Teleconsultation booked</h3>
+                  <p>Join opens at {joinWindowLabel ?? "the scheduled time"}.</p>
+                </div>
+                <button className="app-pressable" type="button" onClick={() => navigate("/bookings")}>
+                  Go to Bookings
+                </button>
+              </div>
+            )}
+
+            {joinReady && (
+              <>
             {!usingZegoTemplate && !usingAgoraTemplate && (
               <div className="video-top">
                 <h3>{selectedDoctorInfo.name}</h3>
@@ -955,6 +1065,8 @@ export default function TeleConsultation() {
 
             {!usingZegoTemplate && !usingAgoraTemplate && (
               <div className="video-controls" />
+            )}
+              </>
             )}
           </section>
         )}

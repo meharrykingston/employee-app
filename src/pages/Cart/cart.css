@@ -346,17 +346,36 @@
   padding: 8px;
 }
 
-.bill p {
-  margin: 0;
+.cart-delivery-banner {
+  border: 1px solid #dbe3f2;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #4e5f78;
-  font-size: 0.82rem;
+  gap: 10px;
 }
 
-.bill p + p {
-  margin-top: 6px;
+.cart-delivery-banner h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.cart-delivery-banner p {
+  margin: 3px 0 0;
+  color: #66758c;
+  font-size: 0.78rem;
+}
+
+.cart-delivery-banner .delivery-badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e8f6ff;
+  color: #2f6e9b;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .checkout-btn {

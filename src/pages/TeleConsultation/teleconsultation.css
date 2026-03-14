@@ -619,6 +619,55 @@
   font-size: 0.79rem;
 }
 
+.tele-wait-card {
+  margin: 24px auto;
+  width: min(92%, 360px);
+  border-radius: 20px;
+  border: 1px solid rgba(216, 226, 255, 0.35);
+  background: rgba(12, 20, 34, 0.88);
+  color: #f6f8ff;
+  padding: 16px 18px;
+  display: grid;
+  gap: 10px;
+  text-align: center;
+  box-shadow: 0 18px 30px rgba(12, 20, 34, 0.3);
+}
+
+.tele-wait-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
+}
+
+.tele-wait-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tele-wait-copy h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.tele-wait-copy p {
+  margin: 6px 0 0;
+  color: rgba(233, 240, 255, 0.82);
+  font-size: 0.82rem;
+}
+
+.tele-wait-card button {
+  border: 0;
+  border-radius: 12px;
+  min-height: 38px;
+  background: #2f6fed;
+  color: #fff;
+  font-weight: 700;
+}
+
 .tele-join-spinner {
   width: 20px;
   height: 20px;

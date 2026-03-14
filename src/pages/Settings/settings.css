@@ -179,6 +179,17 @@
   font-size: 0.75rem;
 }
 
+.notice-meta {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: #eef3ff;
+  color: #3c4e7e;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .notify-test-btn {
   margin-top: 10px;
   width: 100%;

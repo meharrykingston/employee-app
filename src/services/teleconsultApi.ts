@@ -31,6 +31,7 @@ export async function createTeleconsultSession(input: {
   doctorId: string
   appointmentId?: string
   preferredProvider?: "zego" | "agora"
+  scheduledAt?: string
 }) {
   return apiPost<TeleconsultSessionCreateResponse, typeof input>("/teleconsult/sessions", input)
 }
@@ -46,4 +47,3 @@ export async function joinTeleconsultSession(
 ) {
   return apiPost<TeleconsultSessionJoinResponse, typeof input>(`/teleconsult/sessions/${sessionId}/join`, input)
 }
-

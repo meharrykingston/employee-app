@@ -7,6 +7,10 @@
   unread?: boolean
   channel: "delivery" | "consult" | "health" | "system"
   cta?: { label: string; route: string }
+  joinWindowStart?: string
+  teleconsultSessionId?: string
+  doctorId?: string
+  scheduledAt?: string
 }
 
 const STORAGE_KEY = "employee_notifications"
@@ -31,6 +35,9 @@ export const seedNotifications: AppNotification[] = [
     unread: true,
     channel: "consult",
     cta: { label: "Join Now", route: "/teleconsultation" },
+    joinWindowStart: new Date(Date.now() - 60 * 1000).toISOString(),
+    teleconsultSessionId: "demo-session",
+    doctorId: "riza",
   },
 ]
 
