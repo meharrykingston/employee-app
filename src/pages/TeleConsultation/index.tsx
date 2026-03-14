@@ -37,7 +37,7 @@ type Doctor = {
 
 type JourneyStep = "options" | "ride" | "video"
 type ConsultMode = "tele" | "opd"
-type CallState = "ready" | "connecting" | "live" | "ended"
+type CallState = "ready" | "connecting" | "live" | "ended" | "failed"
 type TeleNavState = {
   fromAiAnalyser?: boolean
   preselectedSpecialty?: Doctor["specialty"]
@@ -223,6 +223,7 @@ export default function TeleConsultation() {
   const [rideProgress, setRideProgress] = useState(0)
   const [rideBanner, setRideBanner] = useState<"booked" | "onway" | "reached" | null>(null)
   const [callState, setCallState] = useState<CallState>("ready")
+  const [callError, setCallError] = useState("")
   const [mediaError, setMediaError] = useState("")
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [showDoctors, setShowDoctors] = useState(false)
@@ -415,40 +416,47 @@ export default function TeleConsultation() {
     goBackOrFallback(navigate)
   }
 
-  async function bootstrapZegoTemplateCall() {
+  async function bootstrapZegoTemplateCall(preferredProvider?: "zego" | "agora") {
     if (zegoBootstrapInProgressRef.current || usingZegoTemplate || usingAgoraTemplate || step !== "video" || mode !== "tele") {
       return
     }
     zegoBootstrapInProgressRef.current = true
     setCallState("connecting")
     setMediaError("")
+    setCallError("")
     setElapsedSeconds(0)
 
     try {
-      const rtc = await connectRealtimeCallWithRetry()
+      const rtc = await connectRealtimeCallWithRetry(preferredProvider)
       if (!rtc) {
         throw new Error("Realtime provider unavailable")
       }
       setActiveRtc(rtc)
       if (rtc.provider === "zego") {
-        await startZegoTemplateCall(rtc)
+        try {
+          await startZegoTemplateCall(rtc)
+        } catch {
+          setUsingZegoTemplate(false)
+          setActiveRtc(null)
+          const fallbackRtc = await connectRealtimeCallWithRetry("agora")
+          if (fallbackRtc) {
+            setActiveRtc(fallbackRtc)
+            setUsingAgoraTemplate(true)
+          } else {
+            throw new Error("Unable to start Zego. Agora fallback unavailable.")
+          }
+        }
       } else {
         setUsingAgoraTemplate(true)
       }
       setCallState("live")
       playAppSound("notify")
       startLiveTimer()
-    } catch {
-      setCallState("connecting")
-      setMediaError("Connecting is taking longer than expected. Retrying automatically...")
-      if (connectTimerRef.current) {
-        window.clearTimeout(connectTimerRef.current)
-      }
-      connectTimerRef.current = window.setTimeout(() => {
-        if (step === "video" && mode === "tele" && !usingZegoTemplate && !usingAgoraTemplate) {
-          void bootstrapZegoTemplateCall()
-        }
-      }, 2000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to join consultation"
+      setCallState("failed")
+      setMediaError("")
+      setCallError(message)
     } finally {
       zegoBootstrapInProgressRef.current = false
     }
@@ -671,7 +679,7 @@ export default function TeleConsultation() {
     }, 1000)
   }
 
-  async function connectRealtimeCallWithRetry(): Promise<TeleconsultRtcPayload | null> {
+  async function connectRealtimeCallWithRetry(preferredProvider?: "zego" | "agora"): Promise<TeleconsultRtcPayload | null> {
     let lastError: unknown = null
 
     for (let attempt = 0; attempt < MAX_JOIN_RETRIES; attempt += 1) {
@@ -685,8 +693,8 @@ export default function TeleConsultation() {
         const joined = await joinTeleconsultSession(sessionId, {
           participantType: "employee",
           participantId: actors.employee.employeeUserId,
-          preferredProvider: attempt === 0 ? "zego" : undefined,
-          forceFailover: attempt > 0,
+          preferredProvider: attempt === 0 ? preferredProvider ?? "zego" : undefined,
+          forceFailover: attempt > 0 || preferredProvider === "agora",
         })
 
         return joined.rtc
@@ -870,6 +878,22 @@ export default function TeleConsultation() {
                 <span className="tele-join-spinner" aria-hidden="true" />
                 <strong>Joining consultation...</strong>
                 <p>Setting up your secure call room. This may take a few seconds.</p>
+              </div>
+            )}
+
+            {callState === "failed" && (
+              <div className="tele-join-loader tele-join-failed" role="status" aria-live="polite">
+                <span className="tele-join-spinner" aria-hidden="true" />
+                <strong>We could not connect yet</strong>
+                <p>{callError || "Please check your network and try again."}</p>
+                <div className="tele-join-actions">
+                  <button className="app-pressable" type="button" onClick={() => void bootstrapZegoTemplateCall()}>
+                    Retry join
+                  </button>
+                  <button className="ghost" type="button" onClick={exitCallToPreviousScreen}>
+                    Go back
+                  </button>
+                </div>
               </div>
             )}
 

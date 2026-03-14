@@ -1,0 +1,221 @@
+﻿.tip-blog-page {
+  min-height: 100dvh;
+  background: #f6f8fc;
+  color: #1f2940;
+  font-family: "Manrope", sans-serif;
+}
+
+.tip-blog-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: min(100%, var(--app-frame-width));
+  min-height: 70px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(246, 248, 252, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e1e7f2;
+}
+
+.tip-blog-header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.tip-back {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 0;
+  background: #e9edf5;
+  color: #2f3750;
+  font-size: 18px;
+}
+
+.tip-blog-shell {
+  width: min(100%, var(--app-frame-width));
+  margin: 0 auto;
+  padding: 90px 16px 32px;
+  display: grid;
+  gap: 20px;
+  max-height: 100dvh;
+  overflow-y: auto;
+}
+
+.tip-hero {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e1e7f2;
+}
+
+.tip-hero img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.tip-hero-copy {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.tip-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #edf2ff;
+  color: #2f4a9f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.tip-hero-copy h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.tip-hero-copy p {
+  margin: 0;
+  color: #58637b;
+  font-size: 0.95rem;
+}
+
+.tip-speed {
+  border: 1px solid #f4d4a4;
+  background: #fff6e6;
+  color: #9a6c14;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.tip-section-list {
+  display: grid;
+  gap: 16px;
+}
+
+.tip-section {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #dfe6f2;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tip-section.locked {
+  opacity: 0.7;
+  filter: blur(0.3px);
+  pointer-events: none;
+}
+
+.tip-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tip-section h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-family: "Satoshi", sans-serif;
+}
+
+.tip-section p {
+  margin: 0;
+  color: #505a71;
+  line-height: 1.5;
+}
+
+.tip-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8a95ac;
+}
+
+.tip-question {
+  background: #f4f6fb;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.tip-question p {
+  margin: 0;
+  font-weight: 600;
+  color: #2f3750;
+}
+
+.tip-options {
+  display: grid;
+  gap: 8px;
+}
+
+.tip-coach {
+  border-radius: 12px;
+  border: 1px dashed #c7d3ea;
+  background: #f7f9ff;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.tip-coach-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b6c94;
+  font-weight: 700;
+}
+
+.tip-coach p {
+  margin: 0;
+  color: #4a5672;
+  line-height: 1.45;
+}
+
+.tip-option {
+  border: 1px solid #d6deeb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #3a4560;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tip-option.active {
+  background: #e8f0ff;
+  border-color: #88a7f3;
+  color: #1f3a8a;
+}
+
+@media (min-width: 768px) {
+  .tip-hero img {
+    height: 230px;
+  }
+}

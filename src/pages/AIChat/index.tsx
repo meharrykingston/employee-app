@@ -667,6 +667,7 @@ export default function AIChat() {
                         className="ai-med-add app-pressable"
                         onClick={() => {
                           addItem(med.medicine)
+                          navigate("/cart")
                         }}
                       >
                         <FiPlus /> Add

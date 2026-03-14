@@ -702,13 +702,13 @@
   padding: 2px 8px;
 }
 
-.tip-step {
-  border-radius: 999px;
-  background: #e7d5ef;
-  color: #683375;
-  font-size: 0.72rem;
-  padding: 4px 8px;
-  height: fit-content;
+.tip-card {
+  cursor: pointer;
+}
+
+.tip-card:focus-visible {
+  outline: 2px solid #7aa2f7;
+  outline-offset: 2px;
 }
 
 .tip-card p {

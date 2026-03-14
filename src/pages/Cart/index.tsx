@@ -1,10 +1,7 @@
-import { FiArrowLeft, FiGift, FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck } from "react-icons/fi"
+﻿import { FiArrowLeft, FiGift, FiMinus, FiPlus, FiShoppingBag, FiTrash2, FiTruck } from "react-icons/fi"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCart } from "../../app/cart"
-import { ensureEmployeeActor } from "../../services/actorsApi"
-import { getEmployeeCompanySession } from "../../services/authApi"
-import { createPharmacyOrder } from "../../services/pharmacyApi"
 import { fetchPharmacyProducts, lookupPharmacyProducts } from "../../services/pharmacyApi"
 import { mapProductToMedicine, medicines, type MedicineItem } from "../Pharmacy/medicineData"
 import { playAppSound } from "../../utils/sound"
@@ -12,7 +9,7 @@ import "./cart.css"
 
 export default function CartPage() {
   const navigate = useNavigate()
-  const { items, totalItems, removeItem, updateQty, addItem, clearCart, syncItems } = useCart()
+  const { items, totalItems, removeItem, updateQty, addItem, syncItems } = useCart()
   const [catalog, setCatalog] = useState<MedicineItem[]>([])
   const idsKey = useMemo(() => items.map((item) => item.id).sort().join("|"), [items])
   const hasOutOfStock = items.some((item) => !item.inStock)
@@ -23,7 +20,6 @@ export default function CartPage() {
     return source.filter((item) => !ids.has(item.id)).slice(0, 3)
   }, [items, catalog])
 
-  const companySession = getEmployeeCompanySession()
 
   useEffect(() => {
     let active = true
@@ -79,7 +75,7 @@ export default function CartPage() {
         </button>
         <div>
           <h1>Your Cart</h1>
-          <p>{totalItems} items • delivery in 10 mins</p>
+          <p>{totalItems} items â€¢ delivery in 10 mins</p>
         </div>
       </header>
 
@@ -220,49 +216,16 @@ export default function CartPage() {
             type="button"
             className="checkout-btn app-pressable"
             disabled={hasOutOfStock}
-            onClick={async () => {
+            onClick={() => {
               playAppSound("notify")
-              const employee = await ensureEmployeeActor({
-                companyReference: "astikan-demo-company",
-                companyName: companySession?.companyName ?? "Astikan",
-                fullName: "Astikan Employee",
-                handle: "astikan-employee",
-                email: "employee@astikan.local",
-              })
-              const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0)
-              await createPharmacyOrder({
-                companyReference: employee.companyId,
-                companyName: companySession?.companyName ?? "Astikan",
-                employee: {
-                  email: employee.email,
-                  fullName: "Astikan Employee",
-                  handle: employee.employeeCode,
-                  employeeCode: employee.employeeCode,
-                },
-                orderSource: "employee_store",
-                subtotalInr: subtotal,
-                walletUsedInr: 0,
-                onlinePaymentInr: subtotal,
-                items: items.map((item) => ({
-                  productId: item.id,
-                  sku: item.id,
-                  name: item.name,
-                  category: item.kind,
-                  description: `${item.dose} • ${item.kind}`,
-                  price: item.price,
-                  quantity: item.qty,
-                  imageUrls: [item.image],
-                })),
-              })
-              const orderedItems = totalItems
-              clearCart()
-              navigate("/pharmacy/booking-success", { state: { orderedItems } })
+              navigate("/pharmacy/checkout")
             }}
           >
-            Confirm Order
+            Proceed to checkout
           </button>
         </footer>
       )}
     </main>
   )
 }
+

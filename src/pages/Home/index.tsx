@@ -5,7 +5,6 @@ import {
   FiBatteryCharging,
   FiBell,
   FiCreditCard,
-  FiDroplet,
   FiHeart,
   FiHome,
   FiMapPin,
@@ -24,14 +23,11 @@ import {
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
 import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
+import { logBehaviorSignal } from "../../services/behaviorApi"
 import { preloadLabCatalog } from "../../services/labApi"
+import { healthTips, type HealthTip } from "../../data/healthTips"
 import "./home.css"
 
-type Tip = {
-  title: string
-  body: string
-  tags: string[]
-}
 
 type QuickAccessItem = {
   title: string
@@ -121,13 +117,10 @@ const feelingPrefill: Record<(typeof feelings)[number]["id"], string> = {
   fatigue: "I am dealing with chronic fatigue and low energy. Please help.",
 }
 
-const tips: Tip[] = [
-  { title: "Stay Hydrated", body: "Drink at least 8 glasses of water daily to maintain optimal health", tags: ["Hydration", "All Day"] },
-  { title: "Mindful Breathing", body: "Take 5 deep breaths every hour to reduce stress and improve focus", tags: ["Stress", "Breathing"] },
-  { title: "Quick Stretch", body: "Stand and stretch your shoulders for 2 minutes to ease muscle tension", tags: ["Mobility", "Desk Work"] },
-  { title: "Healthy Snacks", body: "Choose protein-rich snacks to sustain energy through the afternoon", tags: ["Nutrition", "Workday"] },
-  { title: "Sleep Routine", body: "Keep a fixed bedtime to improve recovery and next-day concentration", tags: ["Recovery", "Night"] },
-]
+const TIP_PREF_KEY = "home:tip-preference"
+const TIP_FAST_SCROLL_KEY = "home:tip-fast-scroll"
+const AI_THREAD_KEY = "employee_ai_thread_id"
+const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
 
 const metrics: Array<{ id: MetricId; title: string; value: string; unit: string; status: string; age: string; tone: string; icon: ReactElement }> = [
   { id: "heart-rate", title: "Heart Rate", value: "72", unit: "bpm", status: "normal", age: "2 hours ago", tone: "red", icon: <FiHeart /> },
@@ -170,13 +163,74 @@ export default function Home() {
   const pageRef = useRef<HTMLElement | null>(null)
   const scoreTarget = 90
 
+  const [moodHint, setMoodHint] = useState("")
+
+  function computeMoodHint() {
+    const threadId = localStorage.getItem(AI_THREAD_KEY)
+    if (!threadId) return ""
+    const raw = localStorage.getItem(`${AI_MESSAGE_PREFIX}${threadId}`)
+    if (!raw) return ""
+    try {
+      const parsed = JSON.parse(raw) as Array<{ from: string; text: string }>
+      const lastUser = [...parsed].reverse().find((item) => item.from === "user")
+      if (!lastUser?.text) return ""
+      const text = lastUser.text.toLowerCase()
+      if (/(stress|anxious|panic|overwhelm|tension)/.test(text)) return "stress"
+      if (/(dizz|vertigo|faint|lightheaded)/.test(text)) return "dizzy"
+      if (/(sleep|insomnia|tired|night)/.test(text)) return "sleep"
+      if (/(fatigue|low energy|weak|drained)/.test(text)) return "fatigue"
+      return ""
+    } catch {
+      return ""
+    }
+  }
+
+  useEffect(() => {
+    const update = () => setMoodHint(computeMoodHint())
+    update()
+    const interval = window.setInterval(update, 3000)
+    const onFocus = () => update()
+    window.addEventListener("focus", onFocus)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [])
+
+  const recentFastScroll = useMemo(() => {
+    const raw = localStorage.getItem(TIP_FAST_SCROLL_KEY)
+    if (!raw) return false
+    const ts = Number(raw)
+    if (Number.isNaN(ts)) return false
+    return Date.now() - ts < 6 * 60 * 60 * 1000
+  }, [])
+
+  const preferredTag = useMemo(() => localStorage.getItem(TIP_PREF_KEY) ?? "", [])
+
+  const displayTips = useMemo<HealthTip[]>(() => {
+    let pool = [...healthTips]
+    if (preferredTag) {
+      const tagged = pool.filter((tip) => tip.tags.some((tag) => tag.toLowerCase() === preferredTag.toLowerCase()))
+      if (tagged.length > 0) pool = tagged
+    } else if (moodHint || recentFastScroll) {
+      const mood = moodHint || (recentFastScroll ? "stress" : "")
+      const tagged = pool.filter((tip) => tip.moodTags.includes(mood))
+      if (tagged.length > 0) pool = tagged
+    }
+    return pool
+  }, [moodHint, preferredTag, recentFastScroll])
+
   useEffect(() => {
     if (tipInteracting) return
     const ticker = window.setInterval(() => {
-      setTipIndex((prev) => (prev + 1) % tips.length)
+      setTipIndex((prev) => (prev + 1) % displayTips.length)
     }, 4300)
     return () => window.clearInterval(ticker)
-  }, [tipInteracting])
+  }, [tipInteracting, displayTips.length])
+
+  useEffect(() => {
+    if (tipIndex >= displayTips.length) setTipIndex(0)
+  }, [displayTips.length, tipIndex])
 
   useEffect(() => {
     let frame = 0
@@ -263,9 +317,27 @@ export default function Home() {
     if (tipTouchStartX.current === null) return
     const delta = clientX - tipTouchStartX.current
     tipTouchStartX.current = null
-    if (delta > 45) setTipIndex((prev) => (prev - 1 + tips.length) % tips.length)
-    if (delta < -45) setTipIndex((prev) => (prev + 1) % tips.length)
+    if (Math.abs(delta) > 90) {
+      localStorage.setItem(TIP_FAST_SCROLL_KEY, String(Date.now()))
+      void logBehaviorSignal({
+        type: "tip_swipe_fast",
+        meta: { delta },
+      })
+    }
+    if (delta > 45) setTipIndex((prev) => (prev - 1 + displayTips.length) % displayTips.length)
+    if (delta < -45) setTipIndex((prev) => (prev + 1) % displayTips.length)
     window.setTimeout(() => setTipInteracting(false), 900)
+  }
+
+  function openTip(tip: HealthTip) {
+    if (tip.tags[0]) localStorage.setItem(TIP_PREF_KEY, tip.tags[0])
+    void logBehaviorSignal({
+      type: "tip_open",
+      label: tip.title,
+      tags: tip.tags,
+      meta: { tipId: tip.id, mood: moodHint || null },
+    })
+    navigate(`/health-tips/${tip.id}`)
   }
 
   const companySession = getEmployeeCompanySession()
@@ -390,15 +462,25 @@ export default function Home() {
             <div
               className={`tip-track ${tipInteracting ? "dragging" : ""}`}
               style={{
-                width: `${tips.length * 100}%`,
-                transform: `translate3d(-${tipIndex * (100 / tips.length)}%, 0, 0)`,
+                width: `${displayTips.length * 100}%`,
+                transform: `translate3d(-${tipIndex * (100 / displayTips.length)}%, 0, 0)`,
               }}
             >
-              {tips.map((tip, index) => (
-                <section className="tip-card" key={tip.title} style={{ width: `${100 / tips.length}%` }}>
+              {displayTips.map((tip, index) => (
+                <section
+                  className="tip-card"
+                  key={tip.title}
+                  style={{ width: `${100 / displayTips.length}%` }}
+                  onClick={() => openTip(tip)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") openTip(tip)
+                  }}
+                >
                   <div className="tip-header">
                     <div className="tip-title-icon">
-                      <span className="tip-big-icon"><FiDroplet /></span>
+                      <span className="tip-big-icon">{tip.icon}</span>
                       <div>
                         <h4>{tip.title}</h4>
                         <div className="tip-tags">
@@ -408,14 +490,13 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                    <span className="tip-step">{index + 1} of {tips.length}</span>
                   </div>
-                  <p>{tip.body}</p>
+                  <p>{tip.summary}</p>
                 </section>
               ))}
             </div>
             <div className="slider-dots">
-              {tips.map((tip, index) => (
+              {displayTips.map((tip, index) => (
                 <button
                   key={tip.title}
                   className={`dot app-pressable ${tipIndex === index ? "active" : ""}`}

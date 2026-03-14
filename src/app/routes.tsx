@@ -26,6 +26,7 @@ import Pharmacy from "../pages/Pharmacy"
 import PharmacyCategories from "../pages/PharmacyCategories"
 import MedicineDetail from "../pages/MedicineDetail"
 import CartPage from "../pages/Cart"
+import PharmacyCheckout from "../pages/PharmacyCheckout"
 import PharmacySuccess from "../pages/PharmacySuccess"
 import MedicineTracking from "../pages/MedicineTracking"
 import Wallet from "../pages/Wallet"
@@ -40,6 +41,7 @@ import Bookings from "../pages/Bookings"
 import Reports from "../pages/Reports"
 import Notifications from "../pages/Notifications"
 import MetricDetails from "../pages/MetricDetails"
+import TipBlog from "../pages/TipBlog"
 import RouteTransitionLayout from "./RouteTransitionLayout"
 
 export const router = createBrowserRouter([
@@ -71,6 +73,7 @@ export const router = createBrowserRouter([
       { path: "pharmacy/categories", element: <PharmacyCategories /> },
       { path: "pharmacy/tracking", element: <MedicineTracking /> },
       { path: "pharmacy/medicine/:medicineId", element: <MedicineDetail /> },
+      { path: "pharmacy/checkout", element: <PharmacyCheckout /> },
       { path: "pharmacy/booking-success", element: <PharmacySuccess /> },
       { path: "cart", element: <CartPage /> },
       { path: "weekend-tasks", element: <WeekendTasks /> },
@@ -85,6 +88,7 @@ export const router = createBrowserRouter([
       { path: "reports", element: <Reports /> },
       { path: "notifications", element: <Notifications /> },
       { path: "metric/:metricId", element: <MetricDetails /> },
+      { path: "health-tips/:tipId", element: <TipBlog /> },
       { path: "terms", element: <Terms /> },
       { path: "privacy", element: <Privacy /> },
     ],

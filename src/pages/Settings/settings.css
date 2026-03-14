@@ -66,6 +66,12 @@
   font-size: 0.9rem;
 }
 
+.address-note {
+  margin-top: 6px;
+  color: #8a93a8;
+  font-size: 0.78rem;
+}
+
 .setting-list {
   display: grid;
   gap: 10px;
