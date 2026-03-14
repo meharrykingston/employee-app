@@ -574,13 +574,7 @@ export default function Home() {
           <div className="daily-tips-head">
             <div>
               <h3 className="section-title daily-tips-title">Daily Health Tips</h3>
-              {dailyTopic ? <p className="daily-topic">{dailyTopic}</p> : null}
             </div>
-            {dailyCity || weather?.location ? (
-              <span className="daily-tips-city">
-                {dailyCity || weather?.location} · {Math.round(weather?.tempC ?? 0)}°C · {weather?.condition ?? "clear"}
-              </span>
-            ) : null}
           </div>
           <article
             className="tip-swiper"
