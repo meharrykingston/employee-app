@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react"
-import { FiCheckCircle, FiLock } from "react-icons/fi"
+import { FiActivity, FiCheckCircle, FiDroplet, FiHeart, FiLock, FiMoon, FiSmile, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { healthTips } from "../../data/healthTips"
 import { logBehaviorSignal } from "../../services/behaviorApi"
@@ -7,6 +7,7 @@ import "./tipblog.css"
 
 const AI_THREAD_KEY = "employee_ai_thread_id"
 const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
+const DAILY_TIP_STORAGE_KEY = "daily_tip_map"
 
 const moodOptionMap: Record<string, string[]> = {
   stress: ["I feel anxious", "I feel overwhelmed", "I feel okay"],
@@ -44,7 +45,46 @@ export default function TipBlog() {
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [speedWarning, setSpeedWarning] = useState(false)
 
-  const tip = useMemo(() => healthTips.find((item) => item.id === tipId), [tipId])
+  const tip = useMemo(() => {
+    if (tipId?.startsWith("daily-")) {
+      try {
+        const raw = localStorage.getItem(DAILY_TIP_STORAGE_KEY)
+        if (!raw) return undefined
+        const tips = JSON.parse(raw) as Array<{
+          id: string
+          title: string
+          summary: string
+          tags: string[]
+          moodTags: string[]
+          heroImage: string
+          iconKey?: string
+          sections: Array<{
+            heading: string
+            body: string
+            coach: string
+            question: { id: string; text: string; options: string[] }
+          }>
+        }>
+        const found = tips.find((item) => item.id === tipId)
+        if (!found) return undefined
+        const icon = found.iconKey === "droplet"
+          ? <FiDroplet />
+          : found.iconKey === "moon"
+            ? <FiMoon />
+            : found.iconKey === "smile"
+              ? <FiSmile />
+              : found.iconKey === "heart"
+                ? <FiHeart />
+                : found.iconKey === "thermo"
+                  ? <FiThermometer />
+                  : <FiActivity />
+        return { ...found, icon }
+      } catch {
+        return undefined
+      }
+    }
+    return healthTips.find((item) => item.id === tipId)
+  }, [tipId])
   const moodHint = useMemo(() => getMoodHint(), [])
   const moodOptions = moodOptionMap[moodHint] ?? []
 

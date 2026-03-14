@@ -24,6 +24,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import { logBehaviorSignal } from "../../services/behaviorApi"
 import { preloadLabCatalog } from "../../services/labApi"
+import { fetchDailyTips, type DailyTipPayload } from "../../services/newsApi"
 import { fetchWeather, type WeatherSnapshot } from "../../services/weatherApi"
 import { healthTips, type HealthTip } from "../../data/healthTips"
 import "./home.css"
@@ -119,6 +120,7 @@ const feelingPrefill: Record<(typeof feelings)[number]["id"], string> = {
 
 const TIP_PREF_KEY = "home:tip-preference"
 const TIP_FAST_SCROLL_KEY = "home:tip-fast-scroll"
+const DAILY_TIP_STORAGE_KEY = "daily_tip_map"
 const AI_THREAD_KEY = "employee_ai_thread_id"
 const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
 
@@ -161,6 +163,9 @@ export default function Home() {
   const [sosRunning, setSosRunning] = useState(false)
   const [sosStatus, setSosStatus] = useState<"dialing" | "connecting" | "connected">("dialing")
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
+  const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
+  const [dailyTopic, setDailyTopic] = useState("")
+  const [dailyCity, setDailyCity] = useState("")
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -221,7 +226,24 @@ export default function Home() {
     return ""
   }, [weather])
 
+  const hydratedDailyTips = useMemo<HealthTip[]>(() => {
+    if (!dailyTips || dailyTips.length === 0) return []
+    const iconFor = (key?: string) => {
+      if (key === "droplet") return <FiDroplet />
+      if (key === "moon") return <FiMoon />
+      if (key === "smile") return <FiSmile />
+      if (key === "heart") return <FiHeart />
+      if (key === "thermo") return <FiThermometer />
+      return <FiActivity />
+    }
+    return dailyTips.map((tip) => ({
+      ...tip,
+      icon: iconFor(tip.iconKey),
+    }))
+  }, [dailyTips])
+
   const displayTips = useMemo<HealthTip[]>(() => {
+    if (hydratedDailyTips.length > 0) return hydratedDailyTips.slice(0, 3)
     let pool = [...healthTips]
     if (weatherTag) {
       const tagged = pool.filter((tip) => tip.tags.some((tag) => tag.toLowerCase() === weatherTag.toLowerCase()))
@@ -279,20 +301,6 @@ export default function Home() {
       pageRef.current?.scrollTo({ top: y, behavior: "auto" })
     })
     return () => window.cancelAnimationFrame(raf)
-  }, [])
-
-  useEffect(() => {
-    const raw = localStorage.getItem("employee_geo")
-    if (!raw) return
-    try {
-      const { lat, lon } = JSON.parse(raw) as { lat: number; lon: number }
-      if (typeof lat !== "number" || typeof lon !== "number") return
-      void fetchWeather(lat, lon)
-        .then((data) => setWeather(data))
-        .catch(() => setWeather(null))
-    } catch {
-      setWeather(null)
-    }
   }, [])
 
   const activeTab: (typeof tabs)[number]["id"] = useMemo(() => {
@@ -364,6 +372,9 @@ export default function Home() {
   }
 
   function openTip(tip: HealthTip) {
+    if (tip.id.startsWith("daily-") && dailyTips) {
+      localStorage.setItem(DAILY_TIP_STORAGE_KEY, JSON.stringify(dailyTips))
+    }
     if (tip.tags[0]) localStorage.setItem(TIP_PREF_KEY, tip.tags[0])
     void logBehaviorSignal({
       type: "tip_open",
@@ -417,6 +428,31 @@ export default function Home() {
       navigate("/login")
     }
   }, [navigate])
+
+  useEffect(() => {
+    const raw = localStorage.getItem("employee_geo")
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as { lat?: number; lon?: number }
+      if (!parsed?.lat || !parsed?.lon) return
+      fetchWeather(parsed.lat, parsed.lon)
+        .then((data) => {
+          setWeather(data)
+          if (data.location) setDailyCity(data.location)
+          return fetchDailyTips({ lat: parsed.lat, lon: parsed.lon, city: data.location })
+        })
+        .then((daily) => {
+          if (daily?.tips?.length) setDailyTips(daily.tips)
+          if (daily?.topic) setDailyTopic(daily.topic)
+          if (daily?.city) setDailyCity(daily.city)
+        })
+        .catch(() => {
+          // keep fallback tips
+        })
+    } catch {
+      // ignore invalid location cache
+    }
+  }, [])
 
   return (
     <main className="home-page app-page-enter" onScroll={handleScroll} ref={pageRef}>
@@ -535,10 +571,13 @@ export default function Home() {
 
         <section className="section app-fade-stagger">
           <div className="daily-tips-head">
-            <h3 className="section-title daily-tips-title">Daily Health Tips</h3>
-            {weather?.location ? (
+            <div>
+              <h3 className="section-title daily-tips-title">Daily Health Tips</h3>
+              {dailyTopic ? <p className="daily-topic">{dailyTopic}</p> : null}
+            </div>
+            {dailyCity || weather?.location ? (
               <span className="daily-tips-city">
-                {weather.location} · {Math.round(weather.tempC)}°C · {weather.condition}
+                {dailyCity || weather?.location} · {Math.round(weather?.tempC ?? 0)}°C · {weather?.condition ?? "clear"}
               </span>
             ) : null}
           </div>
@@ -719,3 +758,4 @@ export default function Home() {
     </main>
   )
 }
+

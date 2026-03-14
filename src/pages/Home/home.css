@@ -388,6 +388,13 @@
   flex-wrap: wrap;
 }
 
+.daily-topic {
+  margin: 4px 0 0;
+  color: #5f6679;
+  font-size: 0.98rem;
+  max-width: 240px;
+}
+
 .daily-tips-city {
   font-size: 0.78rem;
   color: #5c687f;
