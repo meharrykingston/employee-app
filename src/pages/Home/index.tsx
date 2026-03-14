@@ -474,7 +474,7 @@ export default function Home() {
                 transform: `translate3d(-${tipIndex * (100 / displayTips.length)}%, 0, 0)`,
               }}
             >
-              {displayTips.map((tip, index) => (
+              {displayTips.map((tip) => (
                 <section
                   className="tip-card"
                   key={tip.title}

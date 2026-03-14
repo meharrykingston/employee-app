@@ -50,14 +50,6 @@ export default function WeekendTasks() {
           <h1>Weekend Challenges</h1>
           <p>Complete tasks, earn coins, stay healthy</p>
         </div>
-        <button className="wallet-btn app-pressable" type="button" onClick={() => navigate("/wallet")}>
-          <FiLink />
-          View Wallet
-        </button>
-        <button className="wallet-btn app-pressable" type="button" onClick={() => navigate("/health-assessments")}>
-          <FiTarget />
-          Health Assessments
-        </button>
       </header>
 
       <section className="weekend-content app-content-slide">

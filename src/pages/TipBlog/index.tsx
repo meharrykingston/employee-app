@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react"
-import { FiArrowLeft, FiCheckCircle, FiLock } from "react-icons/fi"
+import { FiCheckCircle, FiLock } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { healthTips } from "../../data/healthTips"
 import { logBehaviorSignal } from "../../services/behaviorApi"
@@ -50,11 +50,12 @@ export default function TipBlog() {
 
   useEffect(() => {
     if (!tip) return
+    const safeTip = tip
     void logBehaviorSignal({
       type: "tip_view",
-      label: tip.title,
-      tags: tip.tags,
-      meta: { tipId: tip.id },
+      label: safeTip.title,
+      tags: safeTip.tags,
+      meta: { tipId: safeTip.id },
     })
   }, [tip])
 
@@ -97,12 +98,14 @@ export default function TipBlog() {
   }
 
   function handleAnswer(sectionIndex: number, answer: string) {
+    if (!tip) return
+    const safeTip = tip
     setAnswers((prev) => ({ ...prev, [sectionIndex]: answer }))
     void logBehaviorSignal({
       type: "tip_answer",
-      label: tip.title,
-      tags: tip.tags,
-      meta: { tipId: tip.id, sectionIndex, answer },
+      label: safeTip.title,
+      tags: safeTip.tags,
+      meta: { tipId: safeTip.id, sectionIndex, answer },
     })
     setUnlockedIndex((prev) => Math.max(prev, sectionIndex + 1))
     window.setTimeout(() => {
