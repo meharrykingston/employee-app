@@ -5,7 +5,6 @@ import {
   FiHeart,
   FiMic,
   FiMoon,
-  FiMusic,
   FiSend,
   FiSmile,
   FiSquare,
@@ -17,6 +16,16 @@ import { useNavigate } from "react-router-dom"
 import "./stresschat.css"
 
 type Mode = null | "breathing" | "sleep"
+type SpeechRecognitionInstance = {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((event: any) => void) | null
+  onerror: (() => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
 
 type ActivityItem = {
   id: string
@@ -73,9 +82,11 @@ export default function StressRelief() {
   })
   const [isRecording, setIsRecording] = useState(false)
   const [sleepSound, setSleepSound] = useState("Rain")
+  const [isListening, setIsListening] = useState(false)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const recordChunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+  const speechRef = useRef<SpeechRecognitionInstance | null>(null)
 
   const calmScore = useMemo(() => 78, [])
   const isNight = useMemo(() => {
@@ -104,6 +115,7 @@ export default function StressRelief() {
     if (!text) return
     setLastSent(text)
     setDraft("")
+    navigate("/ai-chat", { state: { prefill: text } })
   }
 
   function persistSleepRecords(next: SleepRecording[]) {
@@ -191,6 +203,10 @@ export default function StressRelief() {
 
   useEffect(() => {
     return () => {
+      if (speechRef.current) {
+        speechRef.current.stop()
+        speechRef.current = null
+      }
       if (recorderRef.current) {
         recorderRef.current.stop()
         recorderRef.current = null
@@ -201,6 +217,44 @@ export default function StressRelief() {
       }
     }
   }, [])
+
+  function stopVoiceToText() {
+    if (speechRef.current) {
+      speechRef.current.stop()
+      speechRef.current = null
+    }
+    setIsListening(false)
+  }
+
+  function startVoiceToText() {
+    const Recognition = (window as typeof window & {
+      SpeechRecognition?: new () => SpeechRecognitionInstance
+      webkitSpeechRecognition?: new () => SpeechRecognitionInstance
+    }).SpeechRecognition || (window as typeof window & { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition
+
+    if (!Recognition) {
+      setLastSent("Voice input is not supported on this device.")
+      return
+    }
+
+    const recognition = new Recognition()
+    recognition.lang = "en-IN"
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim() || ""
+      if (transcript) {
+        setDraft(transcript)
+        navigate("/ai-chat", { state: { prefill: transcript } })
+      }
+      setIsListening(false)
+    }
+    recognition.onerror = () => stopVoiceToText()
+    recognition.onend = () => stopVoiceToText()
+    speechRef.current = recognition
+    setIsListening(true)
+    recognition.start()
+  }
 
   return (
     <div className="stress-page app-page-enter">
@@ -270,12 +324,29 @@ export default function StressRelief() {
       </div>
 
       <div className="stress-input">
-        <button className="input-icon app-pressable" type="button" aria-label="Open soundscape" onClick={() => setMode("sleep")}>
-          <FiMusic />
+        <button className="input-icon app-pressable" type="button" aria-label="Voice input" onClick={startVoiceToText}>
+          <FiMic />
         </button>
         <input placeholder="Share your feelings..." value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSend()} />
         <button className="send-btn app-pressable" type="button" aria-label="Send" onClick={onSend}><FiSend /></button>
       </div>
+
+      {isListening && (
+        <div className="voice-overlay" onClick={stopVoiceToText}>
+          <div className="voice-sheet app-page-enter" onClick={(e) => e.stopPropagation()}>
+            <h4>Listening...</h4>
+            <p>Speak your feelings. We’ll take you to AI chat right after.</p>
+            <div className="voice-bars" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <button className="stop-voice app-pressable" onClick={stopVoiceToText} type="button">Stop</button>
+          </div>
+        </div>
+      )}
 
       {mode === "breathing" && (
         <div className="overlay" onClick={() => setMode(null)}>

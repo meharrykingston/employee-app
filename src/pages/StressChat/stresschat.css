@@ -336,6 +336,78 @@
   place-items: center;
 }
 
+.voice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  align-items: end;
+}
+
+.voice-sheet {
+  width: min(100vw, 430px);
+  margin: 0 auto;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  background: #f8f2fb;
+  padding: 16px;
+  border-top: 1px solid #e6d9ed;
+}
+
+.voice-sheet h4 {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.08rem;
+  color: #5f2a70;
+}
+
+.voice-sheet p {
+  margin: 4px 0 12px;
+  color: #6e6781;
+  font-size: 0.86rem;
+}
+
+.voice-bars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.voice-bars span {
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #b166ca, #6e2d82);
+  animation: voice 950ms ease-in-out infinite;
+}
+
+.voice-bars span:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.voice-bars span:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.voice-bars span:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+.voice-bars span:nth-child(5) {
+  animation-delay: 360ms;
+}
+
+.stop-voice {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  min-height: 44px;
+  background: #6b2a83;
+  color: #fff;
+  font-weight: 700;
+}
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -498,4 +570,13 @@
 @keyframes flow {
   0%, 100% { filter: brightness(1); }
   50% { filter: brightness(1.12); }
+}
+
+@keyframes voice {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
