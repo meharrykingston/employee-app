@@ -1,206 +1,144 @@
-﻿import { useEffect, useMemo, useState } from "react"
-import { FiArrowLeft, FiClock, FiHeart, FiLoader, FiSearch, FiShield, FiZap } from "react-icons/fi"
+import { useEffect, useMemo, useState } from "react"
+import {
+  FiActivity,
+  FiAlertCircle,
+  FiArrowLeft,
+  FiCloudRain,
+  FiDroplet,
+  FiHeart,
+  FiMoon,
+  FiSearch,
+  FiSun,
+  FiThermometer,
+  FiWind,
+} from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
+import { fetchWeather, type WeatherSnapshot } from "../../services/weatherApi"
 import { goBackOrFallback } from "../../utils/navigation"
 import "./ai-symptom-analyser.css"
 
 type Specialty = "Internal Medicine" | "Cardiology" | "Dermatology" | "Pulmonology"
 
-type OptionItem = {
-  label: string
-  value: string
-  severityImpact: number
-}
-
-type SymptomQuestion = {
+type SymptomCard = {
   id: string
-  title: string
-  subtitle: string
-  icon: "pulse" | "clock" | "shield" | "heart"
-  options: OptionItem[]
+  label: string
+  icon: React.ReactNode
+  moods?: string[]
+  weatherTags?: Array<"hot" | "cold" | "rain" | "air" | "dry" | "humid">
+  keywords?: string[]
 }
 
-const symptomOptions = [
-  "Fever",
-  "Headache",
-  "Dizziness",
-  "Nausea",
-  "Chest Pain",
-  "Breathing Issue",
-  "Cough",
-  "Fatigue",
-  "Skin Rash",
+const AI_THREAD_KEY = "employee_ai_thread_id"
+const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
+
+const baseSymptoms: SymptomCard[] = [
+  { id: "fever", label: "Fever", icon: <FiThermometer />, weatherTags: ["hot", "cold"], keywords: ["fever"] },
+  { id: "headache", label: "Headache", icon: <FiAlertCircle />, weatherTags: ["hot", "dry"], keywords: ["headache", "migraine"] },
+  { id: "dizzy", label: "Dizzy", icon: <FiWind />, weatherTags: ["hot"], keywords: ["dizzy", "vertigo", "lightheaded"] },
+  { id: "cough", label: "Cough", icon: <FiCloudRain />, weatherTags: ["cold", "rain", "air"], keywords: ["cough"] },
+  { id: "sore-throat", label: "Sore Throat", icon: <FiWind />, weatherTags: ["cold", "air"], keywords: ["throat"] },
+  { id: "breath", label: "Breathing", icon: <FiWind />, weatherTags: ["air", "humid"], keywords: ["breath", "asthma"] },
+  { id: "chest", label: "Chest Pain", icon: <FiHeart />, keywords: ["chest", "heart"] },
+  { id: "fatigue", label: "Fatigue", icon: <FiActivity />, moods: ["fatigue", "stress"], keywords: ["fatigue", "tired", "low energy"] },
+  { id: "sleep", label: "Sleep", icon: <FiMoon />, moods: ["sleep"], keywords: ["sleep", "insomnia"] },
+  { id: "stress", label: "Anxiety", icon: <FiAlertCircle />, moods: ["stress"], keywords: ["anxious", "panic", "stress"] },
+  { id: "nausea", label: "Nausea", icon: <FiDroplet />, keywords: ["nausea", "vomit"] },
+  { id: "rash", label: "Skin Rash", icon: <FiSun />, weatherTags: ["hot", "humid"], keywords: ["rash", "itch"] },
 ]
 
 function inferSpecialty(symptom: string): Specialty {
   const text = symptom.toLowerCase()
   if (text.includes("chest") || text.includes("heart")) return "Cardiology"
   if (text.includes("skin") || text.includes("rash")) return "Dermatology"
-  if (text.includes("breathing") || text.includes("cough") || text.includes("asthma")) return "Pulmonology"
+  if (text.includes("breath") || text.includes("cough") || text.includes("asthma")) return "Pulmonology"
   return "Internal Medicine"
 }
 
-function buildSymptomQuestions(symptom: string): SymptomQuestion[] {
-  const lower = symptom.toLowerCase()
-
-  const symptomSpecific: SymptomQuestion = lower.includes("chest")
-    ? {
-        id: "pattern",
-        title: "When does chest discomfort feel stronger?",
-        subtitle: "This helps us prioritize urgent pathways.",
-        icon: "heart",
-        options: [
-          { label: "During activity/walking", value: "activity-triggered", severityImpact: 25 },
-          { label: "At rest too", value: "rest-and-activity", severityImpact: 28 },
-          { label: "Only while coughing/moving", value: "movement-triggered", severityImpact: 10 },
-          { label: "Not sure yet", value: "uncertain-pattern", severityImpact: 14 },
-        ],
-      }
-    : lower.includes("breathing")
-      ? {
-          id: "breath-pattern",
-          title: "How does the breathing issue feel right now?",
-          subtitle: "A quick check for urgency markers.",
-          icon: "pulse",
-          options: [
-            { label: "Mild but noticeable", value: "mild-breathless", severityImpact: 10 },
-            { label: "Hard to speak full sentence", value: "sentence-limited", severityImpact: 30 },
-            { label: "Worse while lying down", value: "worse-lying", severityImpact: 22 },
-            { label: "Comes and goes", value: "intermittent", severityImpact: 14 },
-          ],
-        }
-      : {
-          id: "intensity",
-          title: `How intense is your ${symptom.toLowerCase()} right now?`,
-          subtitle: "Choose what feels closest.",
-          icon: "pulse",
-          options: [
-            { label: "Mild, manageable", value: "mild", severityImpact: 8 },
-            { label: "Moderate, affecting routine", value: "moderate", severityImpact: 16 },
-            { label: "Severe, hard to focus", value: "severe", severityImpact: 26 },
-            { label: "Very severe, need help now", value: "critical", severityImpact: 34 },
-          ],
-        }
-
-  return [
-    symptomSpecific,
-    {
-      id: "duration",
-      title: "How long has this been happening?",
-      subtitle: "Duration helps us match right doctor type.",
-      icon: "clock",
-      options: [
-        { label: "Started today", value: "today", severityImpact: 6 },
-        { label: "2 to 3 days", value: "2-3-days", severityImpact: 12 },
-        { label: "About a week", value: "one-week", severityImpact: 18 },
-        { label: "Recurring over weeks", value: "recurring", severityImpact: 24 },
-      ],
-    },
-    {
-      id: "history",
-      title: "Any existing health condition connected to this?",
-      subtitle: "Pick the closest context.",
-      icon: "shield",
-      options: [
-        { label: "Diabetes / BP / Thyroid", value: "chronic-condition", severityImpact: 14 },
-        { label: "Respiratory or heart history", value: "heart-lung-history", severityImpact: 18 },
-        { label: "On current medication", value: "on-medication", severityImpact: 10 },
-        { label: "No known history", value: "no-history", severityImpact: 4 },
-      ],
-    },
-    {
-      id: "extra",
-      title: "Anything else you want doctor to know first?",
-      subtitle: "We will pass this with your request.",
-      icon: "heart",
-      options: [
-        { label: "Sleep / appetite disturbed", value: "sleep-appetite-affected", severityImpact: 8 },
-        { label: "Work stress may be a trigger", value: "stress-trigger", severityImpact: 7 },
-        { label: "Had similar episode before", value: "similar-episode", severityImpact: 11 },
-        { label: "No additional notes", value: "no-extra-notes", severityImpact: 2 },
-      ],
-    },
-  ]
+function getRecentUserText() {
+  const threadId = localStorage.getItem(AI_THREAD_KEY)
+  if (!threadId) return ""
+  const raw = localStorage.getItem(`${AI_MESSAGE_PREFIX}${threadId}`)
+  if (!raw) return ""
+  try {
+    const parsed = JSON.parse(raw) as Array<{ from: string; text: string }>
+    const lastUser = [...parsed].reverse().find((item) => item.from === "user")
+    return lastUser?.text?.toLowerCase() ?? ""
+  } catch {
+    return ""
+  }
 }
 
-function iconForQuestion(icon: SymptomQuestion["icon"]) {
-  if (icon === "clock") return <FiClock />
-  if (icon === "shield") return <FiShield />
-  if (icon === "heart") return <FiHeart />
-  return <FiZap />
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
+function getMoodHint(text: string) {
+  if (/(stress|anxious|panic|overwhelm|tension)/.test(text)) return "stress"
+  if (/(dizz|vertigo|faint|lightheaded)/.test(text)) return "dizzy"
+  if (/(sleep|insomnia|tired|night)/.test(text)) return "sleep"
+  if (/(fatigue|low energy|weak|drained)/.test(text)) return "fatigue"
+  return ""
 }
 
 export default function AISymptomAnalyser() {
   const navigate = useNavigate()
   const [query, setQuery] = useState("")
-  const [selectedSymptom, setSelectedSymptom] = useState<string | null>(null)
-  const [questions, setQuestions] = useState<SymptomQuestion[]>([])
-  const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, OptionItem>>({})
-  const [phase, setPhase] = useState<"pick" | "ask" | "analyzing">("pick")
-  const [isTransitioning, setIsTransitioning] = useState(false)
-
-  const filteredSymptoms = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return symptomOptions
-    return symptomOptions.filter((item) => item.toLowerCase().includes(q))
-  }, [query])
-
-  const currentQuestion = questions[stepIndex]
-
-  function selectSymptom(symptom: string) {
-    const nextQuestions = buildSymptomQuestions(symptom)
-    setSelectedSymptom(symptom)
-    setQuestions(nextQuestions)
-    setAnswers({})
-    setStepIndex(0)
-    setPhase("ask")
-  }
-
-  function chooseOption(option: OptionItem) {
-    if (!currentQuestion || isTransitioning) return
-    setIsTransitioning(true)
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: option }))
-
-    window.setTimeout(() => {
-      if (stepIndex >= questions.length - 1) {
-        setPhase("analyzing")
-      } else {
-        setStepIndex((prev) => prev + 1)
-      }
-      setIsTransitioning(false)
-    }, 280)
-  }
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
 
   useEffect(() => {
-    if (phase !== "analyzing" || !selectedSymptom) return
+    const raw = localStorage.getItem("employee_geo")
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as { lat?: number; lon?: number }
+      if (!parsed?.lat || !parsed?.lon) return
+      fetchWeather(parsed.lat, parsed.lon).then(setWeather).catch(() => setWeather(null))
+    } catch {
+      setWeather(null)
+    }
+  }, [])
 
-    const selected = Object.values(answers)
-    const severityScore = clamp(30 + selected.reduce((sum, item) => sum + item.severityImpact, 0), 0, 100)
-    const triageLevel = severityScore >= 75 ? "High" : severityScore >= 45 ? "Moderate" : "Low"
-    const recommendedMode = severityScore >= 70 ? "opd" : "tele"
-    const specialty = inferSpecialty(selectedSymptom)
-    const analysisQuery = [selectedSymptom, ...selected.map((item) => item.label)].join(" | ")
+  const smartSymptoms = useMemo(() => {
+    const userText = getRecentUserText()
+    const mood = getMoodHint(userText)
 
-    const timer = window.setTimeout(() => {
-      navigate("/teleconsultation", {
-        state: {
-          fromAiAnalyser: true,
-          preselectedSpecialty: specialty,
-          selectedSymptoms: [selectedSymptom],
-          analysisQuery,
-          recommendedMode,
-          triageLevel,
-        },
-      })
-    }, 1000)
+    const weatherTags: Array<"hot" | "cold" | "rain" | "air" | "dry" | "humid"> = []
+    if (weather) {
+      if (weather.tempC >= 32) weatherTags.push("hot")
+      if (weather.tempC <= 18) weatherTags.push("cold")
+      if (weather.condition.toLowerCase().includes("rain")) weatherTags.push("rain")
+      if (weather.humidity >= 70) weatherTags.push("humid")
+      if (weather.aqi && weather.aqi >= 4) weatherTags.push("air")
+      if (weather.humidity <= 35) weatherTags.push("dry")
+    }
 
-    return () => window.clearTimeout(timer)
-  }, [phase, selectedSymptom, answers, navigate])
+    const scored = baseSymptoms.map((item) => {
+      let score = 0
+      if (mood && item.moods?.includes(mood)) score += 4
+      if (item.weatherTags?.some((tag) => weatherTags.includes(tag))) score += 3
+      if (item.keywords?.some((kw) => userText.includes(kw))) score += 5
+      return { ...item, score }
+    })
+
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12)
+  }, [weather])
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return smartSymptoms
+    return smartSymptoms.filter((item) => item.label.toLowerCase().includes(q))
+  }, [query, smartSymptoms])
+
+  function selectSymptom(symptom: string) {
+    const specialty = inferSpecialty(symptom)
+    navigate("/teleconsultation", {
+      state: {
+        fromAiAnalyser: true,
+        preselectedSpecialty: specialty,
+        selectedSymptoms: [symptom],
+        analysisQuery: symptom,
+        recommendedMode: "tele",
+        triageLevel: "Moderate",
+      },
+    })
+  }
 
   return (
     <main className="symptom-analyser-page app-page-enter">
@@ -209,73 +147,42 @@ export default function AISymptomAnalyser() {
           <FiArrowLeft />
         </button>
         <div>
-          <h1>AI Symptom Flow</h1>
-          <p>Quick guided triage without scrolling forms</p>
+          <h1>How are you feeling?</h1>
+          <p>Pick a symptom and we will connect you to the right doctor.</p>
         </div>
       </header>
 
       <section className="symptom-flow-body app-content-slide">
-        {phase === "pick" && (
-          <section className="flow-card app-fade-stagger">
-            <div className="flow-card-head">
-              <span className="flow-badge">Step 1</span>
-              <h2>What are you feeling right now?</h2>
-              <p>Select one symptom. AI will ask friendly follow-up questions automatically.</p>
-            </div>
+        <section className="flow-card app-fade-stagger">
+          <div className="flow-card-head">
+            <h2>Search your symptom</h2>
+            <p>AI suggests symptoms based on your recent chat and local conditions.</p>
+          </div>
 
-            <div className="analyser-search">
-              <FiSearch />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search symptom" />
-            </div>
+          <div className="analyser-search focus">
+            <FiSearch />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search symptoms (headache, fever, cough)"
+              autoFocus
+            />
+          </div>
 
-            <div className="flow-option-grid symptom-grid">
-              {filteredSymptoms.map((item) => (
-                <button key={item} type="button" className="flow-option app-pressable" onClick={() => selectSymptom(item)}>
-                  {item}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {phase === "ask" && currentQuestion && (
-          <section className="flow-card app-fade-stagger">
-            <div className="flow-progress-row">
-              <span>Question {stepIndex + 1} / {questions.length}</span>
-              <i style={{ width: `${((stepIndex + 1) / questions.length) * 100}%` }} />
-            </div>
-
-            <div className="ai-question">
-              <span className="ai-question-icon">{iconForQuestion(currentQuestion.icon)}</span>
-              <div>
-                <h2>{currentQuestion.title}</h2>
-                <p>{currentQuestion.subtitle}</p>
-              </div>
-            </div>
-
-            <div className="flow-option-grid">
-              {currentQuestion.options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className="flow-option app-pressable"
-                  disabled={isTransitioning}
-                  onClick={() => chooseOption(option)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {phase === "analyzing" && (
-          <section className="flow-card app-fade-stagger analyzing-card" aria-live="polite">
-            <span className="analyzing-spinner"><FiLoader /></span>
-            <h2>Finding best available doctor...</h2>
-            <p>Matching your answers with specialty, urgency and consultation mode.</p>
-          </section>
-        )}
+          <div className="flow-option-grid symptom-grid">
+            {filtered.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="flow-option symptom-card app-pressable"
+                onClick={() => selectSymptom(item.label)}
+              >
+                <span className="symptom-icon">{item.icon}</span>
+                <span className="symptom-label">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       </section>
     </main>
   )

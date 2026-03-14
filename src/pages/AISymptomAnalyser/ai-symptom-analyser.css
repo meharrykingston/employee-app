@@ -1,4 +1,4 @@
-﻿.symptom-analyser-page {
+.symptom-analyser-page {
   min-height: 100dvh;
   background: #f2f6fd;
   color: #1f2940;
@@ -64,7 +64,7 @@
 
 .flow-card-head h2 {
   margin: 6px 0 0;
-  font-size: 1.28rem;
+  font-size: 1.22rem;
   line-height: 1.2;
 }
 
@@ -72,16 +72,6 @@
   margin: 6px 0 0;
   color: #607292;
   font-size: 0.84rem;
-}
-
-.flow-badge {
-  border-radius: 999px;
-  border: 1px solid #c6daf6;
-  background: #edf5ff;
-  color: #2f629f;
-  font-size: 0.74rem;
-  padding: 5px 10px;
-  display: inline-flex;
 }
 
 .analyser-search {
@@ -92,6 +82,11 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
+}
+
+.analyser-search.focus {
+  border-color: #9bb8eb;
+  box-shadow: 0 0 0 3px rgba(78, 127, 214, 0.15);
 }
 
 .analyser-search svg {
@@ -112,121 +107,41 @@
 
 .flow-option-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
-.flow-option {
-  min-height: 56px;
-  border-radius: 14px;
+.symptom-card {
+  min-height: 64px;
+  border-radius: 16px;
   border: 1px solid #d6e3f7;
   background: #fff;
   color: #2f476f;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  padding: 0 12px;
-  text-align: left;
-}
-
-.flow-option:disabled {
-  opacity: 0.6;
-}
-
-.symptom-grid .flow-option {
-  min-height: 48px;
-}
-
-.flow-progress-row {
+  padding: 10px 8px;
+  text-align: center;
   display: grid;
   gap: 6px;
+  justify-items: center;
 }
 
-.flow-progress-row span {
-  font-size: 0.78rem;
-  color: #5f7598;
-}
-
-.flow-progress-row i {
-  display: block;
-  height: 7px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2f67d2, #22b8a4);
-}
-
-.ai-question {
-  border: 1px solid #d8e4f8;
-  border-radius: 14px;
-  background: #f8fbff;
-  padding: 11px;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-}
-
-.ai-question-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+.symptom-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  background: #eaf4ff;
+  background: #eef5ff;
   color: #2e66a9;
 }
 
-.ai-question h2 {
-  margin: 0;
-  font-size: 1.04rem;
-  line-height: 1.28;
+.symptom-label {
+  line-height: 1.1;
 }
 
-.ai-question p {
-  margin: 5px 0 0;
-  color: #5f7392;
-  font-size: 0.82rem;
-}
-
-.analyzing-card {
-  min-height: 220px;
-  place-items: center;
-  text-align: center;
-  align-content: center;
-}
-
-.analyzing-spinner {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #ecf5ff;
-  color: #2c67ad;
-}
-
-.analyzing-spinner svg {
-  width: 24px;
-  height: 24px;
-  animation: spin360 0.9s linear infinite;
-}
-
-.analyzing-card h2 {
-  margin: 4px 0 0;
-  font-size: 1.1rem;
-}
-
-.analyzing-card p {
-  margin: 0;
-  color: #607292;
-  font-size: 0.84rem;
-}
-
-@media (max-width: 380px) {
+@media (max-width: 400px) {
   .flow-option-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@keyframes spin360 {
-  to {
-    transform: rotate(360deg);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
