@@ -185,15 +185,14 @@ export default function PharmacyCheckout() {
                   <img src={item.image} alt={item.name} loading="lazy" />
                   <div>
                     <h4>{item.name}</h4>
-                    <p>{item.qty} × ₹{item.price}</p>
+                    <p>{item.qty} × {item.kind}</p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="review-summary">
               <div><span>Items</span><strong>{totalItems}</strong></div>
-              <div><span>Subtotal</span><strong>₹{subtotal.toFixed(0)}</strong></div>
-              <div><span>Delivery</span><strong>Free</strong></div>
+              <div><span>ETA</span><strong>10-15 mins</strong></div>
             </div>
             <button type="button" className="checkout-primary app-pressable" onClick={() => setStep("confirm")}>
               Confirm order
