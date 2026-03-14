@@ -11,6 +11,7 @@ import Terms from "../pages/Legal/Terms"
 import Privacy from "../pages/Legal/Privacy"
 import AIChat from "../pages/AIChat"
 import StressRelief from "../pages/StressChat"
+import Meditation from "../pages/Meditation"
 import LabTests from "../pages/LabTest"
 import LabReadiness from "../pages/LabTest/readiness"
 import LabLocation from "../pages/LabTest/location"
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
       { path: "health", element: <Health /> },
       { path: "ai-chat", element: <AIChat /> },
       { path: "stress-relief", element: <StressRelief /> },
+      { path: "meditation", element: <Meditation /> },
       { path: "lab-tests", element: <LabTests /> },
       { path: "lab-tests/readiness", element: <LabReadiness /> },
       { path: "lab-tests/location", element: <LabLocation /> },
