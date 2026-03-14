@@ -85,7 +85,6 @@ export default function Badges() {
           <div className="badges-title">Rankings &amp; Achievements</div>
           <div className="badges-subtitle">Compete and earn badges</div>
         </div>
-        {activeTab === "badges" && <div className="badges-notif">25</div>}
       </div>
 
       <div className="badges-tabs">
