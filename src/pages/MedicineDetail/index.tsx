@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   FiArrowLeft,
   FiChevronDown,
@@ -6,7 +6,6 @@ import {
   FiMessageCircle,
   FiShoppingCart,
   FiStar,
-  FiZap,
 } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { fetchPharmacyProducts } from "../../services/pharmacyApi"
@@ -243,7 +242,7 @@ export default function MedicineDetail() {
                   <img src={item.image} alt={item.name} loading="lazy" />
                   <div>
                     <h4>{item.name}</h4>
-                    <p>{item.dose} • {item.kind}</p>
+                    <p>{item.dose} � {item.kind}</p>
                   </div>
                 </button>
                 <button type="button" className="upsell-add app-pressable" onClick={() => addToCart(item)} disabled={!item.inStock}>
@@ -320,3 +319,4 @@ export default function MedicineDetail() {
     </main>
   )
 }
+
