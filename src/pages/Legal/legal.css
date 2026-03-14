@@ -25,6 +25,12 @@
   color: #374151;
 }
 
+.legal-scroll {
+  max-height: 68dvh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 .legal-back {
   margin-top: 16px;
   min-height: 44px;
