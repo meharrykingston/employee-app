@@ -5,6 +5,7 @@ export type EmployeeCompanyAuth = {
   companyCode: string
   companyName: string
   companySlug?: string | null
+  hrPhone?: string | null
 }
 
 export type EmployeeLoginResponse = {

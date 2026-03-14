@@ -18,7 +18,6 @@ import {
   FiTruck,
   FiUser,
   FiX,
-  FiAlertTriangle,
   FiZap,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -157,7 +156,7 @@ export default function Home() {
   const [lastAction, setLastAction] = useState("Ready")
   const [tipInteracting, setTipInteracting] = useState(false)
   const [showSos, setShowSos] = useState(false)
-  const [showEmergencyContacts, setShowEmergencyContacts] = useState(true)
+  const [sosStep, setSosStep] = useState(0)
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -341,6 +340,15 @@ export default function Home() {
   }
 
   const companySession = getEmployeeCompanySession()
+  const hrContact = companySession?.companyName
+    ? `${companySession.companyName} HR Desk`
+    : "HR Desk"
+  const hrNumber = companySession?.hrPhone || localStorage.getItem("employee_hr_contact") || "1800-000-000"
+  const sosContacts = [
+    { label: hrContact, number: hrNumber, note: "Primary HR helpdesk" },
+    { label: "Police", number: "100", note: "Immediate police assistance" },
+    { label: "Ambulance", number: "108", note: "Emergency medical response" },
+  ]
 
   useEffect(() => {
     const session = getEmployeeAuthSession()
@@ -580,62 +588,44 @@ export default function Home() {
             <div className="sos-body">
               <div className="sos-call-core">
                 <span className="sos-call-icon"><FiPhoneCall /></span>
-                <h4>Calling Emergency Services</h4>
-                <p>Stay on the line and speak clearly</p>
-                <div className="sos-connected">
-                  <span />
-                  <span />
-                  <span />
-                  <b>Connected</b>
+                <h4>Emergency Call Flow</h4>
+                <p>We follow India-first order: HR → Police → Ambulance</p>
+                <div className="sos-step">
+                  Step {sosStep + 1} of {sosContacts.length}: <strong>{sosContacts[sosStep]?.label}</strong>
                 </div>
               </div>
 
-              <div className="sos-contacts-head">
-                <h5>Emergency Contact</h5>
-                <button className="app-pressable" type="button" onClick={() => setShowEmergencyContacts((prev) => !prev)}>
-                  {showEmergencyContacts ? "Hide" : "Show"}
-                </button>
+              <div className="sos-contact-list">
+                {sosContacts.map((contact, index) => (
+                  <button
+                    key={contact.label}
+                    className={`sos-contact-row app-pressable ${index === sosStep ? "active" : ""}`}
+                    type="button"
+                    onClick={() => {
+                      setSosStep(index)
+                      window.location.href = `tel:${contact.number.replace(/\\s/g, "")}`
+                    }}
+                  >
+                    <div>
+                      <h5>{contact.label}</h5>
+                      <p>{contact.note}</p>
+                    </div>
+                    <span className="sos-number">{contact.number}</span>
+                  </button>
+                ))}
               </div>
 
-              {showEmergencyContacts && (
-                <div className="sos-contact-list">
-                  <article className="sos-contact-card">
-                    <span className="sos-contact-icon red"><FiShield /></span>
-                    <div className="sos-contact-copy">
-                      <h6>Emergency Services</h6>
-                      <p>Police, Fire, Medical</p>
-                    </div>
-                    <div className="sos-contact-right">
-                      <strong>911</strong>
-                      <a href="tel:911" className="sos-call-btn app-pressable">Call</a>
-                    </div>
-                  </article>
+              <button
+                className="sos-next app-pressable"
+                type="button"
+                onClick={() => {
+                  const next = (sosStep + 1) % sosContacts.length
+                  setSosStep(next)
+                }}
+              >
+                Next call in sequence
+              </button>
 
-                  <article className="sos-contact-card">
-                    <span className="sos-contact-icon purple"><FiUser /></span>
-                    <div className="sos-contact-copy">
-                      <h6>Dr. Riza Yuhi</h6>
-                      <p>Your Primary Doctor</p>
-                    </div>
-                    <div className="sos-contact-right">
-                      <strong>(555) 123-4567</strong>
-                      <a href="tel:+15551234567" className="sos-call-btn app-pressable">Call</a>
-                    </div>
-                  </article>
-
-                  <article className="sos-contact-card">
-                    <span className="sos-contact-icon orange"><FiAlertTriangle /></span>
-                    <div className="sos-contact-copy">
-                      <h6>Poison Control</h6>
-                      <p>24/7 Poison Help</p>
-                    </div>
-                    <div className="sos-contact-right">
-                      <strong>1-800-222-1222</strong>
-                      <a href="tel:+18002221222" className="sos-call-btn app-pressable">Call</a>
-                    </div>
-                  </article>
-                </div>
-              )}
             </div>
           </section>
         </div>

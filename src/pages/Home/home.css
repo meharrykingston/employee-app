@@ -1112,6 +1112,12 @@
   font-size: 0.95rem;
 }
 
+.sos-step {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #5b667a;
+}
+
 .sos-connected {
   margin-top: 14px;
   display: inline-flex;
@@ -1164,6 +1170,52 @@
 .sos-contact-list {
   display: grid;
   gap: 10px;
+}
+
+.sos-contact-row {
+  width: 100%;
+  border: 1px solid #d6dce8;
+  border-radius: 14px;
+  background: #f5f7fb;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+}
+
+.sos-contact-row.active {
+  border-color: #5b7cf0;
+  background: #eef4ff;
+}
+
+.sos-contact-row h5 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.sos-contact-row p {
+  margin: 0;
+  color: #59647a;
+  font-size: 0.86rem;
+}
+
+.sos-number {
+  font-weight: 800;
+  color: #1f3a8a;
+  font-size: 1rem;
+}
+
+.sos-next {
+  margin-top: 12px;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  min-height: 44px;
+  background: #1f3a8a;
+  color: #fff;
+  font-weight: 700;
 }
 
 .sos-contact-card {
