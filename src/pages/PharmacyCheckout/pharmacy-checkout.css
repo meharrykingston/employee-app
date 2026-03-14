@@ -48,6 +48,55 @@
   gap: 16px;
 }
 
+.checkout-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(135deg, #1b4ac9, #17b092);
+  color: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.checkout-hero h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.checkout-hero p {
+  margin: 0 0 10px;
+  color: rgba(236, 246, 255, 0.92);
+  font-size: 0.86rem;
+}
+
+.hero-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-tags span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.hero-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+}
+
 .checkout-steps {
   position: relative;
   display: grid;

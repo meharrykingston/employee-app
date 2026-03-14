@@ -24,6 +24,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import { logBehaviorSignal } from "../../services/behaviorApi"
 import { preloadLabCatalog } from "../../services/labApi"
+import { fetchWeather, type WeatherSnapshot } from "../../services/weatherApi"
 import { healthTips, type HealthTip } from "../../data/healthTips"
 import "./home.css"
 
@@ -157,6 +158,9 @@ export default function Home() {
   const [tipInteracting, setTipInteracting] = useState(false)
   const [showSos, setShowSos] = useState(false)
   const [sosStep, setSosStep] = useState(0)
+  const [sosRunning, setSosRunning] = useState(false)
+  const [sosStatus, setSosStatus] = useState<"dialing" | "connecting" | "connected">("dialing")
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -206,9 +210,22 @@ export default function Home() {
 
   const preferredTag = useMemo(() => localStorage.getItem(TIP_PREF_KEY) ?? "", [])
 
+  const weatherTag = useMemo(() => {
+    if (!weather) return ""
+    const cond = weather.condition.toLowerCase()
+    if (weather.tempC >= 32) return "Hydration"
+    if (weather.tempC <= 18) return "Sleep"
+    if (cond.includes("rain") || cond.includes("drizzle") || cond.includes("thunder")) return "Recovery"
+    if (weather.humidity >= 70) return "Hydration"
+    return ""
+  }, [weather])
+
   const displayTips = useMemo<HealthTip[]>(() => {
     let pool = [...healthTips]
-    if (preferredTag) {
+    if (weatherTag) {
+      const tagged = pool.filter((tip) => tip.tags.some((tag) => tag.toLowerCase() === weatherTag.toLowerCase()))
+      if (tagged.length > 0) pool = tagged
+    } else if (preferredTag) {
       const tagged = pool.filter((tip) => tip.tags.some((tag) => tag.toLowerCase() === preferredTag.toLowerCase()))
       if (tagged.length > 0) pool = tagged
     } else if (moodHint || recentFastScroll) {
@@ -216,8 +233,11 @@ export default function Home() {
       const tagged = pool.filter((tip) => tip.moodTags.includes(mood))
       if (tagged.length > 0) pool = tagged
     }
-    return pool
-  }, [moodHint, preferredTag, recentFastScroll])
+    const unique = Array.from(new Map(pool.map((tip) => [tip.id, tip])).values())
+    const fallback = healthTips.filter((tip) => !unique.find((item) => item.id === tip.id))
+    const combined = [...unique, ...fallback]
+    return combined.slice(0, 3)
+  }, [moodHint, preferredTag, recentFastScroll, weatherTag])
 
   useEffect(() => {
     if (tipInteracting) return
@@ -258,6 +278,20 @@ export default function Home() {
       pageRef.current?.scrollTo({ top: y, behavior: "auto" })
     })
     return () => window.cancelAnimationFrame(raf)
+  }, [])
+
+  useEffect(() => {
+    const raw = localStorage.getItem("employee_geo")
+    if (!raw) return
+    try {
+      const { lat, lon } = JSON.parse(raw) as { lat: number; lon: number }
+      if (typeof lat !== "number" || typeof lon !== "number") return
+      void fetchWeather(lat, lon)
+        .then((data) => setWeather(data))
+        .catch(() => setWeather(null))
+    } catch {
+      setWeather(null)
+    }
   }, [])
 
   const activeTab: (typeof tabs)[number]["id"] = useMemo(() => {
@@ -351,6 +385,32 @@ export default function Home() {
   ]
 
   useEffect(() => {
+    if (!showSos) {
+      setSosRunning(false)
+      setSosStep(0)
+      return
+    }
+    setSosRunning(true)
+    const interval = window.setInterval(() => {
+      setSosStep((prev) => (prev + 1) % sosContacts.length)
+    }, 8000)
+    return () => window.clearInterval(interval)
+  }, [showSos, sosContacts.length])
+
+  useEffect(() => {
+    if (!showSos || !sosRunning) return
+    const contact = sosContacts[sosStep]
+    if (!contact) return
+    setSosStatus("dialing")
+    const timer = window.setTimeout(() => {
+      setSosStatus("connecting")
+      window.location.href = `tel:${contact.number.replace(/\s/g, "")}`
+      window.setTimeout(() => setSosStatus("connected"), 1500)
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [showSos, sosRunning, sosStep, sosContacts])
+
+  useEffect(() => {
     const session = getEmployeeAuthSession()
     if (!session) {
       navigate("/login")
@@ -368,7 +428,21 @@ export default function Home() {
             </div>
           </div>
 
-          <button className="sos-btn app-pressable" type="button" onClick={() => setShowSos(true)}>
+          <button
+            className="sos-btn app-pressable"
+            type="button"
+            onClick={() => {
+              setShowSos(true)
+              setSosRunning(true)
+              setSosStep(0)
+              setSosStatus("dialing")
+              const first = sosContacts[0]
+              if (first) {
+                window.location.href = `tel:${first.number.replace(/\s/g, "")}`
+                window.setTimeout(() => setSosStatus("connected"), 1200)
+              }
+            }}
+          >
             <FiShield />
             <span>SOS</span>
           </button>
@@ -589,9 +663,13 @@ export default function Home() {
               <div className="sos-call-core">
                 <span className="sos-call-icon"><FiPhoneCall /></span>
                 <h4>Emergency Call Flow</h4>
-                <p>We follow India-first order: HR → Police → Ambulance</p>
                 <div className="sos-step">
-                  Step {sosStep + 1} of {sosContacts.length}: <strong>{sosContacts[sosStep]?.label}</strong>
+                  Calling: <strong>{sosContacts[sosStep]?.label}</strong>
+                </div>
+                <div className={`sos-status ${sosStatus}`}>
+                  {sosStatus === "dialing" && "Dialing..."}
+                  {sosStatus === "connecting" && "Ringing..."}
+                  {sosStatus === "connected" && "Connected"}
                 </div>
               </div>
 
@@ -619,11 +697,11 @@ export default function Home() {
                 className="sos-next app-pressable"
                 type="button"
                 onClick={() => {
-                  const next = (sosStep + 1) % sosContacts.length
-                  setSosStep(next)
+                  setSosRunning(false)
+                  setShowSos(false)
                 }}
               >
-                Next call in sequence
+                Stop SOS
               </button>
 
             </div>

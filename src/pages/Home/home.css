@@ -1118,6 +1118,21 @@
   color: #5b667a;
 }
 
+.sos-status {
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #1f3a8a;
+}
+
+.sos-status.connecting {
+  color: #b56d00;
+}
+
+.sos-status.connected {
+  color: #0b7d43;
+}
+
 .sos-connected {
   margin-top: 14px;
   display: inline-flex;

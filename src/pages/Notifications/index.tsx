@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   FiArrowLeft,
   FiBell,
@@ -12,70 +12,10 @@ import {
 } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import { playAppSound } from "../../utils/sound"
+import { addNotification, getNotificationsWithSeed, setStoredNotifications, type AppNotification } from "../../services/notificationCenter"
 import "./notifications.css"
 
-type NoticeItem = {
-  id: string
-  title: string
-  body: string
-  time: string
-  group: "Today" | "Yesterday"
-  unread?: boolean
-  channel: "delivery" | "consult" | "health" | "system"
-  cta?: { label: string; route: string }
-}
-
-const notices: NoticeItem[] = [
-  {
-    id: "n1",
-    title: "Medicine order is packed",
-    body: "Rider will pick up from HealthPlus in 2 mins. ETA 5 mins.",
-    time: "2 min ago",
-    group: "Today",
-    unread: true,
-    channel: "delivery",
-    cta: { label: "Track Order", route: "/pharmacy/tracking" },
-  },
-  {
-    id: "n2",
-    title: "Doctor is ready in waiting room",
-    body: "Dr. Riza Yuhi started your slot. Join now to avoid reschedule.",
-    time: "8 min ago",
-    group: "Today",
-    unread: true,
-    channel: "consult",
-    cta: { label: "Join Now", route: "/teleconsultation" },
-  },
-  {
-    id: "n3",
-    title: "Hydration check",
-    body: "You are below your target today. Drink water and log intake.",
-    time: "26 min ago",
-    group: "Today",
-    channel: "health",
-    cta: { label: "Open Health", route: "/health" },
-  },
-  {
-    id: "n4",
-    title: "Lab report available",
-    body: "CBC report is generated. Values are in normal range.",
-    time: "Yesterday, 6:15 PM",
-    group: "Yesterday",
-    channel: "health",
-    cta: { label: "View Report", route: "/lab-tests" },
-  },
-  {
-    id: "n5",
-    title: "Account security",
-    body: "New login detected on Chrome desktop. If not you, secure account.",
-    time: "Yesterday, 1:08 PM",
-    group: "Yesterday",
-    channel: "system",
-    cta: { label: "Review", route: "/settings" },
-  },
-]
-
-function channelIcon(channel: NoticeItem["channel"]) {
+function channelIcon(channel: AppNotification["channel"]) {
   if (channel === "delivery") return <FiPackage />
   if (channel === "consult") return <FiVideo />
   if (channel === "health") return <FiDroplet />
@@ -85,7 +25,16 @@ function channelIcon(channel: NoticeItem["channel"]) {
 export default function Notifications() {
   const navigate = useNavigate()
   const [notifyState, setNotifyState] = useState("Push notifications are on")
-  const [items, setItems] = useState<NoticeItem[]>(notices)
+  const [items, setItems] = useState<AppNotification[]>(getNotificationsWithSeed())
+
+  useEffect(() => {
+    const onNew = (event: Event) => {
+      const detail = (event as CustomEvent<AppNotification>).detail
+      if (detail) setItems((prev) => [detail, ...prev])
+    }
+    window.addEventListener("app-notification", onNew as EventListener)
+    return () => window.removeEventListener("app-notification", onNew as EventListener)
+  }, [])
 
   const grouped = useMemo(() => {
     const today = items.filter((item) => item.group === "Today")
@@ -113,31 +62,22 @@ export default function Notifications() {
       return
     }
 
-    const title = "Astikan Update"
-    const options = {
-      body: "Rider picked your medicine order. ETA 5 mins.",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      tag: "astikan-live-notice",
-    }
-
-    if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.getRegistration()
-      if (reg) {
-        await reg.showNotification(title, options)
-        setNotifyState("Live test notification sent")
-        playAppSound("notify")
-        return
-      }
-    }
-
-    new Notification(title, options)
+    await addNotification({
+      title: "Rider picked your order",
+      body: "ETA 5 mins. Rider is near your area.",
+      channel: "delivery",
+      cta: { label: "Track Order", route: "/pharmacy/tracking" },
+    })
     setNotifyState("Live test notification sent")
     playAppSound("notify")
   }
 
   function markAllRead() {
-    setItems((prev) => prev.map((item) => ({ ...item, unread: false })))
+    setItems((prev) => {
+      const next = prev.map((item) => ({ ...item, unread: false }))
+      setStoredNotifications(next)
+      return next
+    })
     playAppSound("success")
   }
 

@@ -5,6 +5,7 @@ import { useCart } from "../../app/cart"
 import { ensureEmployeeActor } from "../../services/actorsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { createPharmacyOrder } from "../../services/pharmacyApi"
+import { addNotification, pushBrowserNotification } from "../../services/notificationCenter"
 import { playAppSound } from "../../utils/sound"
 import "./pharmacy-checkout.css"
 
@@ -83,6 +84,13 @@ export default function PharmacyCheckout() {
           imageUrls: [item.image],
         })),
       })
+      await addNotification({
+        title: "Order confirmed",
+        body: "Your medicines are confirmed. Live tracking is now available.",
+        channel: "delivery",
+        cta: { label: "Track Order", route: "/pharmacy/tracking" },
+      })
+      await pushBrowserNotification("Order confirmed", "Live tracking is now available in Astikan.")
       clearCart()
       navigate("/pharmacy/booking-success", { state: { orderedItems: totalItems } })
     } catch {
@@ -102,6 +110,18 @@ export default function PharmacyCheckout() {
       </header>
 
       <section className="checkout-shell">
+        <article className="checkout-hero card-rise">
+          <div>
+            <h2>Zepto-fast delivery</h2>
+            <p>Verified packing, real-time tracking, and safe handoff.</p>
+            <div className="hero-tags">
+              <span><FiTruck /> 10-15 mins</span>
+              <span><FiCheckCircle /> Verified pharmacy</span>
+            </div>
+          </div>
+          <div className="hero-icon"><FiTruck /></div>
+        </article>
+
         <div className="checkout-steps">
           <div className={`checkout-step ${step !== "address" ? "done" : "active"}`}>
             <span>1</span>
@@ -176,7 +196,7 @@ export default function PharmacyCheckout() {
               <div><span>Delivery</span><strong>Free</strong></div>
             </div>
             <button type="button" className="checkout-primary app-pressable" onClick={() => setStep("confirm")}>
-              Confirm & pay
+              Confirm order
             </button>
             <button type="button" className="checkout-link" onClick={() => setStep("address")}>
               Change address

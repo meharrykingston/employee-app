@@ -24,7 +24,13 @@ export default function Splash() {
       if ("geolocation" in navigator) {
         await new Promise((resolve) => {
           navigator.geolocation.getCurrentPosition(
-            () => resolve(true),
+            (pos) => {
+              localStorage.setItem(
+                "employee_geo",
+                JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+              )
+              resolve(true)
+            },
             () => resolve(false),
             { timeout: 6000 }
           )
