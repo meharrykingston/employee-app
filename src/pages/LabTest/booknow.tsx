@@ -29,7 +29,7 @@ export default function LabBookNowStep3() {
     }
   }
 
-  const [mapboxToken, setMapboxToken] = useState("")
+  const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_TOKEN ?? ""
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
   const [displayEta, setDisplayEta] = useState<number | null>(null)
   const [mapError, setMapError] = useState("")
@@ -53,7 +53,8 @@ export default function LabBookNowStep3() {
     } as LabTestItem)
 
   const canRenderMap = useMemo(() => mapboxToken.trim().length > 0, [mapboxToken])
-  const addressLabel = state?.address ?? "Selected address"
+  const addressValue = state?.address ?? ""
+  const addressLabel = addressValue || "Selected address"
   const userInitial = (addressLabel.trim()[0] || "U").toUpperCase()
   const now = new Date()
   const bookingDate = now.toISOString().slice(0, 10)
@@ -99,26 +100,10 @@ export default function LabBookNowStep3() {
   }
 
   useEffect(() => {
-    let active = true
-    async function loadMapboxToken() {
-      try {
-        const response = await fetch("/api/integrations/mapbox-token")
-        const payload = await response.json()
-        if (!active) return
-        if (payload?.status === "ok" && payload?.data?.token) {
-          setMapboxToken(payload.data.token)
-        } else {
-          setMapError("Map unavailable right now.")
-        }
-      } catch {
-        if (active) setMapError("Map unavailable right now.")
-      }
+    if (!mapboxToken.trim()) {
+      setMapError("Map unavailable right now.")
     }
-    loadMapboxToken()
-    return () => {
-      active = false
-    }
-  }, [])
+  }, [mapboxToken])
 
   useEffect(() => {
     if (!canRenderMap || !mapContainerRef.current || mapRef.current) return
@@ -193,13 +178,13 @@ export default function LabBookNowStep3() {
   }, [canRenderMap, mapboxToken])
 
   useEffect(() => {
-    if (!canRenderMap || !state?.address) return
+    if (!canRenderMap || !addressValue) return
     const controller = new AbortController()
     let interval: number | undefined
 
     async function updateRoute() {
       try {
-        const origin = await geocodeAddress(state?.address ?? "", controller.signal)
+        const origin = await geocodeAddress(addressValue, controller.signal)
         const destination = await geocodeAddress(NIRAMAYA_DELHI_ADDRESS, controller.signal)
         if (!origin || !destination) return
         const route = await fetchRoute(origin, destination)
@@ -270,7 +255,7 @@ export default function LabBookNowStep3() {
       controller.abort()
       if (interval) window.clearInterval(interval)
     }
-  }, [NIRAMAYA_DELHI_ADDRESS, canRenderMap, mapboxToken, state?.address])
+  }, [NIRAMAYA_DELHI_ADDRESS, canRenderMap, mapboxToken, addressValue])
 
   useEffect(() => {
     if (!etaMinutes) return

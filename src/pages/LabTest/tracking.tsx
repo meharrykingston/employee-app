@@ -39,7 +39,7 @@ function mapStatusToStep(status: string) {
 export default function LabTracking() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const [mapboxToken, setMapboxToken] = useState("")
+  const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_TOKEN ?? ""
   const [mapError, setMapError] = useState("")
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -133,26 +133,10 @@ export default function LabTracking() {
   }, [id])
 
   useEffect(() => {
-    let active = true
-    async function loadMapboxToken() {
-      try {
-        const response = await fetch("/api/integrations/mapbox-token")
-        const payload = await response.json()
-        if (!active) return
-        if (payload?.status === "ok" && payload?.data?.token) {
-          setMapboxToken(payload.data.token)
-        } else {
-          setMapError("Map unavailable right now.")
-        }
-      } catch {
-        if (active) setMapError("Map unavailable right now.")
-      }
+    if (!mapboxToken.trim()) {
+      setMapError("Map unavailable right now.")
     }
-    loadMapboxToken()
-    return () => {
-      active = false
-    }
-  }, [])
+  }, [mapboxToken])
 
   useEffect(() => {
     if (!mapboxToken || !mapContainerRef.current || mapRef.current) return

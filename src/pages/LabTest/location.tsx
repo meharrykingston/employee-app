@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiHome, FiMapPin } from "react-icons/fi"
+﻿import { FiArrowLeft, FiHome, FiMapPin } from "react-icons/fi"
 import { MdOutlineBusinessCenter } from "react-icons/md"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -43,7 +43,7 @@ export default function LabLocationStep2() {
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null)
 
-  const [mapboxToken, setMapboxToken] = useState("")
+  const mapboxToken = (import.meta as any).env?.VITE_MAPBOX_TOKEN ?? ""
   const NIRAMAYA_DELHI_ADDRESS =
     "NirAmaya PathLabs Private Limited, B-4, New Multan Nagar, Near Paschim Vihar Metro, Pillor No. 233, New Delhi-110056"
 
@@ -384,27 +384,10 @@ export default function LabLocationStep2() {
   }, [collectionType, homeAddress, mapboxToken, officeAddress])
 
   useEffect(() => {
-    let active = true
-    async function loadMapboxToken() {
-      try {
-        const response = await fetch("/api/integrations/mapbox-token")
-        const payload = await response.json()
-        if (!active) return
-        if (payload?.status === "ok" && payload?.data?.token) {
-          setMapboxToken(payload.data.token)
-        } else {
-          setMapError("Mapbox token missing")
-        }
-      } catch {
-        if (active) setMapError("Mapbox token missing")
-      }
+    if (!mapboxToken.trim()) {
+      setMapError("Mapbox token missing")
     }
-
-    loadMapboxToken()
-    return () => {
-      active = false
-    }
-  }, [])
+  }, [mapboxToken])
 
   return (
     <div className="lab-page">
@@ -501,3 +484,4 @@ export default function LabLocationStep2() {
     </div>
   )
 }
+
