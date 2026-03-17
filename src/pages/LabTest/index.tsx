@@ -224,7 +224,6 @@ export default function LabTestsStep1() {
   const [queryResolving, setQueryResolving] = useState(false)
   const [queryResolvedTests, setQueryResolvedTests] = useState<LabTestItem[] | null>(null)
   const [loadError, setLoadError] = useState("")
-  const [total, setTotal] = useState(0)
   const [nextOffset, setNextOffset] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [showFilterModal, setShowFilterModal] = useState(false)
@@ -255,8 +254,7 @@ export default function LabTestsStep1() {
         const mappedTests = data.tests.map(toLabTestItem)
         const categories = data.categories.map((item) => item.name)
 
-        setTotal(data.total)
-        setAllCategories(categories)
+      setAllCategories(categories)
         setAllTests((prev) => (append ? [...prev, ...mappedTests] : mappedTests))
         setNextOffset(offset + mappedTests.length)
         setHasMore(offset + mappedTests.length < data.total && mappedTests.length > 0)

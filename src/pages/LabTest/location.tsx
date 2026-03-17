@@ -274,8 +274,9 @@ export default function LabLocationStep2() {
         const map = mapRef.current
         if (!map) return
 
-        const geojson = {
+        const geojson: GeoJSON.Feature<GeoJSON.LineString> = {
           type: "Feature",
+          properties: {},
           geometry: {
             type: "LineString",
             coordinates: route.geometry?.coordinates ?? [],
@@ -284,11 +285,11 @@ export default function LabLocationStep2() {
 
         if (map.getSource("route")) {
           const source = map.getSource("route") as mapboxgl.GeoJSONSource
-          source.setData(geojson as GeoJSON.Feature<GeoJSON.LineString>)
+          source.setData(geojson)
         } else {
           map.addSource("route", {
             type: "geojson",
-            data: geojson as GeoJSON.Feature<GeoJSON.LineString>,
+            data: geojson,
           })
           map.addLayer({
             id: "route-line",

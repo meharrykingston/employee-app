@@ -6,7 +6,7 @@ import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
 import { addNotification } from "../../services/notificationCenter"
 import { ensureEmployeeActor } from "../../services/actorsApi"
-import { getLabOrderById, getLabReportLink, subscribeLabOrderUpdates } from "../../services/labApi"
+import { getLabOrderById, subscribeLabOrderUpdates } from "../../services/labApi"
 import "./labtest.css"
 
 type LabBooking = {
@@ -44,8 +44,6 @@ export default function LabTracking() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [liveBooking, setLiveBooking] = useState<LabBooking | null>(null)
-  const [reportLink, setReportLink] = useState<string | null>(null)
-  const [employeeId, setEmployeeId] = useState<string>("")
 
   const booking = useMemo(() => {
     const raw = localStorage.getItem(LAB_BOOKINGS_KEY)
@@ -69,8 +67,8 @@ export default function LabTracking() {
 
     async function loadInitial() {
       try {
+        if (!id) return
         const actor = await ensureEmployeeActor({ companyReference: "astikan-demo-company", companyName: "Astikan" })
-        if (active) setEmployeeId(actor.employeeUserId)
         const order = await getLabOrderById(id)
         if (!active || !order) return
         const mapped: LabBooking = {
@@ -83,10 +81,6 @@ export default function LabTracking() {
         }
         setLiveBooking(mapped)
         lastStatus = order.status
-        if (order.reportKey) {
-          const link = await getLabReportLink(order.id, actor.employeeUserId)
-          if (active) setReportLink(link)
-        }
       } catch {
         // silent
       }
@@ -94,8 +88,8 @@ export default function LabTracking() {
 
     async function setupStream() {
       try {
+        if (!id) return
         const actor = await ensureEmployeeActor({ companyReference: "astikan-demo-company", companyName: "Astikan" })
-        setEmployeeId(actor.employeeUserId)
         unsubscribe = subscribeLabOrderUpdates(actor.employeeUserId, async (updates) => {
           const update = updates.find((item) => item.id === id)
           if (!update) return
@@ -114,8 +108,6 @@ export default function LabTracking() {
                   } as LabBooking)
             )
             if (nextStatus.toLowerCase().includes("report")) {
-              const link = await getLabReportLink(id, actor.employeeUserId)
-              setReportLink(link)
               await addNotification({
                 title: "Lab report ready",
                 body: `${update.testName} report is now available.`,
@@ -239,13 +231,6 @@ export default function LabTracking() {
           <p>Track sample progress in real time</p>
         </div>
       </header>
-
-      <section className="lab-steps app-fade-stagger">
-        <span className="done">1. Tests</span>
-        <span className="done">2. Location</span>
-        <span className="done">3. Schedule</span>
-        <span className="done">4. Confirm</span>
-      </section>
 
       <section className="lab-test-card static-card tracking-card app-fade-stagger">
         <div className="lab-icon red"><RiTestTubeLine /></div>

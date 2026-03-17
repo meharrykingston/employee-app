@@ -26,7 +26,6 @@ export default function Notifications() {
   const navigate = useNavigate()
   const [notifyState, setNotifyState] = useState("Push notifications are on")
   const [items, setItems] = useState<AppNotification[]>(getNotificationsWithSeed())
-  const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
     const onNew = (event: Event) => {
@@ -35,11 +34,6 @@ export default function Notifications() {
     }
     window.addEventListener("app-notification", onNew as EventListener)
     return () => window.removeEventListener("app-notification", onNew as EventListener)
-  }, [])
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15000)
-    return () => window.clearInterval(timer)
   }, [])
 
   const grouped = useMemo(() => {

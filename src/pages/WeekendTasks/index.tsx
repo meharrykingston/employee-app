@@ -24,6 +24,7 @@ export default function WeekendTasks() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const session = getEmployeeAuthSession()
+  const employeeId = session?.userId ?? ""
 
   const completed = useMemo(() => tasks.filter((task) => task.done).length, [tasks])
   const earned = useMemo(() => tasks.filter((task) => task.done).reduce((sum, task) => sum + task.coins, 0), [tasks])
@@ -31,7 +32,7 @@ export default function WeekendTasks() {
 
   useEffect(() => {
     let active = true
-    if (!session?.userId) {
+    if (!employeeId) {
       setLoading(false)
       setError("Employee session missing. Please login again.")
       return
@@ -41,7 +42,7 @@ export default function WeekendTasks() {
       setLoading(true)
       setError("")
       try {
-        const data = await fetchWeekendChallenges(session.userId)
+        const data = await fetchWeekendChallenges(employeeId)
         if (!active) return
         setWeekStart(data.weekStart)
         const mapped = data.challenges.map((item: WeekendChallenge) => ({
@@ -69,7 +70,7 @@ export default function WeekendTasks() {
       active = false
       window.clearInterval(interval)
     }
-  }, [session?.userId])
+  }, [employeeId])
 
   return (
     <main className="weekend-page app-page-enter">

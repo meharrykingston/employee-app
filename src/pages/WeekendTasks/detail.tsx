@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { FiArrowLeft, FiAward, FiClock, FiLink, FiTarget } from "react-icons/fi"
+import { FiArrowLeft, FiAward, FiLink, FiTarget } from "react-icons/fi"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { getEmployeeAuthSession } from "../../services/authApi"
-import { completeWeekendChallenge, fetchWeekendChallenges, type WeekendChallenge } from "../../services/challengesApi"
+import { completeWeekendChallenge, fetchWeekendChallenges } from "../../services/challengesApi"
 import "../../pages/WeekendTasks/weekendtasks.css"
 
 type Task = {

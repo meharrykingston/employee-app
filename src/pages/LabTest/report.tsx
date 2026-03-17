@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { ensureEmployeeActor } from "../../services/actorsApi"
-import { buildReportDownloadName, getLabReportLink } from "../../services/labApi"
+import { buildReportDownloadName, getLabOrderById, getLabReportLink } from "../../services/labApi"
 import "./labtest.css"
 
 export default function LabReportViewer() {
@@ -18,11 +18,16 @@ export default function LabReportViewer() {
       try {
         if (!id) return
         const actor = await ensureEmployeeActor({ companyReference: "astikan-demo-company", companyName: "Astikan" })
+        const order = await getLabOrderById(id)
         const link = await getLabReportLink(id, actor.employeeUserId)
         if (!active) return
         if (link) setReportUrl(link)
         else setError("Report not available yet.")
-        setReportName(buildReportDownloadName("Lab Report", new Date().toISOString()))
+        if (order) {
+          setReportName(buildReportDownloadName(order.testName, order.createdAt))
+        } else {
+          setReportName(buildReportDownloadName("Lab Report", new Date().toISOString()))
+        }
       } catch {
         if (active) setError("Unable to load report right now.")
       }
