@@ -14,9 +14,14 @@ function clampWaist(value: number) {
   return Math.min(MAX_WAIST, Math.max(MIN_WAIST, value))
 }
 
+function cmToInches(cm: number) {
+  return cm / 2.54
+}
+
 export default function Waist({ onNext }: Props) {
   const [waist, setWaist] = useState(80)
   const progress = ((waist - MIN_WAIST) / (MAX_WAIST - MIN_WAIST)) * 100
+  const waistIn = cmToInches(waist)
 
   const sliderStyle = {
     "--slider-fill": `${progress}%`,
@@ -41,9 +46,10 @@ export default function Waist({ onNext }: Props) {
         <p>This helps us understand metabolic health</p>
 
         <div className="value-display">
-          <span className="value">{waist}</span>
-          <span className="unit">cm</span>
+          <span className="value">{waistIn.toFixed(1)}</span>
+          <span className="unit">in</span>
         </div>
+        <p className="helper">({waist} cm)</p>
 
         <div className="slider-actions">
           <button className="slider-stepper app-pressable" type="button" onClick={() => setWaist((v) => clampWaist(v - 1))} aria-label="decrease waist">

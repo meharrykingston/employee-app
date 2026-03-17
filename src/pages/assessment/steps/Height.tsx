@@ -14,9 +14,17 @@ function clampHeight(value: number) {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, value))
 }
 
+function cmToFeetInches(cm: number) {
+  const totalInches = cm / 2.54
+  const feet = Math.floor(totalInches / 12)
+  const inches = Math.round(totalInches - feet * 12)
+  return { feet, inches }
+}
+
 export default function Height({ onNext }: Props) {
   const [height, setHeight] = useState(170)
   const progress = ((height - MIN_HEIGHT) / (MAX_HEIGHT - MIN_HEIGHT)) * 100
+  const heightFt = cmToFeetInches(height)
 
   const sliderStyle = {
     "--slider-fill": `${progress}%`,
@@ -37,9 +45,12 @@ export default function Height({ onNext }: Props) {
         <p>This helps us understand your body composition</p>
 
         <div className="value-display">
-          <span className="value">{height}</span>
-          <span className="unit">cm</span>
+          <span className="value">
+            {heightFt.feet}'{heightFt.inches}"
+          </span>
+          <span className="unit">ft in</span>
         </div>
+        <p className="helper">({height} cm)</p>
 
         <div className="slider-actions">
           <button className="slider-stepper app-pressable" type="button" onClick={() => setHeight((v) => clampHeight(v - 1))} aria-label="decrease height">

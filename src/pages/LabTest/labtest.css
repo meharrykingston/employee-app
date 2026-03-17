@@ -552,6 +552,16 @@
   font-size: 14px;
 }
 
+.address-link {
+  margin: 8px 22px 0;
+  border: none;
+  background: none;
+  color: #4f46e5;
+  font-weight: 600;
+  text-align: left;
+  padding: 0;
+}
+
 .address-line--sub {
   margin-top: 8px;
   font-size: 13px;

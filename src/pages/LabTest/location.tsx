@@ -38,6 +38,7 @@ export default function LabLocationStep2() {
   })
   const [pageReady, setPageReady] = useState(false)
   const [mapError, setMapError] = useState("")
+  const [mapLoaded, setMapLoaded] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null)
@@ -57,6 +58,7 @@ export default function LabLocationStep2() {
       : officeAddress || "Office address on file"
 
   const mapOriginAddress = collectionType === "home" ? homeAddress : officeAddress
+  const hasAddress = Boolean(mapOriginAddress && mapOriginAddress.trim().length > 0)
   const employeeSession = getEmployeeAuthSession()
   const userName = employeeSession?.fullName?.trim() || "Home"
   const userAvatar = employeeSession?.avatarUrl ?? ""
@@ -215,6 +217,7 @@ export default function LabLocationStep2() {
     }
 
     map.on("load", () => {
+      setMapLoaded(true)
       map.addSource("mapbox-dem", {
         type: "raster-dem",
         url: "mapbox://mapbox.mapbox-terrain-dem-v1",
@@ -260,7 +263,7 @@ export default function LabLocationStep2() {
   }, [canRenderMap, mapboxToken])
 
   useEffect(() => {
-    if (!canRenderMap || !mapOriginAddress || !mapOriginAddress.trim()) {
+    if (!canRenderMap || !hasAddress) {
       return
     }
     if (!mapboxToken) return
@@ -359,13 +362,13 @@ export default function LabLocationStep2() {
   }, [NIRAMAYA_DELHI_ADDRESS, canRenderMap, mapOriginAddress, mapboxToken, collectionType])
 
   useEffect(() => {
-    if (etaByType[collectionType]) {
+    if (etaByType[collectionType] || mapLoaded) {
       setPageReady(true)
       return
     }
     const timer = window.setTimeout(() => setPageReady(true), 2500)
     return () => window.clearTimeout(timer)
-  }, [collectionType, etaByType])
+  }, [collectionType, etaByType, mapLoaded])
 
   useEffect(() => {
     let active = true
@@ -438,7 +441,7 @@ export default function LabLocationStep2() {
             <h3>Home Collection</h3>
             <p>Sample collected at your doorstep</p>
             <span className="mini-pill green">
-              {displayEta ? `in ${formatDuration(displayEta)}` : "in a few mins"}
+              {hasAddress ? (displayEta ? `in ${formatDuration(displayEta)}` : "in a few mins") : "Add address"}
             </span>
           </button>
 
@@ -451,7 +454,7 @@ export default function LabLocationStep2() {
             <h3>Office Collection</h3>
             <p>Sample collected at your doorstep</p>
             <span className="mini-pill blue">
-              {displayEta ? `~${formatDuration(displayEta + 10)}` : "a few mins"}
+              {hasAddress ? (displayEta ? `~${formatDuration(displayEta + 10)}` : "a few mins") : "Add address"}
             </span>
           </button>
         </div>
@@ -466,6 +469,11 @@ export default function LabLocationStep2() {
       <div className="address-line">
         <FiMapPin /> {collectionType === "home" ? "Home Address :" : "Office Address :"} {address}
       </div>
+      {!hasAddress && (
+        <button className="address-link app-pressable" type="button" onClick={() => navigate("/address")}>
+          Add address
+        </button>
+      )}
 
 
       <div className="bottom-buttons single">
@@ -476,12 +484,13 @@ export default function LabLocationStep2() {
               state: {
                 selectedTest,
                 collectionType,
-                address,
+                address: mapOriginAddress,
                 readiness: state?.readiness,
               },
             })
           }
           type="button"
+          disabled={!hasAddress}
         >
           Continue
         </button>
