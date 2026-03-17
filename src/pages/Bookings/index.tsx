@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import "../Settings/settings.css"
+import { ensureEmployeeActor } from "../../services/actorsApi"
+import { getLabOrders, type LabOrder } from "../../services/labApi"
 
 type TeleBooking = {
   id: string
@@ -13,6 +15,7 @@ type TeleBooking = {
 }
 
 const TELE_BOOKINGS_KEY = "teleconsult_bookings"
+const LAB_BOOKINGS_KEY = "lab_bookings"
 
 const past = [
   { title: "Pharmacy Delivery", at: "Feb 26, 2026 - Completed" },
@@ -22,6 +25,7 @@ const past = [
 export default function Bookings() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<"current" | "past">("current")
+  const [labOrders, setLabOrders] = useState<LabOrder[]>([])
   const teleBookings = useMemo(() => {
     const raw = localStorage.getItem(TELE_BOOKINGS_KEY)
     if (!raw) return [] as TeleBooking[]
@@ -29,6 +33,57 @@ export default function Bookings() {
       return JSON.parse(raw) as TeleBooking[]
     } catch {
       return [] as TeleBooking[]
+    }
+  }, [])
+  const labBookings = useMemo(() => {
+    const raw = localStorage.getItem(LAB_BOOKINGS_KEY)
+    if (!raw) return [] as Array<{
+      id: string
+      bookingId: string
+      status: string
+      testName: string
+      collectionType: string
+      scheduledAt: string
+    }>
+    try {
+      return JSON.parse(raw) as Array<{
+        id: string
+        bookingId: string
+        status: string
+        testName: string
+        collectionType: string
+        scheduledAt: string
+      }>
+    } catch {
+      return []
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const actor = await ensureEmployeeActor({ companyReference: "astikan-demo-company", companyName: "Astikan" })
+        const orders = await getLabOrders(actor.employeeUserId)
+        if (!active) return
+        setLabOrders(orders)
+        if (orders.length) {
+          const mapped = orders.map((item) => ({
+            id: item.id,
+            bookingId: item.providerOrderReference ?? item.id,
+            status: item.status,
+            testName: item.testName,
+            collectionType: "Home Collection",
+            scheduledAt: item.slotAt ?? item.createdAt,
+          }))
+          localStorage.setItem(LAB_BOOKINGS_KEY, JSON.stringify(mapped))
+        }
+      } catch {
+        // Keep local storage fallback.
+      }
+    })()
+    return () => {
+      active = false
     }
   }, [])
 
@@ -45,7 +100,30 @@ export default function Bookings() {
       doctorId: booking.doctorId,
     }
   })
-  const items = tab === "current" ? current : past
+  const mergedLabOrders = labOrders.length
+    ? labOrders.map((item) => ({
+        id: item.id,
+        title: `Lab Test • ${item.testName}`,
+        at: new Date(item.slotAt ?? item.createdAt).toLocaleString(),
+        status: item.status,
+        bookingId: item.providerOrderReference ?? item.id,
+        type: "lab",
+      }))
+    : labBookings.map((booking) => {
+        const scheduled = new Date(booking.scheduledAt)
+        return {
+          id: booking.id,
+          title: `Lab Test • ${booking.testName}`,
+          at: scheduled.toLocaleString(),
+          status: booking.status,
+          bookingId: booking.bookingId,
+          type: "lab",
+        }
+      })
+
+  const currentLab = mergedLabOrders.filter((item) => !["completed", "cancelled", "reported"].includes(item.status))
+  const pastLab = mergedLabOrders.filter((item) => ["completed", "cancelled", "reported"].includes(item.status))
+  const items = tab === "current" ? [...currentLab, ...current] : [...pastLab, ...past]
 
   return (
     <main className="account-page app-page-enter">
@@ -66,6 +144,7 @@ export default function Bookings() {
               <article className="notice-item" key={item.id || item.title}>
                 <h4>{item.title}</h4>
                 <small>{item.at}</small>
+                {item.status && <small>Status: {item.status}</small>}
                 {canJoin && item.sessionId && (
                   <button
                     className="app-pressable"
@@ -82,6 +161,15 @@ export default function Bookings() {
                     }
                   >
                     Join Call
+                  </button>
+                )}
+                {item.type === "lab" && (
+                  <button
+                    className="app-pressable"
+                    type="button"
+                    onClick={() => navigate(`/lab-tests/track/${item.id}`)}
+                  >
+                    Track Status
                   </button>
                 )}
               </article>

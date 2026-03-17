@@ -1,6 +1,9 @@
-﻿import { useMemo, useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import "../Settings/settings.css"
+import { ensureEmployeeActor } from "../../services/actorsApi"
+import { addNotification } from "../../services/notificationCenter"
+import { getLabOrders, type LabOrder } from "../../services/labApi"
 
 type ReportTab = "Lab Reports" | "Consultation Reports" | "Manuals"
 
@@ -10,6 +13,8 @@ type ReportItem = {
   date: string
   type: string
   status?: "New" | "Updated"
+  actionLabel?: string
+  action?: () => void
 }
 
 const labReports: ReportItem[] = [
@@ -32,12 +37,57 @@ const manuals: ReportItem[] = [
 export default function Reports() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<ReportTab>("Lab Reports")
+  const [labOrders, setLabOrders] = useState<LabOrder[]>([])
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const actor = await ensureEmployeeActor({ companyReference: "astikan-demo-company", companyName: "Astikan" })
+        const orders = await getLabOrders(actor.employeeUserId)
+        if (active) setLabOrders(orders)
+        if (active) {
+          orders
+            .filter((order) => order.status.toLowerCase().includes("report"))
+            .forEach((order) => {
+              const key = `lab_report_notified:${order.id}`
+              if (localStorage.getItem(key)) return
+              localStorage.setItem(key, "1")
+              void addNotification({
+                title: "Lab report ready",
+                body: `${order.testName} report is now available.`,
+                channel: "health",
+                cta: { label: "View Report", route: `/lab-tests/report/${order.id}` },
+              })
+            })
+        }
+      } catch {
+        // fallback to static list
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const list = useMemo(() => {
-    if (tab === "Lab Reports") return labReports
+    if (tab === "Lab Reports") {
+      const dynamic = labOrders
+        .filter((order) => order.status.toLowerCase().includes("report"))
+        .map((order) => ({
+          title: order.testName,
+          subtitle: "Lab report ready",
+          date: new Date(order.createdAt).toLocaleDateString(),
+          type: "PDF",
+          status: "New" as const,
+          actionLabel: "View Report",
+          action: () => navigate(`/lab-tests/report/${order.id}`),
+        }))
+      return dynamic.length ? dynamic : labReports
+    }
     if (tab === "Consultation Reports") return consultReports
     return manuals
-  }, [tab])
+  }, [tab, labOrders, navigate])
 
   return (
     <main className="account-page app-page-enter">
@@ -66,6 +116,11 @@ export default function Reports() {
               <h4>{item.title}</h4>
               <p>{item.subtitle}</p>
               <small>{item.date} • {item.type}{item.status ? ` • ${item.status}` : ""}</small>
+              {item.actionLabel && (
+                <button className="app-pressable" type="button" onClick={item.action}>
+                  {item.actionLabel}
+                </button>
+              )}
             </article>
           ))}
         </section>

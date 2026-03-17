@@ -36,6 +36,7 @@ export default function LabLocationStep2() {
     home: null,
     office: null,
   })
+  const [pageReady, setPageReady] = useState(false)
   const [mapError, setMapError] = useState("")
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -81,6 +82,9 @@ export default function LabLocationStep2() {
         home: prev.home ?? cached.home ?? null,
         office: prev.office ?? cached.office ?? null,
       }))
+      if (cached[collectionType]) {
+        setPageReady(true)
+      }
     } catch {
       // ignore cache errors
     }
@@ -330,6 +334,7 @@ export default function LabLocationStep2() {
             localStorage.setItem("lab_eta_cache", JSON.stringify(next))
             return next
           })
+          setPageReady(true)
         }
       } catch (error) {
         setMapError(error instanceof Error ? error.message : "Unable to load map route")
@@ -344,6 +349,15 @@ export default function LabLocationStep2() {
       if (interval) window.clearInterval(interval)
     }
   }, [NIRAMAYA_DELHI_ADDRESS, canRenderMap, mapOriginAddress, mapboxToken, collectionType])
+
+  useEffect(() => {
+    if (etaByType[collectionType]) {
+      setPageReady(true)
+      return
+    }
+    const timer = window.setTimeout(() => setPageReady(true), 2500)
+    return () => window.clearTimeout(timer)
+  }, [collectionType, etaByType])
 
   useEffect(() => {
     let active = true
@@ -393,6 +407,13 @@ export default function LabLocationStep2() {
 
   return (
     <div className="lab-page">
+      {!pageReady ? (
+        <div className="page-loading">
+          <span className="lab-loading-spinner" />
+          <p>Preparing your booking experience...</p>
+        </div>
+      ) : (
+        <>
       <div className="lab-header">
         <button className="lab-back" onClick={() => navigate(-1)} type="button" aria-label="Back">
           <FiArrowLeft />
@@ -474,6 +495,8 @@ export default function LabLocationStep2() {
           Continue
         </button>
       </div>
+        </>
+      )}
     </div>
   )
 }

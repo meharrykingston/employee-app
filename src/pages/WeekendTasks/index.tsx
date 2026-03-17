@@ -1,9 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react"
-import { FiArrowLeft, FiClock, FiLink, FiTarget } from "react-icons/fi"
+import { FiArrowLeft, FiAward, FiClock, FiLink, FiTarget } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import { goBackOrFallback } from "../../utils/navigation"
 import { getEmployeeAuthSession } from "../../services/authApi"
-import { completeWeekendChallenge, fetchWeekendChallenges, type WeekendChallenge } from "../../services/challengesApi"
+import { fetchWeekendChallenges, type WeekendChallenge } from "../../services/challengesApi"
 import "./weekendtasks.css"
 
 type Task = {
@@ -71,20 +71,14 @@ export default function WeekendTasks() {
     }
   }, [session?.userId])
 
-  async function toggleTask(id: string) {
-    if (!session?.userId) return
-    const target = tasks.find((task) => task.id === id)
-    if (!target || target.done) return
-    setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, done: true } : task)))
-    try {
-      await completeWeekendChallenge(session.userId, id)
-    } catch {
-      setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, done: false } : task)))
-    }
-  }
-
   return (
     <main className="weekend-page app-page-enter">
+      {loading && (
+        <div className="page-loading">
+          <span className="lab-loading-spinner" />
+          <p>Loading weekend challenges...</p>
+        </div>
+      )}
       <header className="weekend-header app-fade-stagger">
         <button className="weekend-back app-pressable" type="button" onClick={() => goBackOrFallback(navigate)} aria-label="Back">
           <FiArrowLeft />
@@ -95,7 +89,8 @@ export default function WeekendTasks() {
         </div>
       </header>
 
-      <section className="weekend-content app-content-slide">
+      {!loading && (
+        <section className="weekend-content app-content-slide">
         <article className="progress-card app-fade-stagger">
           <div className="progress-head">
             <div className="progress-icon"><FiTarget /></div>
@@ -103,7 +98,7 @@ export default function WeekendTasks() {
               <p>Weekend Progress</p>
               <h2>{completed} / {tasks.length} Tasks</h2>
             </div>
-            <span className="trophy">Trophy</span>
+            <span className="trophy"><FiAward /></span>
           </div>
           <div className="progress-track">
             <span style={{ width: `${tasks.length ? (completed / tasks.length) * 100 : 0}%` }} />
@@ -118,14 +113,17 @@ export default function WeekendTasks() {
 
         <section className="tasks-list app-fade-stagger">
           <h3>Your Tasks</h3>
-          {loading && <p>Loading weekend challenges...</p>}
           {error && !loading && <p>{error}</p>}
           {tasks.map((task) => (
             <button
               key={task.id}
               className={`task-card app-pressable ${task.done ? "done" : ""}`}
               type="button"
-              onClick={() => toggleTask(task.id)}
+              onClick={() =>
+                navigate(`/weekend-tasks/${task.id}`, {
+                  state: { task },
+                })
+              }
             >
               <span className={`task-check ${task.done ? "active" : ""}`}>{task.done ? "Done" : ""}</span>
               <div className="task-main">
@@ -151,9 +149,10 @@ export default function WeekendTasks() {
             <span>+1000 Bonus Coins</span>
             <span>Limited Time</span>
           </div>
-          <i>Trophy</i>
+          <i><FiAward /></i>
         </article>
       </section>
+      )}
     </main>
   )
 }

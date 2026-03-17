@@ -111,7 +111,18 @@
 }
 
 .trophy {
-  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.trophy svg {
+  width: 22px;
+  height: 22px;
+  color: #fff7cc;
 }
 
 .progress-track {
@@ -308,5 +319,132 @@
   top: 18px;
   right: 18px;
   font-style: normal;
-  font-size: 37px;
+  font-size: 30px;
+}
+
+.bonus-card i svg {
+  width: 30px;
+  height: 30px;
+  color: #fff6c3;
+}
+
+.challenge-hero {
+  border-radius: 18px;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.35), transparent 45%),
+    linear-gradient(135deg, #5b21b6, #8b5cf6, #ec4899);
+  color: #fff;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.challenge-hero h2 {
+  margin: 0;
+  font-size: 22px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.challenge-hero p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.challenge-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+}
+
+.challenge-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.challenge-meta {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.challenge-meta article {
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e2dfeb;
+  padding: 10px 12px;
+}
+
+.challenge-meta span {
+  display: block;
+  font-size: 12px;
+  color: #677083;
+}
+
+.challenge-meta strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.challenge-steps {
+  margin-top: 14px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e2dfeb;
+  padding: 14px;
+}
+
+.challenge-steps h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-family: "Satoshi", sans-serif;
+}
+
+.challenge-steps ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #5f687c;
+  font-size: 13px;
+}
+
+.challenge-cta {
+  margin-top: 14px;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  min-height: 46px;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: #fff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.challenge-complete {
+  margin-top: 14px;
+  border-radius: 14px;
+  background: #e9fbef;
+  color: #0d8044;
+  padding: 12px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+
+.challenge-complete svg {
+  width: 18px;
+  height: 18px;
 }

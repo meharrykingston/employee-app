@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { FiAlertCircle, FiArrowLeft, FiCalendar, FiCheck, FiMapPin } from "react-icons/fi"
+import { FiAlertCircle, FiArrowLeft, FiCalendar, FiCheck, FiFileText, FiMapPin } from "react-icons/fi"
 import { RiTestTubeLine } from "react-icons/ri"
 import { useLocation, useNavigate } from "react-router-dom"
 import { ensureEmployeeActor } from "../../services/actorsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { bookLabOrder } from "../../services/labApi"
+import { addNotification } from "../../services/notificationCenter"
 import { goBackOrFallback } from "../../utils/navigation"
 import "./labtest.css"
 
@@ -12,6 +13,32 @@ type LabTestItem = {
   id?: string
   code?: string
   name: string
+}
+
+type LabBooking = {
+  id: string
+  bookingId: string
+  status: string
+  testName: string
+  collectionType: string
+  scheduledAt: string
+  createdAt: string
+}
+
+const LAB_BOOKINGS_KEY = "lab_bookings"
+
+function storeLabBooking(input: LabBooking) {
+  const raw = localStorage.getItem(LAB_BOOKINGS_KEY)
+  let existing: LabBooking[] = []
+  if (raw) {
+    try {
+      existing = JSON.parse(raw) as LabBooking[]
+    } catch {
+      existing = []
+    }
+  }
+  const next = [input, ...existing.filter((item) => item.id !== input.id)].slice(0, 50)
+  localStorage.setItem(LAB_BOOKINGS_KEY, JSON.stringify(next))
 }
 
 export default function LabConfirm() {
@@ -70,10 +97,38 @@ export default function LabConfirm() {
           (response?.order_id as string | undefined) ??
           (response?.localOrderId as string | undefined)
         if (response?.success && ref) {
-          setBookingId(String(ref))
+          const bookingIdValue = String(ref)
+          const localOrderId =
+            (response?.localOrderId as string | undefined) ?? bookingIdValue
+          const status = String(response?.providerStatus ?? "created")
+          const scheduledAtValue = state?.date
+            ? new Date(dateTime).toISOString()
+            : new Date().toISOString()
+          storeLabBooking({
+            id: localOrderId,
+            bookingId: bookingIdValue,
+            status,
+            testName: selectedTest,
+            collectionType,
+            scheduledAt: scheduledAtValue,
+            createdAt: new Date().toISOString(),
+          })
+          await addNotification({
+            title: "Lab booking confirmed",
+            body: `${selectedTest} scheduled for ${collectionType}.`,
+            channel: "health",
+            cta: { label: "Track Status", route: `/lab-tests/track/${localOrderId}` },
+          })
+          setBookingId(bookingIdValue)
           if (active) setPhase("confirmed")
         } else {
           setErrorMessage("Booking could not be confirmed yet.")
+          await addNotification({
+            title: "Lab booking pending",
+            body: "We are verifying your booking with the lab partner.",
+            channel: "health",
+            cta: { label: "View Booking", route: "/bookings" },
+          })
           if (active) setPhase("failed")
         }
       } catch (error) {

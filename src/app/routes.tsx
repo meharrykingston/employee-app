@@ -18,6 +18,8 @@ import LabLocation from "../pages/LabTest/location"
 import LabBookNow from "../pages/LabTest/booknow"
 import LabSchedule from "../pages/LabTest/schedule"
 import LabConfirm from "../pages/LabTest/confirm"
+import LabTracking from "../pages/LabTest/tracking"
+import LabReportViewer from "../pages/LabTest/report"
 import TeleConsultation from "../pages/TeleConsultation"
 import OpdPickup from "../pages/TeleConsultation/pickup"
 import TeleSchedule from "../pages/TeleConsultation/schedule"
@@ -32,6 +34,7 @@ import MedicineTracking from "../pages/MedicineTracking"
 import Wallet from "../pages/Wallet"
 import Badges from "../pages/Badges"
 import WeekendTasks from "../pages/WeekendTasks"
+import WeekendTaskDetail from "../pages/WeekendTasks/detail"
 import HealthAssessments from "../pages/HealthAssessments"
 import Settings from "../pages/Settings"
 import Address from "../pages/Address"
@@ -65,6 +68,8 @@ export const router = createBrowserRouter([
       { path: "lab-tests/book-now", element: <LabBookNow /> },
       { path: "lab-tests/schedule", element: <LabSchedule /> },
       { path: "lab-tests/confirm", element: <LabConfirm /> },
+      { path: "lab-tests/track/:id", element: <LabTracking /> },
+      { path: "lab-tests/report/:id", element: <LabReportViewer /> },
       { path: "teleconsultation", element: <TeleConsultation /> },
       { path: "teleconsultation/pickup", element: <OpdPickup /> },
       { path: "teleconsultation/schedule", element: <TeleSchedule /> },
@@ -77,6 +82,7 @@ export const router = createBrowserRouter([
       { path: "pharmacy/booking-success", element: <PharmacySuccess /> },
       { path: "cart", element: <CartPage /> },
       { path: "weekend-tasks", element: <WeekendTasks /> },
+      { path: "weekend-tasks/:id", element: <WeekendTaskDetail /> },
       { path: "health-assessments", element: <HealthAssessments /> },
       { path: "wallet", element: <Wallet /> },
       { path: "badges", element: <Badges /> },
