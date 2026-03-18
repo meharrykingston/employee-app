@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react"
 import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
-import { saveVitalReading } from "../../services/vitalsApi"
+import { flushQueuedVitals, saveVitalReading } from "../../services/vitalsApi"
 import "./metric-details.css"
 
 type WindowKey = "7D" | "14D" | "30D"
@@ -290,6 +290,13 @@ export default function MetricDetails() {
       }
     })()
   }, [measureStage, measureBpm, signalQuality])
+
+  useEffect(() => {
+    void flushQueuedVitals()
+    const onOnline = () => void flushQueuedVitals()
+    window.addEventListener("online", onOnline)
+    return () => window.removeEventListener("online", onOnline)
+  }, [])
 
   return (
     <main className="metric-detail-page app-page-enter">
