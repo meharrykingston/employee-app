@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react"
 import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
+import { saveVitalReading } from "../../services/vitalsApi"
 import "./metric-details.css"
 
 type WindowKey = "7D" | "14D" | "30D"
@@ -93,12 +94,15 @@ export default function MetricDetails() {
   const [measureProgress, setMeasureProgress] = useState(0)
   const [measureBpm, setMeasureBpm] = useState(72)
   const [cameraError, setCameraError] = useState("")
+  const [lowSignal, setLowSignal] = useState(false)
+  const [signalQuality, setSignalQuality] = useState(0)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const measureStartRef = useRef<number | null>(null)
   const samplesRef = useRef<Array<{ t: number; v: number }>>([])
   const rafRef = useRef<number | null>(null)
+  const savedRef = useRef(false)
   const history = metric.windows[windowKey]
 
   const max = Math.max(...history)
@@ -176,9 +180,10 @@ export default function MetricDetails() {
 
   useEffect(() => {
     if (measureStage !== "measuring") return
-    const durationMs = 15000
+    const durationMs = 25000
     measureStartRef.current = performance.now()
     samplesRef.current = []
+    savedRef.current = false
 
     const tick = () => {
       const now = performance.now()
@@ -212,6 +217,9 @@ export default function MetricDetails() {
           const detrended = values.map((v) => v - mean)
           const variance = detrended.reduce((sum, v) => sum + Math.pow(v, 2), 0) / (detrended.length || 1)
           const std = Math.sqrt(variance)
+          const quality = Math.min(1, std / 5)
+          setSignalQuality(quality)
+          setLowSignal(quality < 0.2)
           const threshold = std * 0.4
 
           const peaks: number[] = []
@@ -258,8 +266,22 @@ export default function MetricDetails() {
     setMeasureProgress(0)
     setMeasureBpm(72)
     setCameraError("")
+    setLowSignal(false)
+    setSignalQuality(0)
     setMeasureStage("prepare")
   }
+
+  useEffect(() => {
+    if (measureStage !== "done" || savedRef.current) return
+    savedRef.current = true
+    void saveVitalReading({
+      metric: "heart_rate",
+      value: measureBpm,
+      unit: "bpm",
+      source: "camera",
+      signalQuality: Number(signalQuality.toFixed(2)),
+    })
+  }, [measureStage, measureBpm, signalQuality])
 
   return (
     <main className="metric-detail-page app-page-enter">
@@ -388,6 +410,9 @@ export default function MetricDetails() {
               <span className="hr-progress-text">
                 {measureStage === "done" ? "Completed" : `Measuring... (${measureProgress}%)`}
               </span>
+              {lowSignal && measureStage !== "done" && (
+                <span className="hr-signal-warning">Low signal. Cover camera and light fully.</span>
+              )}
               <div className="hr-wave" aria-hidden="true" />
             </div>
 

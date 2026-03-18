@@ -371,6 +371,12 @@
   font-size: 0.9rem;
 }
 
+.hr-signal-warning {
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .hr-wave {
   height: 48px;
   border-radius: 12px;
