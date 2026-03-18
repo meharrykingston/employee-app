@@ -5,8 +5,9 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { ensureEmployeeActor } from "../../services/actorsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { bookLabOrder } from "../../services/labApi"
-import { addNotification } from "../../services/notificationCenter"
+import { addNotification, pushBrowserNotification } from "../../services/notificationCenter"
 import { goBackOrFallback } from "../../utils/navigation"
+import { playAppSound } from "../../utils/sound"
 import "./labtest.css"
 
 type LabTestItem = {
@@ -119,6 +120,11 @@ export default function LabConfirm() {
             channel: "health",
             cta: { label: "Track Status", route: `/lab-tests/track/${localOrderId}` },
           })
+          await pushBrowserNotification(
+            "Lab booking confirmed",
+            `${selectedTest} scheduled for ${collectionType}.`,
+          )
+          playAppSound("success")
           setBookingId(bookingIdValue)
           if (active) setPhase("confirmed")
         } else {
@@ -176,7 +182,7 @@ export default function LabConfirm() {
       ) : phase === "confirmed" ? (
         <>
           <div className="confirm-top">
-            <div className="confirm-check pulse">
+            <div className="confirm-check confirm-check--success">
               <span className="confirm-check-inner">
                 <FiCheck />
               </span>

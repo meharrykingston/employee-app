@@ -1130,6 +1130,32 @@
   color: #101726;
 }
 
+.sos-countdown {
+  margin-top: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.sos-countdown span {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #ff5e5e, #ff2b3f);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  box-shadow: 0 14px 24px rgba(255, 43, 63, 0.35);
+  animation: sosPulse 1000ms ease-in-out infinite;
+}
+
+.sos-countdown small {
+  color: #7a8699;
+  font-size: 0.82rem;
+}
+
 .sos-call-core p {
   margin: 0;
   color: #4d586e;

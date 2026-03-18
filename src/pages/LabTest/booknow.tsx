@@ -36,7 +36,6 @@ export default function LabBookNowStep3() {
       : ""
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
   const [displayEta, setDisplayEta] = useState<number | null>(null)
-  const [mapError, setMapError] = useState("")
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null)
@@ -105,7 +104,7 @@ export default function LabBookNowStep3() {
 
   useEffect(() => {
     if (!mapboxToken.trim()) {
-      setMapError("Map unavailable right now.")
+      console.error("Mapbox token missing")
     }
   }, [mapboxToken])
 
@@ -170,8 +169,9 @@ export default function LabBookNowStep3() {
     })
 
     map.on("styledata", hideLabels)
-    map.on("error", () => {
-      setMapError("Map failed to load")
+    map.on("error", (event) => {
+      const err = (event as { error?: Error }).error
+      console.error("Mapbox error", err ?? event)
     })
 
     map.scrollZoom.disable()
@@ -251,8 +251,8 @@ export default function LabBookNowStep3() {
         if (typeof route.duration === "number") {
           setEtaMinutes(Math.max(1, Math.round(route.duration / 60)))
         }
-      } catch {
-        setMapError("Map unavailable right now.")
+      } catch (error) {
+        console.error("Mapbox route error", error)
       }
     }
 
@@ -325,7 +325,6 @@ export default function LabBookNowStep3() {
       <div className="map-box live-map">
         {!canRenderMap && <div className="mapbox-fallback">Map unavailable right now.</div>}
         {canRenderMap && <div ref={mapContainerRef} className="mapbox-container" />}
-        {mapError && <div className="mapbox-error">{mapError}</div>}
       </div>
 
       <div className="address-line">

@@ -18,7 +18,6 @@ import {
   FiThermometer,
   FiTruck,
   FiUser,
-  FiX,
   FiZap,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
@@ -28,6 +27,7 @@ import { preloadLabCatalog } from "../../services/labApi"
 import { fetchDailyTips, type DailyTipPayload } from "../../services/newsApi"
 import { fetchWeather, type WeatherSnapshot } from "../../services/weatherApi"
 import { healthTips, type HealthTip } from "../../data/healthTips"
+import { playAppSound } from "../../utils/sound"
 import "./home.css"
 
 
@@ -163,11 +163,13 @@ export default function Home() {
   const [sosStep, setSosStep] = useState(0)
   const [sosRunning, setSosRunning] = useState(false)
   const [sosStatus, setSosStatus] = useState<"dialing" | "connecting" | "connected">("dialing")
+  const [sosCountdown, setSosCountdown] = useState<number | null>(null)
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
   const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
+  const sosAlarmRef = useRef<number | null>(null)
   const scoreTarget = 90
 
   const [moodHint, setMoodHint] = useState("")
@@ -395,13 +397,29 @@ export default function Home() {
     { label: "Ambulance", number: "108", note: "Emergency medical response" },
   ]
 
+  function startSosAlarm() {
+    if (sosAlarmRef.current) return
+    playAppSound("error")
+    sosAlarmRef.current = window.setInterval(() => {
+      playAppSound("error")
+    }, 1200)
+  }
+
+  function stopSosAlarm() {
+    if (!sosAlarmRef.current) return
+    window.clearInterval(sosAlarmRef.current)
+    sosAlarmRef.current = null
+  }
+
   useEffect(() => {
     if (!showSos) {
       setSosRunning(false)
       setSosStep(0)
+      setSosCountdown(null)
+      stopSosAlarm()
       return
     }
-    setSosRunning(true)
+    setSosRunning(false)
     const interval = window.setInterval(() => {
       setSosStep((prev) => (prev + 1) % sosContacts.length)
     }, 8000)
@@ -409,7 +427,24 @@ export default function Home() {
   }, [showSos, sosContacts.length])
 
   useEffect(() => {
-    if (!showSos || !sosRunning) return
+    if (!showSos || sosCountdown === null) return
+    if (sosCountdown <= 0) return
+    const timer = window.setTimeout(() => {
+      setSosCountdown((prev) => (prev !== null ? prev - 1 : null))
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [showSos, sosCountdown])
+
+  useEffect(() => {
+    if (!showSos || sosCountdown !== 0) return
+    setSosCountdown(null)
+    setSosRunning(true)
+    setSosStatus("dialing")
+    startSosAlarm()
+  }, [showSos, sosCountdown])
+
+  useEffect(() => {
+    if (!showSos || !sosRunning || sosCountdown !== null) return
     const contact = sosContacts[sosStep]
     if (!contact) return
     setSosStatus("dialing")
@@ -466,14 +501,10 @@ export default function Home() {
             type="button"
             onClick={() => {
               setShowSos(true)
-              setSosRunning(true)
+              setSosRunning(false)
               setSosStep(0)
               setSosStatus("dialing")
-              const first = sosContacts[0]
-              if (first) {
-                window.location.href = `tel:${first.number.replace(/\s/g, "")}`
-                window.setTimeout(() => setSosStatus("connected"), 1200)
-              }
+              setSosCountdown(3)
             }}
           >
             <FiShield />
@@ -681,7 +712,7 @@ export default function Home() {
       </section>
 
       {showSos && (
-        <div className="sos-overlay" onClick={() => setShowSos(false)}>
+        <div className="sos-overlay">
           <section className="sos-modal app-page-enter" onClick={(e) => e.stopPropagation()}>
             <header className="sos-head">
               <div className="sos-head-left">
@@ -691,23 +722,29 @@ export default function Home() {
                   <p>Get immediate help</p>
                 </div>
               </div>
-              <button className="sos-close app-pressable" type="button" onClick={() => setShowSos(false)} aria-label="Close">
-                <FiX />
-              </button>
             </header>
 
             <div className="sos-body">
               <div className="sos-call-core">
                 <span className="sos-call-icon"><FiPhoneCall /></span>
                 <h4>Emergency Call Flow</h4>
-                <div className="sos-step">
-                  Calling: <strong>{sosContacts[sosStep]?.label}</strong>
-                </div>
-                <div className={`sos-status ${sosStatus}`}>
-                  {sosStatus === "dialing" && "Dialing..."}
-                  {sosStatus === "connecting" && "Ringing..."}
-                  {sosStatus === "connected" && "Connected"}
-                </div>
+                {sosCountdown !== null ? (
+                  <div className="sos-countdown">
+                    <span>{sosCountdown}</span>
+                    <small>Starting in</small>
+                  </div>
+                ) : (
+                  <>
+                    <div className="sos-step">
+                      Calling: <strong>{sosContacts[sosStep]?.label}</strong>
+                    </div>
+                    <div className={`sos-status ${sosStatus}`}>
+                      {sosStatus === "dialing" && "Dialing..."}
+                      {sosStatus === "connecting" && "Ringing..."}
+                      {sosStatus === "connected" && "Connected"}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="sos-contact-list">
@@ -734,8 +771,10 @@ export default function Home() {
                 className="sos-next app-pressable"
                 type="button"
                 onClick={() => {
+                  stopSosAlarm()
                   setSosRunning(false)
                   setShowSos(false)
+                  setSosCountdown(null)
                 }}
               >
                 Stop SOS

@@ -37,7 +37,6 @@ export default function LabLocationStep2() {
     office: null,
   })
   const [pageReady, setPageReady] = useState(false)
-  const [mapError, setMapError] = useState("")
   const [mapLoaded, setMapLoaded] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -247,8 +246,9 @@ export default function LabLocationStep2() {
     })
 
     map.on("styledata", hideLabels)
-    map.on("error", () => {
-      setMapError("Map failed to load")
+    map.on("error", (event) => {
+      const err = (event as { error?: Error }).error
+      console.error("Mapbox error", err ?? event)
     })
 
     map.scrollZoom.disable()
@@ -273,11 +273,10 @@ export default function LabLocationStep2() {
 
     async function updateRoute() {
       try {
-        setMapError("")
         const origin = await geocodeAddress(mapOriginAddress, controller.signal)
         const destination = await geocodeAddress(NIRAMAYA_DELHI_ADDRESS, controller.signal)
         if (!origin || !destination) {
-          setMapError("Unable to locate address")
+          console.warn("Mapbox geocode failed for address")
           return
         }
         const route = await fetchRoute(origin, destination)
@@ -348,7 +347,7 @@ export default function LabLocationStep2() {
           setPageReady(true)
         }
       } catch (error) {
-        setMapError(error instanceof Error ? error.message : "Unable to load map route")
+        console.error("Mapbox route error", error)
       }
     }
 
@@ -395,7 +394,7 @@ export default function LabLocationStep2() {
 
   useEffect(() => {
     if (!mapboxToken.trim()) {
-      setMapError("Mapbox token missing")
+      console.error("Mapbox token missing")
     }
   }, [mapboxToken])
 
@@ -463,7 +462,6 @@ export default function LabLocationStep2() {
       <div className="map-box live-map">
         {!canRenderMap && <div className="mapbox-fallback">Map unavailable right now.</div>}
         {canRenderMap && <div ref={mapContainerRef} className="mapbox-container" />}
-        {mapError && <div className="mapbox-error">{mapError}</div>}
       </div>
 
       <div className="address-line">

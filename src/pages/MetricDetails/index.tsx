@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react"
+import { useEffect, useState, type ReactElement } from "react"
 import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import "./metric-details.css"
@@ -89,6 +89,9 @@ export default function MetricDetails() {
   const { metricId } = useParams()
   const metric = details[metricId ?? "heart-rate"] ?? details["heart-rate"]
   const [windowKey, setWindowKey] = useState<WindowKey>("7D")
+  const [measureStage, setMeasureStage] = useState<"idle" | "prepare" | "measuring" | "done">("idle")
+  const [measureProgress, setMeasureProgress] = useState(0)
+  const [measureBpm, setMeasureBpm] = useState(72)
   const history = metric.windows[windowKey]
 
   const max = Math.max(...history)
@@ -97,6 +100,34 @@ export default function MetricDetails() {
   const average = avg(history)
   const trendDelta = history[history.length - 1] - history[0]
   const trendText = trendDelta > 0 ? `+${trendDelta.toFixed(1)}` : trendDelta.toFixed(1)
+
+  useEffect(() => {
+    if (measureStage !== "prepare") return
+    const timer = window.setTimeout(() => setMeasureStage("measuring"), 700)
+    return () => window.clearTimeout(timer)
+  }, [measureStage])
+
+  useEffect(() => {
+    if (measureStage !== "measuring") return
+    let progress = 0
+    const interval = window.setInterval(() => {
+      progress = Math.min(100, progress + Math.floor(Math.random() * 8) + 4)
+      setMeasureProgress(progress)
+      setMeasureBpm(70 + Math.floor(Math.random() * 12))
+      if (progress >= 100) {
+        setMeasureProgress(100)
+        setMeasureBpm(78)
+        setMeasureStage("done")
+      }
+    }, 480)
+    return () => window.clearInterval(interval)
+  }, [measureStage])
+
+  const startMeasurement = () => {
+    setMeasureProgress(0)
+    setMeasureBpm(72)
+    setMeasureStage("prepare")
+  }
 
   return (
     <main className="metric-detail-page app-page-enter">
@@ -115,6 +146,18 @@ export default function MetricDetails() {
             <p>{metric.subtitle}</p>
           </div>
         </article>
+
+        {metricId === "heart-rate" && (
+          <article className="metric-measure-card app-fade-stagger">
+            <div>
+              <h3>Check your heart rate</h3>
+              <p>Use your camera to get a quick live reading.</p>
+            </div>
+            <button className="measure-btn app-pressable" type="button" onClick={startMeasurement}>
+              Start Checking Heart Rate
+            </button>
+          </article>
+        )}
 
         <article className="metric-window-card app-fade-stagger">
           <h3>Time Window</h3>
@@ -180,6 +223,43 @@ export default function MetricDetails() {
           </ul>
         </article>
       </section>
+
+      {metricId === "heart-rate" && measureStage !== "idle" && (
+        <div className="hr-measure-overlay">
+          <section className="hr-measure-card">
+            <header className="hr-measure-head">
+              <h2>Measure</h2>
+              <p>{measureStage === "prepare" ? "Press your finger on camera" : "Measuring your heart rate..."}</p>
+            </header>
+
+            <div
+              className="hr-measure-ring"
+              style={{ ["--progress" as string]: `${measureProgress}%` }}
+            >
+              <div className="hr-measure-inner">
+                <span className="hr-heart"><FiHeart /></span>
+                <strong>{measureStage === "prepare" ? "--" : measureBpm}</strong>
+                <small>bpm</small>
+              </div>
+            </div>
+
+            <div className="hr-measure-foot">
+              <span className="hr-progress-text">
+                {measureStage === "done" ? "Completed" : `Measuring... (${measureProgress}%)`}
+              </span>
+              <div className="hr-wave" aria-hidden="true" />
+            </div>
+
+            <button
+              className="measure-close app-pressable"
+              type="button"
+              onClick={() => setMeasureStage("idle")}
+            >
+              {measureStage === "done" ? "Done" : "Cancel"}
+            </button>
+          </section>
+        </div>
+      )}
     </main>
   )
 }

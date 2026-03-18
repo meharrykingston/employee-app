@@ -221,6 +221,161 @@
   font-size: 0.85rem;
 }
 
+.metric-measure-card {
+  border: 1px solid #f0d7dd;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff5f6, #fff);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.metric-measure-card h3 {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.05rem;
+}
+
+.metric-measure-card p {
+  margin: 6px 0 0;
+  color: #6c7284;
+  font-size: 0.86rem;
+}
+
+.measure-btn {
+  border: none;
+  border-radius: 12px;
+  min-height: 44px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff5066, #ff2b45);
+  box-shadow: 0 16px 28px rgba(255, 48, 84, 0.25);
+}
+
+.hr-measure-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.68);
+  display: grid;
+  place-items: center;
+  z-index: 60;
+  padding: 16px;
+}
+
+.hr-measure-card {
+  width: min(100%, 420px);
+  border-radius: 24px;
+  background: #ffffff;
+  padding: 20px 18px 22px;
+  text-align: center;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+}
+
+.hr-measure-head h2 {
+  margin: 0;
+  font-family: "Satoshi", sans-serif;
+  font-size: 1.3rem;
+}
+
+.hr-measure-head p {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.hr-measure-ring {
+  --progress: 0%;
+  margin: 18px auto 12px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: conic-gradient(#ff3b4d var(--progress), #f1f3f8 0);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 10px #fff;
+}
+
+.hr-measure-inner {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, #ffd6da, #fff);
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  box-shadow: inset 0 0 0 1px #f5d1d8;
+}
+
+.hr-heart {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ff2b45;
+  animation: heartBeat 1.2s ease-in-out infinite;
+}
+
+.hr-heart svg {
+  width: 32px;
+  height: 32px;
+}
+
+.hr-measure-inner strong {
+  font-size: 2rem;
+  color: #151a2d;
+  font-family: "Satoshi", sans-serif;
+}
+
+.hr-measure-inner small {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.hr-measure-foot {
+  display: grid;
+  gap: 10px;
+}
+
+.hr-progress-text {
+  color: #5b6374;
+  font-size: 0.9rem;
+}
+
+.hr-wave {
+  height: 48px;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 88, 113, 0.25), rgba(255, 255, 255, 0)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 59, 77, 0.4) 0 6px,
+      rgba(255, 255, 255, 0) 6px 14px
+    );
+  mask: linear-gradient(180deg, transparent 0, #000 45%, #000 55%, transparent 100%);
+  animation: waveMove 1.6s linear infinite;
+}
+
+.measure-close {
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  min-height: 42px;
+  background: #f8fafc;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+@keyframes waveMove {
+  from { background-position: 0 0; }
+  to { background-position: 80px 0; }
+}
+
 @keyframes barRise {
   from {
     transform: scaleY(0.35);
