@@ -16,6 +16,8 @@ type LabBooking = {
   testName: string
   collectionType: string
   scheduledAt: string
+  etaMinutes?: number
+  etaStartAt?: string
 }
 
 const LAB_BOOKINGS_KEY = "lab_bookings"
@@ -44,10 +46,10 @@ export default function LabTracking() {
     typeof mapboxTokenRaw === "string" && mapboxTokenRaw.trim() && mapboxTokenRaw !== "undefined" && mapboxTokenRaw !== "null"
       ? mapboxTokenRaw
       : ""
-  const [mapError, setMapError] = useState("")
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const [liveBooking, setLiveBooking] = useState<LabBooking | null>(null)
+  const [etaRemaining, setEtaRemaining] = useState<number | null>(null)
 
   const booking = useMemo(() => {
     const raw = localStorage.getItem(LAB_BOOKINGS_KEY)
@@ -60,8 +62,34 @@ export default function LabTracking() {
     }
   }, [id])
 
-  const resolvedBooking = liveBooking ?? booking
+  const resolvedBooking = liveBooking
+    ? {
+        ...booking,
+        ...liveBooking,
+        etaMinutes: booking?.etaMinutes ?? liveBooking.etaMinutes,
+        etaStartAt: booking?.etaStartAt ?? liveBooking.etaStartAt,
+      }
+    : booking
   const statusStep = mapStatusToStep(resolvedBooking?.status ?? "pending")
+
+  useEffect(() => {
+    if (!resolvedBooking?.etaMinutes) {
+      setEtaRemaining(null)
+      return
+    }
+    const startAt = resolvedBooking.etaStartAt
+      ? new Date(resolvedBooking.etaStartAt).getTime()
+      : Date.now()
+    const initial = resolvedBooking.etaMinutes
+    const update = () => {
+      const elapsedMin = Math.max(0, Math.floor((Date.now() - startAt) / 60000))
+      const remaining = Math.max(1, initial - elapsedMin)
+      setEtaRemaining(remaining)
+    }
+    update()
+    const interval = window.setInterval(update, 10000)
+    return () => window.clearInterval(interval)
+  }, [resolvedBooking?.etaMinutes, resolvedBooking?.etaStartAt])
 
   useEffect(() => {
     if (!id) return
@@ -138,7 +166,7 @@ export default function LabTracking() {
 
   useEffect(() => {
     if (!mapboxToken.trim()) {
-      setMapError("Map unavailable right now.")
+      console.error("Mapbox token missing")
     }
   }, [mapboxToken])
 
@@ -186,8 +214,9 @@ export default function LabTracking() {
     })
 
     map.on("styledata", hideLabels)
-    map.on("error", () => {
-      setMapError("Map failed to load")
+    map.on("error", (event) => {
+      const err = (event as { error?: Error }).error
+      console.error("Mapbox error", err ?? event)
     })
     map.scrollZoom.disable()
     map.boxZoom.disable()
@@ -233,17 +262,13 @@ export default function LabTracking() {
           </div>
           <div className="lab-meta-row muted">
             <span><FiCheckCircle /> Booking ID {resolvedBooking?.bookingId ?? "Pending"}</span>
-            <span>NirAmaya Delhi Hub</span>
+            {etaRemaining !== null && <span>{etaRemaining} mins away</span>}
           </div>
         </div>
       </section>
 
       <section className="lab-map-wrap app-fade-stagger">
-        {mapError ? (
-          <div className="lab-map-error">{mapError}</div>
-        ) : (
-          <div ref={mapContainerRef} className="lab-map" aria-label="Live tracking map" />
-        )}
+        <div ref={mapContainerRef} className="lab-map" aria-label="Live tracking map" />
       </section>
 
       <section className="lab-status-list app-fade-stagger">

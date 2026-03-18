@@ -358,6 +358,8 @@ export default function LabBookNowStep3() {
                 address: state?.address,
                 date: bookingDate,
                 time: bookingTime,
+                etaMinutes: displayEta ?? etaMinutes ?? 15,
+                etaStartAt: new Date().toISOString(),
                 readiness: state?.readiness,
               },
             })

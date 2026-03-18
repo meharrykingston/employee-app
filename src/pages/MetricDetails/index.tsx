@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from "react"
+import { useEffect, useRef, useState, type ReactElement } from "react"
 import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import "./metric-details.css"
@@ -92,6 +92,9 @@ export default function MetricDetails() {
   const [measureStage, setMeasureStage] = useState<"idle" | "prepare" | "measuring" | "done">("idle")
   const [measureProgress, setMeasureProgress] = useState(0)
   const [measureBpm, setMeasureBpm] = useState(72)
+  const [cameraError, setCameraError] = useState("")
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const history = metric.windows[windowKey]
 
   const max = Math.max(...history)
@@ -105,6 +108,42 @@ export default function MetricDetails() {
     if (measureStage !== "prepare") return
     const timer = window.setTimeout(() => setMeasureStage("measuring"), 700)
     return () => window.clearTimeout(timer)
+  }, [measureStage])
+
+  useEffect(() => {
+    if (measureStage === "idle") {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+      return
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Camera access not supported.")
+      return
+    }
+    const start = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        })
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play()
+        }
+      } catch (error) {
+        setCameraError(error instanceof Error ? error.message : "Camera permission denied.")
+      }
+    }
+    void start()
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+    }
   }, [measureStage])
 
   useEffect(() => {
@@ -126,6 +165,7 @@ export default function MetricDetails() {
   const startMeasurement = () => {
     setMeasureProgress(0)
     setMeasureBpm(72)
+    setCameraError("")
     setMeasureStage("prepare")
   }
 
@@ -231,6 +271,14 @@ export default function MetricDetails() {
               <h2>Measure</h2>
               <p>{measureStage === "prepare" ? "Press your finger on camera" : "Measuring your heart rate..."}</p>
             </header>
+
+            <div className="hr-camera-shell">
+              {cameraError ? (
+                <div className="hr-camera-error">{cameraError}</div>
+              ) : (
+                <video ref={videoRef} className="hr-camera" muted playsInline />
+              )}
+            </div>
 
             <div
               className="hr-measure-ring"

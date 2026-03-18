@@ -24,6 +24,8 @@ type LabBooking = {
   collectionType: string
   scheduledAt: string
   createdAt: string
+  etaMinutes?: number
+  etaStartAt?: string
 }
 
 const LAB_BOOKINGS_KEY = "lab_bookings"
@@ -53,6 +55,8 @@ export default function LabConfirm() {
       collectionType?: string
       date?: string
       time?: string
+      etaMinutes?: number
+      etaStartAt?: string
       readiness?: Record<string, "yes" | "no">
     }
   }
@@ -113,6 +117,8 @@ export default function LabConfirm() {
             collectionType,
             scheduledAt: scheduledAtValue,
             createdAt: new Date().toISOString(),
+            etaMinutes: state?.etaMinutes,
+            etaStartAt: state?.etaStartAt,
           })
           await addNotification({
             title: "Lab booking confirmed",
