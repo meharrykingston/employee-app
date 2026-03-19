@@ -106,6 +106,7 @@ export default function MetricDetails() {
   const samplesRef = useRef<Array<{ t: number; v: number }>>([])
   const rafRef = useRef<number | null>(null)
   const savedRef = useRef(false)
+  const retryTimerRef = useRef<number | null>(null)
   const history = metric.windows[windowKey]
   const dynamicHistory = historyOverride ?? history
 
@@ -128,6 +129,10 @@ export default function MetricDetails() {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
+      }
+      if (retryTimerRef.current) {
+        window.clearTimeout(retryTimerRef.current)
+        retryTimerRef.current = null
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => {
@@ -280,7 +285,7 @@ export default function MetricDetails() {
   useEffect(() => {
     if (measureStage !== "done" || savedRef.current) return
     savedRef.current = true
-    void (async () => {
+    const saveNow = async () => {
       try {
         setSaveStatus("saving")
         await saveVitalReading({
@@ -306,8 +311,10 @@ export default function MetricDetails() {
       } catch (error) {
         setSaveStatus("error")
         console.warn("Failed to save vital reading", error)
+        retryTimerRef.current = window.setTimeout(saveNow, 4000)
       }
-    })()
+    }
+    void saveNow()
   }, [measureStage, measureBpm, signalQuality])
 
   useEffect(() => {
@@ -472,7 +479,7 @@ export default function MetricDetails() {
                 <span className="hr-signal-warning">Saving reading...</span>
               )}
               {measureStage === "done" && saveStatus === "error" && (
-                <span className="hr-signal-warning">Unable to save. Please retry.</span>
+                <span className="hr-signal-warning">Retrying save... keep app open.</span>
               )}
               <div className="hr-wave" aria-hidden="true" />
             </div>
@@ -481,6 +488,7 @@ export default function MetricDetails() {
               className="measure-close app-pressable"
               type="button"
               onClick={() => setMeasureStage("idle")}
+              disabled={measureStage === "done" && saveStatus !== "saved"}
             >
               {measureStage === "done" ? "Done" : "Cancel"}
             </button>
