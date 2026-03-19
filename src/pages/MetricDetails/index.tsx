@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from "react"
 import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
-import { flushQueuedVitals, saveVitalReading } from "../../services/vitalsApi"
+import { getLatestVital, getVitalHistory, saveVitalReading } from "../../services/vitalsApi"
 import "./metric-details.css"
 
 type WindowKey = "7D" | "14D" | "30D"
@@ -96,6 +96,9 @@ export default function MetricDetails() {
   const [cameraError, setCameraError] = useState("")
   const [lowSignal, setLowSignal] = useState(false)
   const [signalQuality, setSignalQuality] = useState(0)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [historyOverride, setHistoryOverride] = useState<number[] | null>(null)
+  const [latestOverride, setLatestOverride] = useState<number | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -104,13 +107,15 @@ export default function MetricDetails() {
   const rafRef = useRef<number | null>(null)
   const savedRef = useRef(false)
   const history = metric.windows[windowKey]
+  const dynamicHistory = historyOverride ?? history
 
-  const max = Math.max(...history)
-  const min = Math.min(...history)
+  const max = Math.max(...dynamicHistory)
+  const min = Math.min(...dynamicHistory)
   const range = max - min || 1
-  const average = avg(history)
-  const trendDelta = history[history.length - 1] - history[0]
+  const average = avg(dynamicHistory)
+  const trendDelta = dynamicHistory[dynamicHistory.length - 1] - dynamicHistory[0]
   const trendText = trendDelta > 0 ? `+${trendDelta.toFixed(1)}` : trendDelta.toFixed(1)
+  const displayCurrent = latestOverride ?? Number(metric.current)
 
   useEffect(() => {
     if (measureStage !== "prepare") return
@@ -268,6 +273,7 @@ export default function MetricDetails() {
     setCameraError("")
     setLowSignal(false)
     setSignalQuality(0)
+    setSaveStatus("idle")
     setMeasureStage("prepare")
   }
 
@@ -276,6 +282,7 @@ export default function MetricDetails() {
     savedRef.current = true
     void (async () => {
       try {
+        setSaveStatus("saving")
         await saveVitalReading({
           metric: "heart_rate",
           value: measureBpm,
@@ -283,18 +290,53 @@ export default function MetricDetails() {
           source: "camera",
           signalQuality: Number(signalQuality.toFixed(2)),
         })
+        setSaveStatus("saved")
+        const latest = await getLatestVital("heart_rate")
+        if (typeof latest?.value === "number") {
+          setLatestOverride(latest.value)
+        }
+        const historyResp = await getVitalHistory("heart_rate", 30)
+        if (historyResp?.points?.length) {
+          const values = historyResp.points
+            .slice()
+            .reverse()
+            .map((point) => point.value)
+          setHistoryOverride(values)
+        }
       } catch (error) {
+        setSaveStatus("error")
         console.warn("Failed to save vital reading", error)
       }
     })()
   }, [measureStage, measureBpm, signalQuality])
 
   useEffect(() => {
-    void flushQueuedVitals()
-    const onOnline = () => void flushQueuedVitals()
-    window.addEventListener("online", onOnline)
-    return () => window.removeEventListener("online", onOnline)
-  }, [])
+    if (metricId !== "heart-rate") return
+    let active = true
+    void (async () => {
+      try {
+        const latest = await getLatestVital("heart_rate")
+        if (!active) return
+        if (typeof latest?.value === "number") {
+          setLatestOverride(latest.value)
+        }
+        const historyResp = await getVitalHistory("heart_rate", 30)
+        if (!active) return
+        if (historyResp?.points?.length) {
+          const values = historyResp.points
+            .slice()
+            .reverse()
+            .map((point) => point.value)
+          setHistoryOverride(values)
+        }
+      } catch {
+        // keep fallback data
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [metricId])
 
   return (
     <main className="metric-detail-page app-page-enter">
@@ -309,7 +351,7 @@ export default function MetricDetails() {
         <article className={`metric-hero ${metric.tone} app-fade-stagger`}>
           <span className="hero-icon">{metric.icon}</span>
           <div>
-            <h2>{metric.current} <small>{metric.unit}</small></h2>
+            <h2>{displayCurrent} <small>{metric.unit}</small></h2>
             <p>{metric.subtitle}</p>
           </div>
         </article>
@@ -364,7 +406,7 @@ export default function MetricDetails() {
         <article className="metric-chart-card app-fade-stagger">
           <h3>Trend ({windowKey})</h3>
           <div className="metric-chart">
-            {history.map((value, index) => {
+            {dynamicHistory.map((value, index) => {
               const height = 26 + ((value - min) / range) * 70
               return (
                 <div className="bar-wrap" key={`${metric.title}-${windowKey}-${index}`}>
@@ -425,6 +467,12 @@ export default function MetricDetails() {
               </span>
               {lowSignal && measureStage !== "done" && (
                 <span className="hr-signal-warning">Low signal. Cover camera and light fully.</span>
+              )}
+              {measureStage === "done" && saveStatus === "saving" && (
+                <span className="hr-signal-warning">Saving reading...</span>
+              )}
+              {measureStage === "done" && saveStatus === "error" && (
+                <span className="hr-signal-warning">Unable to save. Please retry.</span>
               )}
               <div className="hr-wave" aria-hidden="true" />
             </div>

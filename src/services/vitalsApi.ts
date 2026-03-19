@@ -9,63 +9,6 @@ type VitalPayload = {
   signalQuality?: number
 }
 
-const QUEUE_KEY = "employee_vitals_queue"
-
-type QueuedVital = VitalPayload & {
-  queuedAt: string
-}
-
-function readQueue(): QueuedVital[] {
-  const raw = localStorage.getItem(QUEUE_KEY)
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as QueuedVital[]
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-function writeQueue(items: QueuedVital[]) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(items))
-}
-
-function enqueueVital(payload: VitalPayload) {
-  const next: QueuedVital[] = [
-    { ...payload, queuedAt: new Date().toISOString() },
-    ...readQueue(),
-  ].slice(0, 50)
-  writeQueue(next)
-}
-
-export async function flushQueuedVitals() {
-  const auth = getEmployeeAuthSession()
-  const company = getEmployeeCompanySession()
-  if (!auth?.userId || !company?.companyId) return
-  const queue = readQueue()
-  if (!queue.length) return
-  const remaining: QueuedVital[] = []
-  for (const item of queue) {
-    try {
-      await apiPost<
-        { status: string },
-        { companyId: string; employeeId: string } & VitalPayload
-      >("/health/vitals", {
-        companyId: company.companyId,
-        employeeId: auth.userId,
-        metric: item.metric,
-        value: item.value,
-        unit: item.unit,
-        source: item.source,
-        signalQuality: item.signalQuality,
-      })
-    } catch {
-      remaining.push(item)
-    }
-  }
-  writeQueue(remaining)
-}
-
 export async function saveVitalReading(payload: VitalPayload) {
   const auth = getEmployeeAuthSession()
   const company = getEmployeeCompanySession()
@@ -83,15 +26,50 @@ export async function saveVitalReading(payload: VitalPayload) {
       ...payload,
     })
 
-  try {
-    return await attempt()
-  } catch (error) {
-    await new Promise((resolve) => window.setTimeout(resolve, 1200))
+  const retryDelays = [1200, 2000, 3000]
+  let lastError: unknown
+  for (let i = 0; i <= retryDelays.length; i += 1) {
     try {
       return await attempt()
-    } catch (retryError) {
-      enqueueVital(payload)
-      throw retryError
+    } catch (error) {
+      lastError = error
+      if (i < retryDelays.length) {
+        await new Promise((resolve) => window.setTimeout(resolve, retryDelays[i]))
+      }
     }
   }
+  throw lastError
+}
+
+export async function getLatestVital(metric: VitalPayload["metric"]) {
+  const auth = getEmployeeAuthSession()
+  const company = getEmployeeCompanySession()
+  if (!auth?.userId || !company?.companyId) {
+    throw new Error("Missing employee session")
+  }
+  return apiPost<{ value?: number; unit?: string; eventAt?: string }, { companyId: string; employeeId: string; metric: string }>(
+    "/health/vitals/latest",
+    {
+      companyId: company.companyId,
+      employeeId: auth.userId,
+      metric,
+    },
+  )
+}
+
+export async function getVitalHistory(metric: VitalPayload["metric"], limit = 30) {
+  const auth = getEmployeeAuthSession()
+  const company = getEmployeeCompanySession()
+  if (!auth?.userId || !company?.companyId) {
+    throw new Error("Missing employee session")
+  }
+  return apiPost<{ points: Array<{ value: number; eventAt: string }> }, { companyId: string; employeeId: string; metric: string; limit: number }>(
+    "/health/vitals/history",
+    {
+      companyId: company.companyId,
+      employeeId: auth.userId,
+      metric,
+      limit,
+    },
+  )
 }
