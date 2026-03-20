@@ -47,6 +47,7 @@ import Bookings from "../pages/Bookings"
 import Reports from "../pages/Reports"
 import Notifications from "../pages/Notifications"
 import MetricDetails from "../pages/MetricDetails"
+import BloodPressureLog from "../pages/MetricDetails/BloodPressureLog"
 import TipBlog from "../pages/TipBlog"
 import RouteTransitionLayout from "./RouteTransitionLayout"
 
@@ -100,6 +101,7 @@ export const router = createBrowserRouter([
       { path: "reports", element: <Reports /> },
       { path: "notifications", element: <Notifications /> },
       { path: "metric/:metricId", element: <MetricDetails /> },
+      { path: "metric/blood-pressure/log", element: <BloodPressureLog /> },
       { path: "health-tips/:tipId", element: <TipBlog /> },
       { path: "terms", element: <Terms /> },
       { path: "privacy", element: <Privacy /> },

@@ -50,6 +50,7 @@ type TeleNavState = {
   selectedDoctorId?: string
   teleconsultSessionId?: string
   scheduledAt?: string
+  bookingId?: string
   startRide?: boolean
   startVideo?: boolean
 }
@@ -150,7 +151,7 @@ const DEMO_DOCTORS: Array<{
     fee: 33,
   },
 ]
-const MAX_TELECONSULT_SECONDS = 5 * 60
+const MAX_TELECONSULT_SECONDS = 30 * 60
 const MAX_JOIN_RETRIES = 3
 const JOIN_RETRY_DELAY_MS = 1200
 const DEFAULT_COMPANY_ID = "astikan-demo-company"
@@ -251,6 +252,7 @@ export default function TeleConsultation() {
   const [isBookingNow, setIsBookingNow] = useState(false)
   const [teleconsultSessionId, setTeleconsultSessionId] = useState("")
   const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+  const [bookingId, setBookingId] = useState<string | null>(null)
   const [joinReady, setJoinReady] = useState(true)
   const [usingZegoTemplate, setUsingZegoTemplate] = useState(false)
   const [usingAgoraTemplate, setUsingAgoraTemplate] = useState(false)
@@ -395,6 +397,7 @@ export default function TeleConsultation() {
     if (state.selectedDoctorId) setSelectedDoctor(state.selectedDoctorId)
     if (state.teleconsultSessionId) setTeleconsultSessionId(state.teleconsultSessionId)
     if (state.scheduledAt) setScheduledAt(state.scheduledAt)
+    if (state.bookingId) setBookingId(state.bookingId)
     if (state.startVideo) {
       setMode("tele")
       setStep("video")
@@ -499,6 +502,13 @@ export default function TeleConsultation() {
     const timer = window.setTimeout(() => setJoinReady(true), openAt - now)
     return () => window.clearTimeout(timer)
   }, [step, joinWindowStart])
+
+  useEffect(() => {
+    if (step !== "video" || joinReady) return
+    if (bookingId) {
+      navigate(`/teleconsultation/overview/${bookingId}`, { replace: true })
+    }
+  }, [step, joinReady, bookingId, navigate])
 
   function exitCallToPreviousScreen() {
     if (callExitHandledRef.current) {
@@ -671,11 +681,11 @@ export default function TeleConsultation() {
           title: "Teleconsultation booked",
           body: `Your call with ${selectedDoctorInfo.name} is booked. Join will open 1 minute before time.`,
           channel: "consult",
-          cta: { label: "Join Call", route: "/teleconsultation" },
-        joinWindowStart: booking.joinWindowStart,
-        teleconsultSessionId: booking.sessionId,
-        doctorId: booking.doctorId,
-        scheduledAt: booking.scheduledAt,
+          cta: { label: "Join Call", route: `/teleconsultation/overview/${booking.id}` },
+          joinWindowStart: booking.joinWindowStart,
+          teleconsultSessionId: booking.sessionId,
+          doctorId: booking.doctorId,
+          scheduledAt: booking.scheduledAt,
         })
       } catch {
         // Session can still be created during the call bootstrap path.

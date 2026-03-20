@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FiArrowLeft, FiCalendar, FiCheckCircle, FiClock, FiUser } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { goBackOrFallback } from "../../utils/navigation"
@@ -34,6 +34,12 @@ export default function TeleOverview() {
   const navigate = useNavigate()
   const { id } = useParams()
   const booking = loadBooking(id)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const scheduledLabel = useMemo(() => {
     if (!booking?.scheduledAt) return "Not scheduled yet"
@@ -50,6 +56,33 @@ export default function TeleOverview() {
     if (!booking?.joinWindowStart) return null
     return new Date(booking.joinWindowStart).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
   }, [booking?.joinWindowStart])
+
+  const joinWindowMs = useMemo(() => {
+    if (!booking?.joinWindowStart) return null
+    const ts = Date.parse(booking.joinWindowStart)
+    return Number.isNaN(ts) ? null : ts
+  }, [booking?.joinWindowStart])
+
+  const scheduledMs = useMemo(() => {
+    if (!booking?.scheduledAt) return null
+    const ts = Date.parse(booking.scheduledAt)
+    return Number.isNaN(ts) ? null : ts
+  }, [booking?.scheduledAt])
+
+  const joinReady = joinWindowMs !== null ? now >= joinWindowMs : true
+  const joinCountdown = useMemo(() => {
+    if (joinReady || joinWindowMs === null) return null
+    const diff = Math.max(0, joinWindowMs - now)
+    const mins = Math.floor(diff / 60000)
+    const secs = Math.floor((diff % 60000) / 1000)
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+  }, [joinReady, joinWindowMs, now])
+
+  const sessionEndLabel = useMemo(() => {
+    if (!scheduledMs) return null
+    const end = new Date(scheduledMs + 30 * 60 * 1000)
+    return end.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+  }, [scheduledMs])
 
   if (!booking) {
     return (
@@ -125,6 +158,16 @@ export default function TeleOverview() {
               <div>
                 <span>Join opens</span>
                 <strong>{joinWindowLabel}</strong>
+                {joinCountdown && <small>Opens in {joinCountdown}</small>}
+              </div>
+            </div>
+          )}
+          {sessionEndLabel && (
+            <div>
+              <FiClock />
+              <div>
+                <span>Session ends</span>
+                <strong>{sessionEndLabel}</strong>
               </div>
             </div>
           )}
@@ -137,6 +180,7 @@ export default function TeleOverview() {
           <button
             className="tele-overview-primary"
             type="button"
+            disabled={!joinReady}
             onClick={() =>
               navigate("/teleconsultation", {
                 state: {
@@ -144,11 +188,12 @@ export default function TeleOverview() {
                   selectedDoctorId: booking.doctorId,
                   teleconsultSessionId: booking.sessionId,
                   scheduledAt: booking.scheduledAt,
+                  bookingId: booking.id,
                 },
               })
             }
           >
-            Join Call
+            {joinReady ? "Join Call" : "Join opens soon"}
           </button>
         </div>
       </section>

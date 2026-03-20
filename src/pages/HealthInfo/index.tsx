@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
-import { FiActivity, FiArrowLeft, FiDroplet, FiHeart, FiSave } from "react-icons/fi"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { FiActivity, FiArrowLeft, FiDroplet, FiHeart } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import { getHealthProfile, saveHealthProfile } from "../../services/healthProfileApi"
 import "./health-info.css"
@@ -18,6 +18,8 @@ export default function HealthInfo() {
   const [conditions, setConditions] = useState("")
   const [medications, setMedications] = useState("")
   const [notes, setNotes] = useState("")
+  const autosaveRef = useRef<number | null>(null)
+  const loadedRef = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -39,6 +41,7 @@ export default function HealthInfo() {
         setConditions(profile.conditions ?? "")
         setMedications(profile.medications ?? "")
         setNotes(profile.notes ?? "")
+        loadedRef.current = true
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Unable to load profile")
       } finally {
@@ -50,6 +53,40 @@ export default function HealthInfo() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!loadedRef.current) return
+    if (autosaveRef.current) {
+      window.clearTimeout(autosaveRef.current)
+    }
+    autosaveRef.current = window.setTimeout(async () => {
+      setSaving(true)
+      setError("")
+      try {
+        await saveHealthProfile({
+          bloodGroup,
+          heightFt: heightFt ? Number(heightFt) : null,
+          heightIn: heightIn ? Number(heightIn) : null,
+          weightKg: weightKg ? Number(weightKg) : null,
+          waistIn: waistIn ? Number(waistIn) : null,
+          allergies,
+          conditions,
+          medications,
+          notes,
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to save profile")
+      } finally {
+        setSaving(false)
+      }
+    }, 900)
+
+    return () => {
+      if (autosaveRef.current) {
+        window.clearTimeout(autosaveRef.current)
+      }
+    }
+  }, [bloodGroup, heightFt, heightIn, weightKg, waistIn, allergies, conditions, medications, notes])
 
   const bmi = useMemo(() => {
     const ft = Number(heightFt)
@@ -72,28 +109,6 @@ export default function HealthInfo() {
     return "High BMI range"
   }, [bmi])
 
-  const handleSave = async () => {
-    setSaving(true)
-    setError("")
-    try {
-      await saveHealthProfile({
-        bloodGroup,
-        heightFt: heightFt ? Number(heightFt) : null,
-        heightIn: heightIn ? Number(heightIn) : null,
-        weightKg: weightKg ? Number(weightKg) : null,
-        waistIn: waistIn ? Number(waistIn) : null,
-        allergies,
-        conditions,
-        medications,
-        notes,
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save profile")
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <main className="health-info-page app-page-enter">
       <header className="health-info-header app-fade-stagger">
@@ -104,9 +119,6 @@ export default function HealthInfo() {
           <h1>Health Information</h1>
           <p>Keep your profile updated for better recommendations.</p>
         </div>
-        <button className="health-save app-pressable" type="button" onClick={handleSave} disabled={saving}>
-          <FiSave /> {saving ? "Saving..." : "Save"}
-        </button>
       </header>
 
       <section className="health-info-shell app-content-slide">

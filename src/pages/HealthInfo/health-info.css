@@ -3,6 +3,11 @@
   background: #f5f7fb;
   color: #1f2940;
   font-family: "Manrope", sans-serif;
+  overflow-x: hidden;
+}
+
+.health-info-page * {
+  box-sizing: border-box;
 }
 
 .health-info-header {
@@ -158,6 +163,7 @@
   background: #fff;
   font-size: 0.95rem;
   color: #1f2940;
+  width: 100%;
 }
 
 .health-text-grid textarea {

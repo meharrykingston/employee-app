@@ -102,6 +102,13 @@
   color: #202847;
 }
 
+.tele-overview-details small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #5f6880;
+}
+
 .tele-overview-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -120,6 +127,11 @@
 .tele-overview-primary {
   background: linear-gradient(140deg, #7a2d75, #9a4b93);
   color: #fff;
+}
+
+.tele-overview-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .tele-overview-secondary {

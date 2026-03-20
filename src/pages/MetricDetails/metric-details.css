@@ -289,6 +289,50 @@
   box-shadow: 0 16px 28px rgba(255, 48, 84, 0.25);
 }
 
+.metric-log-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 24px rgba(24, 32, 53, 0.08);
+  border: 1px solid #e6ebf5;
+}
+
+.metric-log-card h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.metric-log-empty {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.metric-log-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #edf0f7;
+}
+
+.metric-log-row:first-of-type {
+  border-top: none;
+}
+
+.metric-log-row strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #1f2940;
+}
+
+.metric-log-row span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
 .hr-measure-overlay {
   position: fixed;
   inset: 0;

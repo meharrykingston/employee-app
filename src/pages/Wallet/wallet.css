@@ -221,6 +221,44 @@
   gap: 10px;
 }
 
+.wallet-rank {
+  font-size: 0.8rem;
+  color: #6f2d70;
+  font-weight: 700;
+}
+
+.wallet-leaderboard {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.wallet-leader-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f8fc;
+  border: 1px solid #e2e8f5;
+}
+
+.leader-rank {
+  font-weight: 700;
+  color: #6f2d70;
+}
+
+.leader-name {
+  font-weight: 600;
+  color: #1f2940;
+}
+
+.leader-score {
+  font-size: 0.82rem;
+  color: #5a6377;
+}
+
 .wallet-section-title {
   margin: 0;
   font-size: 1.2rem;

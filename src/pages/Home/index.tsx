@@ -135,6 +135,38 @@ const metrics: Array<{ id: MetricId; title: string; value: string; unit: string;
 ]
 const HOME_SCROLL_KEY = "home:scrollTop"
 
+function seedFromString(input: string) {
+  let hash = 0
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0
+  }
+  return hash || 1
+}
+
+function seededShuffle<T>(items: T[], seed: number) {
+  const arr = [...items]
+  let s = seed
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    s = (s * 1664525 + 1013904223) >>> 0
+    const j = s % (i + 1)
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+function buildLocalDailyTips(dayKey: string) {
+  const shuffled = seededShuffle(healthTips, seedFromString(dayKey))
+  return shuffled.slice(0, 3).map((tip, index) => ({
+    id: `daily-local-${dayKey}-${index + 1}`,
+    title: tip.title,
+    summary: tip.summary,
+    tags: tip.tags,
+    moodTags: tip.moodTags,
+    heroImage: tip.heroImage,
+    sections: tip.sections,
+  }))
+}
+
 function tabIcon(name: (typeof tabs)[number]["icon"]) {
   if (name === "home") return <FiHome />
   if (name === "health") return <FiActivity />
@@ -281,6 +313,7 @@ export default function Home() {
 
   useEffect(() => {
     if (tipInteracting) return
+    if (displayTips.length <= 1) return
     const ticker = window.setInterval(() => {
       setTipIndex((prev) => (prev + 1) % displayTips.length)
     }, 4300)
@@ -576,29 +609,53 @@ export default function Home() {
       } catch {
         // ignore bad cache
       }
+    } else {
+      localStorage.removeItem(DAILY_TIP_STORAGE_KEY)
+      localStorage.removeItem(DAILY_TIP_DATE_KEY)
     }
+
     const raw = localStorage.getItem("employee_geo")
-    if (!raw) return
+    const runDaily = async (lat?: number, lon?: number, city?: string) => {
+      try {
+        const daily = await fetchDailyTips({ lat, lon, city })
+        if (daily?.tips?.length) {
+          setDailyTips(daily.tips)
+          localStorage.setItem(DAILY_TIP_STORAGE_KEY, JSON.stringify(daily.tips))
+          localStorage.setItem(DAILY_TIP_DATE_KEY, todayKey)
+          return
+        }
+      } catch {
+        // fall through
+      }
+      if (!cachedTips) {
+        const localTips = buildLocalDailyTips(todayKey)
+        setDailyTips(localTips)
+        localStorage.setItem(DAILY_TIP_STORAGE_KEY, JSON.stringify(localTips))
+        localStorage.setItem(DAILY_TIP_DATE_KEY, todayKey)
+      }
+    }
+
+    if (!raw) {
+      void runDaily()
+      return
+    }
+
     try {
       const parsed = JSON.parse(raw) as { lat?: number; lon?: number }
-      if (!parsed?.lat || !parsed?.lon) return
-      fetchWeather(parsed.lat, parsed.lon)
-        .then((data) => {
-          setWeather(data)
-          return fetchDailyTips({ lat: parsed.lat, lon: parsed.lon, city: data.location })
-        })
-        .then((daily) => {
-          if (daily?.tips?.length) {
-            setDailyTips(daily.tips)
-            localStorage.setItem(DAILY_TIP_STORAGE_KEY, JSON.stringify(daily.tips))
-            localStorage.setItem(DAILY_TIP_DATE_KEY, todayKey)
-          }
-        })
-        .catch(() => {
-          // keep fallback tips
-        })
+      if (parsed?.lat && parsed?.lon) {
+        fetchWeather(parsed.lat, parsed.lon)
+          .then((data) => {
+            setWeather(data)
+            return runDaily(parsed.lat, parsed.lon, data.location)
+          })
+          .catch(() => {
+            void runDaily(parsed.lat, parsed.lon)
+          })
+      } else {
+        void runDaily()
+      }
     } catch {
-      // ignore invalid location cache
+      void runDaily()
     }
   }, [])
 

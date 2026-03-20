@@ -5,18 +5,57 @@ import "./splash.css"
 
 export default function Splash() {
   const navigate = useNavigate()
-  const [showPermissions, setShowPermissions] = useState(true)
+  const [showPermissions, setShowPermissions] = useState(false)
 
   useEffect(() => {
-    const hasPermissions = localStorage.getItem("astikan_permissions_done")
-    if (hasPermissions) {
-      const timer = setTimeout(() => {
-        navigate("/company")
-      }, 1800)
-      return () => clearTimeout(timer)
+    let active = true
+    const checkPermissions = async () => {
+      const hasPermissions = localStorage.getItem("astikan_permissions_done")
+      if (hasPermissions) {
+        setShowPermissions(false)
+        const timer = setTimeout(() => {
+          if (active) navigate("/company")
+        }, 1800)
+        return () => clearTimeout(timer)
+      }
+
+      let geoGranted = true
+      let notifGranted = true
+
+      if ("geolocation" in navigator) {
+        try {
+          if ("permissions" in navigator) {
+            const status = await navigator.permissions.query({ name: "geolocation" as PermissionName })
+            geoGranted = status.state === "granted"
+          } else {
+            geoGranted = false
+          }
+        } catch {
+          geoGranted = false
+        }
+      }
+
+      if ("Notification" in window) {
+        notifGranted = Notification.permission === "granted"
+      }
+
+      if (geoGranted && notifGranted) {
+        localStorage.setItem("astikan_permissions_done", "1")
+        setShowPermissions(false)
+        const timer = setTimeout(() => {
+          if (active) navigate("/company")
+        }, 1200)
+        return () => clearTimeout(timer)
+      }
+
+      setShowPermissions(true)
+      return undefined
     }
-    setShowPermissions(true)
-    return undefined
+
+    void checkPermissions()
+    return () => {
+      active = false
+    }
   }, [navigate])
 
   async function requestPermissions() {

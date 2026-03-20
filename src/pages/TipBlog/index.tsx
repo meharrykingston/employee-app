@@ -3,6 +3,8 @@ import { FiActivity, FiCheckCircle, FiDroplet, FiHeart, FiMoon, FiSmile, FiTherm
 import { useNavigate, useParams } from "react-router-dom"
 import { healthTips } from "../../data/healthTips"
 import { logBehaviorSignal } from "../../services/behaviorApi"
+import { getEmployeeAuthSession } from "../../services/authApi"
+import { saveDailyTipAnswer } from "../../services/newsApi"
 import "./tipblog.css"
 
 const AI_THREAD_KEY = "employee_ai_thread_id"
@@ -215,6 +217,17 @@ export default function TipBlog() {
       tags: safeTip.tags,
       meta: { tipId: safeTip.id, sectionIndex, answer, dayKey },
     })
+    const session = getEmployeeAuthSession()
+    if (session?.userId) {
+      void saveDailyTipAnswer({
+        employeeId: session.userId,
+        tipId: safeTip.id,
+        dayKey,
+        sectionIndex,
+        answer,
+        tags: safeTip.tags,
+      }).catch(() => {})
+    }
     if (lockedIndex === sectionIndex) {
       setLockedIndex(null)
       if (containerRef.current) {

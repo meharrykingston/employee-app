@@ -101,10 +101,6 @@ export default function MetricDetails() {
   const [latestOverride, setLatestOverride] = useState<number | null>(null)
   const [bpLatest, setBpLatest] = useState<{ sys: number | null; dia: number | null; eventAt?: string } | null>(null)
   const [bpHistory, setBpHistory] = useState<number[] | null>(null)
-  const [bpSysInput, setBpSysInput] = useState("")
-  const [bpDiaInput, setBpDiaInput] = useState("")
-  const [bpSaveStatus, setBpSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
-  const [bpSaveError, setBpSaveError] = useState("")
   const [saveTimeoutReached, setSaveTimeoutReached] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -425,45 +421,6 @@ export default function MetricDetails() {
     }
   }, [metricId])
 
-  const saveBloodPressure = async () => {
-    const sys = Number(bpSysInput)
-    const dia = Number(bpDiaInput)
-    if (!Number.isFinite(sys) || !Number.isFinite(dia) || sys <= 0 || dia <= 0) {
-      setBpSaveError("Enter valid systolic and diastolic values.")
-      setBpSaveStatus("error")
-      return
-    }
-    setBpSaveError("")
-    setBpSaveStatus("saving")
-    try {
-      await Promise.all([
-        saveVitalReading({ metric: "blood_pressure_sys", value: sys, unit: "mmHg", source: "manual" }),
-        saveVitalReading({ metric: "blood_pressure_dia", value: dia, unit: "mmHg", source: "manual" }),
-      ])
-      setBpSaveStatus("saved")
-      const [latestSys, latestDia, historyResp] = await Promise.all([
-        getLatestVital("blood_pressure_sys"),
-        getLatestVital("blood_pressure_dia"),
-        getVitalHistory("blood_pressure_sys", 30),
-      ])
-      setBpLatest({
-        sys: typeof latestSys?.value === "number" ? latestSys.value : sys,
-        dia: typeof latestDia?.value === "number" ? latestDia.value : dia,
-        eventAt: latestSys?.eventAt || latestDia?.eventAt,
-      })
-      if (historyResp?.points?.length) {
-        const values = historyResp.points
-          .slice()
-          .reverse()
-          .map((point) => point.value)
-        setBpHistory(values)
-      }
-    } catch (error) {
-      setBpSaveStatus("error")
-      setBpSaveError(error instanceof Error ? error.message : "Unable to save blood pressure.")
-    }
-  }
-
   return (
     <main className="metric-detail-page app-page-enter">
       <header className="metric-detail-header app-fade-stagger">
@@ -506,33 +463,11 @@ export default function MetricDetails() {
         {metricId === "blood-pressure" && (
           <article className="metric-measure-card app-fade-stagger">
             <div>
-              <h3>Log blood pressure</h3>
-              <p>Enter your latest systolic/diastolic reading.</p>
+              <h3>Daily tracking</h3>
+              <p>Log your BP reading on the tracking page to keep the analysis accurate.</p>
             </div>
-            <div className="bp-input-grid">
-              <label className="bp-input">
-                <span>Systolic</span>
-                <input
-                  inputMode="numeric"
-                  placeholder="120"
-                  value={bpSysInput}
-                  onChange={(e) => setBpSysInput(e.target.value.replace(/[^0-9]/g, ""))}
-                />
-              </label>
-              <label className="bp-input">
-                <span>Diastolic</span>
-                <input
-                  inputMode="numeric"
-                  placeholder="80"
-                  value={bpDiaInput}
-                  onChange={(e) => setBpDiaInput(e.target.value.replace(/[^0-9]/g, ""))}
-                />
-              </label>
-            </div>
-            {bpSaveStatus === "error" && <p className="bp-error">{bpSaveError}</p>}
-            {bpSaveStatus === "saved" && <p className="bp-success">Saved successfully.</p>}
-            <button className="measure-btn app-pressable" type="button" onClick={saveBloodPressure} disabled={bpSaveStatus === "saving"}>
-              {bpSaveStatus === "saving" ? "Saving..." : "Save Blood Pressure"}
+            <button className="measure-btn app-pressable" type="button" onClick={() => navigate("/metric/blood-pressure/log")}>
+              Log blood pressure
             </button>
           </article>
         )}
