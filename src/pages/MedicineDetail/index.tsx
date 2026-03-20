@@ -28,6 +28,7 @@ export default function MedicineDetail() {
   const [openPanel, setOpenPanel] = useState<PanelId>("about")
   const [showCartPopup, setShowCartPopup] = useState(false)
   const [lastAddedName, setLastAddedName] = useState("")
+  const [activeImage, setActiveImage] = useState(0)
   const { addItem, totalItems } = useCart()
   const doseRef = useRef<HTMLDivElement | null>(null)
 
@@ -35,6 +36,13 @@ export default function MedicineDetail() {
     const source = catalog.length ? catalog : medicines
     return source.filter((item) => item.id !== medicineId).slice(0, 3)
   }, [medicineId, catalog])
+
+  const gallery = useMemo(() => {
+    if (!medicine) return []
+    return [medicine.image, ...(medicine.images ?? [])].filter(Boolean)
+  }, [medicine])
+
+  const primaryAddress = localStorage.getItem("employee_primary_address") ?? "Home"
 
   useEffect(() => {
     let active = true
@@ -88,9 +96,6 @@ export default function MedicineDetail() {
   }
 
   const currentMedicine = medicine
-  const primaryAddress = localStorage.getItem("employee_primary_address") ?? "Home"
-  const gallery = [currentMedicine.image, ...(currentMedicine.images ?? [])].filter(Boolean)
-  const [activeImage, setActiveImage] = useState(0)
 
   function togglePanel(id: PanelId) {
     setOpenPanel((prev) => (prev === id ? "about" : id))

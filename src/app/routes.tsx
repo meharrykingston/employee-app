@@ -23,6 +23,8 @@ import LabReportViewer from "../pages/LabTest/report"
 import TeleConsultation from "../pages/TeleConsultation"
 import OpdPickup from "../pages/TeleConsultation/pickup"
 import TeleSchedule from "../pages/TeleConsultation/schedule"
+import TeleConfirm from "../pages/TeleConsultation/confirm"
+import TeleOverview from "../pages/TeleConsultation/overview"
 import AISymptomAnalyser from "../pages/AISymptomAnalyser"
 import Pharmacy from "../pages/Pharmacy"
 import PharmacyCategories from "../pages/PharmacyCategories"
@@ -35,6 +37,7 @@ import Wallet from "../pages/Wallet"
 import Badges from "../pages/Badges"
 import WeekendTasks from "../pages/WeekendTasks"
 import WeekendTaskDetail from "../pages/WeekendTasks/detail"
+import SugarChallenge from "../pages/Challenges/SugarChallenge"
 import HealthAssessments from "../pages/HealthAssessments"
 import Settings from "../pages/Settings"
 import Address from "../pages/Address"
@@ -73,6 +76,8 @@ export const router = createBrowserRouter([
       { path: "teleconsultation", element: <TeleConsultation /> },
       { path: "teleconsultation/pickup", element: <OpdPickup /> },
       { path: "teleconsultation/schedule", element: <TeleSchedule /> },
+      { path: "teleconsultation/confirm", element: <TeleConfirm /> },
+      { path: "teleconsultation/overview/:id", element: <TeleOverview /> },
       { path: "ai-symptom-analyser", element: <AISymptomAnalyser /> },
       { path: "pharmacy", element: <Pharmacy /> },
       { path: "pharmacy/categories", element: <PharmacyCategories /> },
@@ -83,6 +88,7 @@ export const router = createBrowserRouter([
       { path: "cart", element: <CartPage /> },
       { path: "weekend-tasks", element: <WeekendTasks /> },
       { path: "weekend-tasks/:id", element: <WeekendTaskDetail /> },
+      { path: "weekend-tasks/sugar-challenge", element: <SugarChallenge /> },
       { path: "health-assessments", element: <HealthAssessments /> },
       { path: "wallet", element: <Wallet /> },
       { path: "badges", element: <Badges /> },

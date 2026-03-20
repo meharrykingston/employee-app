@@ -607,7 +607,6 @@ export default function AIChat() {
         {messages.map((msg) => (
           <div key={msg.id} className={`message-row ${msg.from === "user" ? "user" : "ai"} bubble-enter`}>
             <div className="message-bubble">
-              {msg.from === "ai" && <div className="bubble-badge">Care Assistant</div>}
               <div className="message-text">{renderRichText(msg.text)}</div>
               {msg.from === "ai" && !!msg.actions?.length && (
                 <div className="ai-action-row">

@@ -538,7 +538,10 @@
   border: 0;
   border-radius: 0;
   padding: 0;
-  background: #070b16;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(122, 214, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 88% 20%, rgba(106, 90, 255, 0.14), transparent 45%),
+    linear-gradient(180deg, #ffffff, #f2f5ff);
   box-shadow: none;
 }
 
@@ -683,7 +686,7 @@
   border-radius: 0;
   border: 0;
   overflow: hidden;
-  background: #070b16;
+  background: #ffffff;
 }
 
 .zego-template-container {
@@ -691,9 +694,16 @@
   height: 100dvh;
 }
 
+.zego-express-shell {
+  display: grid;
+  place-items: stretch;
+  min-height: 100dvh;
+  background: #ffffff;
+}
+
 .video-stage-template {
   padding: 0;
-  background: #070b16;
+  background: #ffffff;
 }
 
 .video-stage-template .video-controls {
@@ -731,6 +741,36 @@
   padding: 0 16px 132px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26);
   overflow: hidden;
+}
+
+.video-screen.remote video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #3b4a66;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0 18px;
+  z-index: 2;
+}
+
+.video-placeholder span {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(210, 220, 240, 0.8);
+  box-shadow: 0 8px 22px rgba(36, 48, 80, 0.12);
 }
 
 .video-screen.local {

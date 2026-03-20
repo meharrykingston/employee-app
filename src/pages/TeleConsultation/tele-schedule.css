@@ -226,6 +226,17 @@
   gap: 10px;
 }
 
+.tele-slot-empty {
+  grid-column: 1 / -1;
+  margin: 4px 0 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px dashed #cfd9db;
+  color: #566176;
+  font-size: 0.9rem;
+}
+
 .tele-slot {
   min-height: 44px;
   border-radius: 999px;

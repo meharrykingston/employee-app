@@ -242,6 +242,43 @@
   font-size: 0.86rem;
 }
 
+.bp-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.bp-input {
+  display: grid;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #6c7284;
+}
+
+.bp-input input {
+  border: 1px solid #d6dbe8;
+  border-radius: 12px;
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 0.95rem;
+  color: #1f2940;
+  background: #fff;
+}
+
+.bp-error {
+  margin: 6px 0 0;
+  color: #d0374f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.bp-success {
+  margin: 6px 0 0;
+  color: #118a4b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .measure-btn {
   border: none;
   border-radius: 12px;
@@ -281,6 +318,60 @@
   margin: 6px 0 0;
   color: #6b7280;
   font-size: 0.9rem;
+}
+
+.hr-guide {
+  display: grid;
+  gap: 12px;
+  padding: 6px 0 2px;
+}
+
+.hr-guide-illustration {
+  position: relative;
+  height: 160px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f7f1ff, #eef6ff);
+  border: 1px dashed #c9d6ef;
+  display: grid;
+  place-items: center;
+}
+
+.hr-guide-illustration .hr-phone {
+  width: 88px;
+  height: 140px;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #222a3a, #444c60);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+}
+
+.hr-guide-illustration .hr-hand {
+  position: absolute;
+  bottom: 18px;
+  width: 64px;
+  height: 88px;
+  border-radius: 32px;
+  background: linear-gradient(160deg, #ffcfb3, #f2b59a);
+  right: 34px;
+  box-shadow: 0 8px 16px rgba(30, 40, 60, 0.12);
+}
+
+.hr-guide-illustration .hr-camera-dot {
+  position: absolute;
+  top: 24px;
+  right: calc(50% - 6px);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff4d5a;
+  box-shadow: 0 0 0 6px rgba(255, 77, 90, 0.15);
+}
+
+.hr-guide ol {
+  margin: 0;
+  padding-left: 18px;
+  color: #4a566f;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 .hr-camera-shell {

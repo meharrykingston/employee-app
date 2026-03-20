@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
 import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
+import { fetchDoctorProfile, type DoctorAvailabilitySlot } from "../../services/doctorsApi"
 import { addNotification } from "../../services/notificationCenter"
 import { createTeleconsultSession } from "../../services/teleconsultApi"
 import { goBackOrFallback } from "../../utils/navigation"
@@ -23,6 +24,8 @@ type TeleBooking = {
   doctorId: string
   doctorName: string
   specialty: string
+  doctorAvatar?: string
+  status?: string
   scheduledAt: string
   joinWindowStart: string
 }
@@ -110,7 +113,44 @@ function getWeekDays(anchor: Date) {
   return Array.from({ length: 7 }, (_, index) => addDays(monday, index))
 }
 
-const slotMinutes = Array.from({ length: 14 }, (_, i) => 9 * 60 + i * 30)
+const fallbackSlotMinutes = Array.from({ length: 14 }, (_, i) => 9 * 60 + i * 30)
+
+function parseTimeToMinutes(value: string) {
+  const parts = value.split(":")
+  const hour = Number(parts[0])
+  const minute = Number(parts[1] ?? 0)
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null
+  return hour * 60 + minute
+}
+
+function buildSlotsForAvailability(
+  availability: DoctorAvailabilitySlot[],
+  selectedDate: Date,
+  mode: "tele" | "opd",
+) {
+  const day = selectedDate.getDay()
+  const type = mode === "tele" ? "virtual" : "physical"
+  const filtered = availability.filter(
+    (slot) =>
+      slot.availability_type === type &&
+      (slot.is_active ?? true) &&
+      slot.day_of_week === day,
+  )
+  if (!filtered.length) return [] as Array<{ label: string; minutes: number }>
+
+  const slots: Array<{ label: string; minutes: number }> = []
+  filtered.forEach((slot) => {
+    const start = parseTimeToMinutes(slot.start_time)
+    const end = parseTimeToMinutes(slot.end_time)
+    if (start === null || end === null || end <= start) return
+    const step = Math.max(15, Number(slot.slot_minutes ?? 30))
+    for (let mins = start; mins + step <= end; mins += step) {
+      slots.push({ label: formatTime(mins), minutes: mins })
+    }
+  })
+
+  return slots
+}
 
 export default function TeleSchedule() {
   const navigate = useNavigate()
@@ -138,23 +178,51 @@ export default function TeleSchedule() {
   const mode = state?.mode ?? "tele"
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()))
   const [selectedSlot, setSelectedSlot] = useState("")
+  const [availability, setAvailability] = useState<DoctorAvailabilitySlot[]>([])
+  const [availabilityLoaded, setAvailabilityLoaded] = useState(false)
 
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate])
   const monthYear = useMemo(() => formatMonthYear(selectedDate), [selectedDate])
+
+  useEffect(() => {
+    let active = true
+    setAvailabilityLoaded(false)
+    if (!doctor?.id) return
+    void fetchDoctorProfile(doctor.id)
+      .then((profile) => {
+        if (!active) return
+        setAvailability(profile?.doctor_availability ?? [])
+      })
+      .catch(() => {
+        if (!active) return
+        setAvailability([])
+      })
+      .finally(() => {
+        if (active) setAvailabilityLoaded(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [doctor?.id])
 
   const availableSlots = useMemo(() => {
     const today = startOfDay(new Date()).getTime()
     const selectedDay = startOfDay(selectedDate).getTime()
     const now = new Date()
 
-    return slotMinutes.map((mins) => {
-      const label = formatTime(mins)
+    const dynamicSlots = buildSlotsForAvailability(availability, selectedDate, mode)
+    const baseSlots = dynamicSlots.length
+      ? dynamicSlots
+      : fallbackSlotMinutes.map((mins) => ({ label: formatTime(mins), minutes: mins }))
+
+    return baseSlots.map((slot) => {
       const slotDate = new Date(selectedDate)
-      slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0)
+      slotDate.setHours(Math.floor(slot.minutes / 60), slot.minutes % 60, 0, 0)
       const disabled = selectedDay === today && slotDate.getTime() <= now.getTime()
-      return { label, disabled }
+      return { label: slot.label, disabled }
     })
-  }, [selectedDate])
+  }, [availability, selectedDate, mode])
 
   useEffect(() => {
     setSelectedSlot((prev) => {
@@ -188,6 +256,7 @@ export default function TeleSchedule() {
     const scheduled = slotToDate(selectedDate, selectedSlot)
     if (!scheduled) return
 
+    let booking: TeleBooking | null = null
     try {
       const actors = await ensureTeleconsultActors(doctor)
       const end = new Date(scheduled.getTime() + 30 * 60 * 1000)
@@ -212,16 +281,18 @@ export default function TeleSchedule() {
         employeeId: actors.employee.employeeUserId,
         doctorId: actors.doctor.userId,
         appointmentId: appointment.appointmentId,
-        preferredProvider: "zego",
+        preferredProvider: "agora",
         scheduledAt: scheduled.toISOString(),
       })
 
-      const booking: TeleBooking = {
+      booking = {
         id: appointment.appointmentId,
         sessionId: created.sessionId,
         doctorId: doctor.id,
         doctorName: doctor.name,
         specialty: doctor.specialty,
+        doctorAvatar: doctor.avatar,
+        status: "confirmed",
         scheduledAt: scheduled.toISOString(),
         joinWindowStart: new Date(scheduled.getTime() - 60 * 1000).toISOString(),
       }
@@ -242,7 +313,11 @@ export default function TeleSchedule() {
       // Keep UI responsive if backend is unavailable.
     }
 
-    navigate("/bookings")
+    if (booking) {
+      navigate("/teleconsultation/confirm", { state: { booking } })
+    } else {
+      navigate("/bookings")
+    }
   }
 
   return (
@@ -304,6 +379,9 @@ export default function TeleSchedule() {
           </header>
 
           <div className="tele-slot-grid">
+            {!availableSlots.length && availabilityLoaded && (
+              <p className="tele-slot-empty">Doctor availability not set. Please choose another date.</p>
+            )}
             {availableSlots.map((slot) => (
               <button
                 key={slot.label}

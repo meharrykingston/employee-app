@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react"
-import { FiActivity, FiCheckCircle, FiDroplet, FiHeart, FiLock, FiMoon, FiSmile, FiThermometer } from "react-icons/fi"
+import { FiActivity, FiCheckCircle, FiDroplet, FiHeart, FiMoon, FiSmile, FiThermometer } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { healthTips } from "../../data/healthTips"
 import { logBehaviorSignal } from "../../services/behaviorApi"
@@ -8,6 +8,7 @@ import "./tipblog.css"
 const AI_THREAD_KEY = "employee_ai_thread_id"
 const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
 const DAILY_TIP_STORAGE_KEY = "daily_tip_map"
+const DAILY_TIP_DATE_KEY = "daily_tip_date"
 
 const moodOptionMap: Record<string, string[]> = {
   stress: ["I feel anxious", "I feel overwhelmed", "I feel okay"],
@@ -36,14 +37,65 @@ function getMoodHint() {
   }
 }
 
+function seedFromString(input: string) {
+  let hash = 0
+  for (let i = 0; i < input.length; i += 1) {
+    hash = (hash * 31 + input.charCodeAt(i)) >>> 0
+  }
+  return hash || 1
+}
+
+function seededShuffle<T>(items: T[], seed: number) {
+  const arr = [...items]
+  let s = seed
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    s = (s * 1664525 + 1013904223) >>> 0
+    const j = s % (i + 1)
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+function ensureFiveSections(sections: Array<{ heading: string; body: string; coach: string; question: { id: string; text: string; options: string[] } }>) {
+  if (sections.length >= 5) return sections.slice(0, 5)
+  const expanded = [...sections]
+  while (expanded.length < 5) {
+    const base = expanded[expanded.length - 1] ?? sections[0]
+    expanded.push({
+      heading: `${base.heading} • Next`,
+      body: base.body,
+      coach: base.coach,
+      question: {
+        id: `${base.question.id}-${expanded.length + 1}`,
+        text: base.question.text,
+        options: base.question.options,
+      },
+    })
+  }
+  return expanded
+}
+
+function buildQuestionIndices(total: number, seed: number) {
+  const indices = Array.from({ length: total }, (_, idx) => idx)
+  const shuffled = seededShuffle(indices, seed)
+  const count = total <= 3 ? 1 : 2
+  return new Set(shuffled.slice(1, 1 + count))
+}
+
+function buildOptions(base: string[], seed: number) {
+  const fallbacks = ["Yes", "No", "I don’t know"]
+  const merged = Array.from(new Set([...base, ...fallbacks]))
+  return seededShuffle(merged, seed).slice(0, Math.min(4, merged.length))
+}
+
 export default function TipBlog() {
   const navigate = useNavigate()
   const { tipId } = useParams()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const lastScrollTop = useRef(0)
-  const [unlockedIndex, setUnlockedIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
-  const [speedWarning, setSpeedWarning] = useState(false)
+  const [lockedIndex, setLockedIndex] = useState<number | null>(null)
+  const sectionRefs = useRef<Array<HTMLElement | null>>([])
 
   const tip = useMemo(() => {
     if (tipId?.startsWith("daily-")) {
@@ -78,15 +130,22 @@ export default function TipBlog() {
                 : found.iconKey === "thermo"
                   ? <FiThermometer />
                   : <FiActivity />
-        return { ...found, icon }
+        return { ...found, icon, sections: ensureFiveSections(found.sections) }
       } catch {
         return undefined
       }
     }
-    return healthTips.find((item) => item.id === tipId)
+    const fallback = healthTips.find((item) => item.id === tipId)
+    if (!fallback) return undefined
+    return { ...fallback, sections: ensureFiveSections(fallback.sections) }
   }, [tipId])
   const moodHint = useMemo(() => getMoodHint(), [])
   const moodOptions = moodOptionMap[moodHint] ?? []
+  const dayKey = useMemo(() => localStorage.getItem(DAILY_TIP_DATE_KEY) ?? new Date().toISOString().slice(0, 10), [])
+  const questionIndices = useMemo(() => {
+    if (!tip) return new Set<number>()
+    return buildQuestionIndices(tip.sections.length, seedFromString(`${tip.id}:${dayKey}`))
+  }, [tip, dayKey])
 
   useEffect(() => {
     if (!tip) return
@@ -107,21 +166,30 @@ export default function TipBlog() {
       const current = node.scrollTop
       const delta = current - lastScrollTop.current
       const clamped = Math.sign(delta) * Math.min(26, Math.abs(delta))
-      if (Math.abs(delta) > 60) {
-        setSpeedWarning(true)
-        void logBehaviorSignal({
-          type: "tip_scroll_fast",
-          meta: { tipId, delta },
-        })
-      }
       node.scrollTop = lastScrollTop.current + clamped
       lastScrollTop.current = node.scrollTop
-      window.setTimeout(() => setSpeedWarning(false), 600)
+
+      if (lockedIndex !== null) return
+      const sections = sectionRefs.current
+      for (let index = 0; index < sections.length; index += 1) {
+        if (!questionIndices.has(index)) continue
+        if (answers[index]) continue
+        const section = sections[index]
+        if (!section) continue
+        const rect = section.getBoundingClientRect()
+        if (rect.top < 180 && rect.bottom > 220) {
+          setLockedIndex(index)
+          if (containerRef.current) {
+            containerRef.current.style.overflow = "hidden"
+          }
+          break
+        }
+      }
     }
 
     node.addEventListener("scroll", onScroll, { passive: false })
     return () => node.removeEventListener("scroll", onScroll)
-  }, [tipId])
+  }, [tipId, answers, questionIndices, lockedIndex])
 
   if (!tip) {
     return (
@@ -145,9 +213,14 @@ export default function TipBlog() {
       type: "tip_answer",
       label: safeTip.title,
       tags: safeTip.tags,
-      meta: { tipId: safeTip.id, sectionIndex, answer },
+      meta: { tipId: safeTip.id, sectionIndex, answer, dayKey },
     })
-    setUnlockedIndex((prev) => Math.max(prev, sectionIndex + 1))
+    if (lockedIndex === sectionIndex) {
+      setLockedIndex(null)
+      if (containerRef.current) {
+        containerRef.current.style.overflow = "auto"
+      }
+    }
     window.setTimeout(() => {
       const node = containerRef.current
       if (!node) return
@@ -173,29 +246,26 @@ export default function TipBlog() {
           </div>
         </div>
 
-        {speedWarning && <div className="tip-speed">Slow down, take it in.</div>}
-
         <div className="tip-section-list">
           {tip.sections.map((section, index) => {
-            const locked = index > unlockedIndex
             const answered = answers[index]
-            const options = moodOptions.length > 0 && index === 0
+            const shouldAsk = questionIndices.has(index)
+            const rawOptions = moodOptions.length > 0 && index === 0
               ? [moodOptions[0], ...section.question.options.slice(0, 2)]
               : section.question.options
+            const options = buildOptions(rawOptions, seedFromString(`${section.question.id}:${dayKey}`))
 
             return (
               <article
                 key={section.heading}
-                className={`tip-section ${locked ? "locked" : ""}`}
+                className="tip-section"
                 data-section={index}
+                ref={(el) => {
+                  sectionRefs.current[index] = el
+                }}
               >
                 <div className="tip-section-head">
                   <h3>{section.heading}</h3>
-                  {locked && (
-                    <span className="tip-lock">
-                      <FiLock /> Locked
-                    </span>
-                  )}
                 </div>
                 <p>{section.body}</p>
 
@@ -204,28 +274,51 @@ export default function TipBlog() {
                   <p>{section.coach}</p>
                 </div>
 
-                <div className="tip-question">
-                  <p>{section.question.text}</p>
-                  <div className="tip-options">
-                    {options.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`tip-option app-pressable ${answered === option ? "active" : ""}`}
-                        onClick={() => handleAnswer(index, option)}
-                        disabled={locked}
-                      >
-                        {answered === option && <FiCheckCircle />}
-                        {option}
-                      </button>
-                    ))}
+                {shouldAsk && (
+                  <div className="tip-question">
+                    <p>{section.question.text}</p>
+                    <div className="tip-options">
+                      {options.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`tip-option app-pressable ${answered === option ? "active" : ""}`}
+                          onClick={() => handleAnswer(index, option)}
+                        >
+                          {answered === option && <FiCheckCircle />}
+                          {option}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </article>
             )
           })}
         </div>
       </section>
+
+      {lockedIndex !== null && tip.sections[lockedIndex] && (
+        <div className="tip-lock-overlay">
+          <div className="tip-lock-card">
+            <h3>{tip.sections[lockedIndex].question.text}</h3>
+            <p>Quick check so we personalize tomorrow’s tip.</p>
+            <div className="tip-options">
+              {buildOptions(tip.sections[lockedIndex].question.options, seedFromString(`overlay:${tip.sections[lockedIndex].question.id}:${dayKey}`)).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`tip-option app-pressable ${answers[lockedIndex] === option ? "active" : ""}`}
+                  onClick={() => handleAnswer(lockedIndex, option)}
+                >
+                  {answers[lockedIndex] === option && <FiCheckCircle />}
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

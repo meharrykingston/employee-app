@@ -10,6 +10,7 @@ type TeleBooking = {
   doctorId: string
   doctorName: string
   specialty: string
+  status?: string
   scheduledAt: string
   joinWindowStart: string
 }
@@ -93,6 +94,7 @@ export default function Bookings() {
       id: booking.id,
       title: `Teleconsultation with ${booking.doctorName}`,
       at: scheduled.toLocaleString(),
+      status: booking.status ?? "confirmed",
       scheduledAt: booking.scheduledAt,
       joinWindowStart: booking.joinWindowStart,
       sessionId: booking.sessionId,
@@ -145,22 +147,33 @@ export default function Bookings() {
                 <small>{item.at}</small>
                 {item.status && <small>Status: {item.status}</small>}
                 {canJoin && item.sessionId && (
-                  <button
-                    className="app-pressable"
-                    type="button"
-                    onClick={() =>
-                      navigate("/teleconsultation", {
-                        state: {
-                          startVideo: true,
-                          selectedDoctorId: item.doctorId,
-                          teleconsultSessionId: item.sessionId,
-                          scheduledAt: item.scheduledAt,
-                        },
-                      })
-                    }
-                  >
-                    Join Call
-                  </button>
+                  <div className="booking-actions">
+                    <button
+                      className="app-pressable"
+                      type="button"
+                      onClick={() =>
+                        navigate(`/teleconsultation/overview/${item.id}`)
+                      }
+                    >
+                      View Details
+                    </button>
+                    <button
+                      className="app-pressable"
+                      type="button"
+                      onClick={() =>
+                        navigate("/teleconsultation", {
+                          state: {
+                            startVideo: true,
+                            selectedDoctorId: item.doctorId,
+                            teleconsultSessionId: item.sessionId,
+                            scheduledAt: item.scheduledAt,
+                          },
+                        })
+                      }
+                    >
+                      Join Call
+                    </button>
+                  </div>
                 )}
                 {item.type === "lab" && (
                   <button

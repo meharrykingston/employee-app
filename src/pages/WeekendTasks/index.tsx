@@ -25,6 +25,7 @@ export default function WeekendTasks() {
   const [error, setError] = useState("")
   const session = getEmployeeAuthSession()
   const employeeId = session?.userId ?? ""
+  const activeChallengeId = localStorage.getItem("active_challenge_id")
 
   const completed = useMemo(() => tasks.filter((task) => task.done).length, [tasks])
   const earned = useMemo(() => tasks.filter((task) => task.done).reduce((sum, task) => sum + task.coins, 0), [tasks])
@@ -115,32 +116,41 @@ export default function WeekendTasks() {
         <section className="tasks-list app-fade-stagger">
           <h3>Your Tasks</h3>
           {error && !loading && <p>{error}</p>}
-          {tasks.map((task) => (
-            <button
-              key={task.id}
-              className={`task-card app-pressable ${task.done ? "done" : ""}`}
-              type="button"
-              onClick={() =>
-                navigate(`/weekend-tasks/${task.id}`, {
-                  state: { task },
-                })
-              }
-            >
-              <span className={`task-check ${task.done ? "active" : ""}`}>{task.done ? "Done" : ""}</span>
-              <div className="task-main">
-                <div className="task-title">
-                  <h4>{task.title}</h4>
-                  <strong><FiLink /> +{task.coins}</strong>
+          {tasks.map((task) => {
+            const isActive = activeChallengeId && activeChallengeId === task.id
+            const isBlocked = activeChallengeId && activeChallengeId !== task.id
+            return (
+              <button
+                key={task.id}
+                className={`task-card app-pressable ${task.done ? "done" : ""} ${isBlocked ? "disabled" : ""}`}
+                type="button"
+                disabled={Boolean(isBlocked)}
+                onClick={() => {
+                  if (task.title.toLowerCase().includes("sugar")) {
+                    navigate("/weekend-tasks/sugar-challenge")
+                    return
+                  }
+                  navigate(`/weekend-tasks/${task.id}`, {
+                    state: { task },
+                  })
+                }}
+              >
+                <span className={`task-check ${task.done ? "active" : ""}`}>{task.done ? "Done" : ""}</span>
+                <div className="task-main">
+                  <div className="task-title">
+                    <h4>{task.title}</h4>
+                    <strong><FiLink /> +{task.coins}</strong>
+                  </div>
+                  <p>{task.desc}</p>
+                  <div className="task-tags">
+                    <span className={`lvl ${task.level.toLowerCase()}`}>{task.level}</span>
+                    <span className={`kind ${task.type.toLowerCase()}`}>{task.type}</span>
+                    <span className="time"><FiClock /> {task.duration}</span>
+                  </div>
                 </div>
-                <p>{task.desc}</p>
-                <div className="task-tags">
-                  <span className={`lvl ${task.level.toLowerCase()}`}>{task.level}</span>
-                  <span className={`kind ${task.type.toLowerCase()}`}>{task.type}</span>
-                  <span className="time"><FiClock /> {task.duration}</span>
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </section>
 
         <article className="bonus-card app-fade-stagger">

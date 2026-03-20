@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   FiActivity,
   FiArrowLeft,
@@ -9,6 +9,7 @@ import {
   FiSmile,
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
+import { getSugarLeaderboard } from "../../services/sugarChallengeApi"
 import "./wallet.css"
 
 type WalletTab = "Home" | "Health" | "AI Chat" | "Stress Relief" | "Wallet"
@@ -41,6 +42,8 @@ export default function MyWallet() {
   const navigate = useNavigate()
   const location = useLocation()
   const [isMenuDocked, setIsMenuDocked] = useState(false)
+  const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string; coins: number; completedDays: number }>>([])
+  const [rank, setRank] = useState<number | null>(null)
 
   const activeTab: WalletTab = useMemo(() => {
     if (location.pathname.startsWith("/home")) return "Home"
@@ -54,6 +57,23 @@ export default function MyWallet() {
     const nextDocked = e.currentTarget.scrollTop > 40
     setIsMenuDocked((prev) => (prev === nextDocked ? prev : nextDocked))
   }
+
+  useEffect(() => {
+    let active = true
+    void (async () => {
+      try {
+        const data = await getSugarLeaderboard()
+        if (!active) return
+        setLeaderboard(data.leaderboard ?? [])
+        setRank(data.rank ?? null)
+      } catch {
+        // ignore
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <main className="wallet-page app-page-enter" onScroll={onPageScroll}>
@@ -137,6 +157,23 @@ export default function MyWallet() {
           <Transaction title="10,000 Steps Achievement" meta="Physical Health" value={200} />
           <Transaction title="Hydration Goal Met" meta="Health Goal" value={100} />
           <Transaction title="Premium Health Report" meta="Service" value={-300} />
+        </section>
+
+        <section className="wallet-section wallet-card-section app-fade-stagger">
+          <div className="wallet-section-head">
+            <h3 className="wallet-section-title">No-Sugar Challenge Leaderboard</h3>
+            <span className="wallet-rank">Your rank: {rank ?? "--"}</span>
+          </div>
+          <div className="wallet-leaderboard">
+            {leaderboard.length === 0 && <p>No leaderboard yet.</p>}
+            {leaderboard.map((row, index) => (
+              <div key={`${row.employeeId}-${index}`} className="wallet-leader-row">
+                <span className="leader-rank">#{index + 1}</span>
+                <span className="leader-name">{row.employeeId}</span>
+                <span className="leader-score">{row.coins} coins • {row.completedDays} days</span>
+              </div>
+            ))}
+          </div>
         </section>
       </section>
     </main>

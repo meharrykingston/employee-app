@@ -24,6 +24,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import { logBehaviorSignal } from "../../services/behaviorApi"
 import { preloadLabCatalog } from "../../services/labApi"
+import { getLatestVital } from "../../services/vitalsApi"
 import { fetchDailyTips, type DailyTipPayload } from "../../services/newsApi"
 import { fetchWeather, type WeatherSnapshot } from "../../services/weatherApi"
 import { healthTips, type HealthTip } from "../../data/healthTips"
@@ -39,7 +40,7 @@ type QuickAccessItem = {
   icon: "stress" | "lab" | "consult" | "weekend" | "pharmacy" | "badges"
 }
 
-type MetricId = "heart-rate" | "blood-pressure" | "temperature" | "weight"
+type MetricId = "heart-rate" | "blood-pressure" | "calories" | "weight"
 
 const tabs = [
   { id: "Home", icon: "home" },
@@ -122,13 +123,14 @@ const feelingPrefill: Record<(typeof feelings)[number]["id"], string> = {
 const TIP_PREF_KEY = "home:tip-preference"
 const TIP_FAST_SCROLL_KEY = "home:tip-fast-scroll"
 const DAILY_TIP_STORAGE_KEY = "daily_tip_map"
+const DAILY_TIP_DATE_KEY = "daily_tip_date"
 const AI_THREAD_KEY = "employee_ai_thread_id"
 const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
 
 const metrics: Array<{ id: MetricId; title: string; value: string; unit: string; status: string; age: string; tone: string; icon: ReactElement }> = [
   { id: "heart-rate", title: "Heart Rate", value: "72", unit: "bpm", status: "normal", age: "2 hours ago", tone: "red", icon: <FiHeart /> },
   { id: "blood-pressure", title: "Blood Pressure", value: "120/80", unit: "mmHg", status: "normal", age: "4 hours ago", tone: "blue", icon: <FiActivity /> },
-  { id: "temperature", title: "Body Temperature", value: "98.6", unit: "F", status: "normal", age: "6 hours ago", tone: "orange", icon: <FiThermometer /> },
+  { id: "calories", title: "Calories", value: "1850", unit: "kcal", status: "on track", age: "today", tone: "orange", icon: <FiZap /> },
   { id: "weight", title: "Weight", value: "165", unit: "lbs", status: "normal", age: "1 day ago", tone: "green", icon: <FiPackage /> },
 ]
 const HOME_SCROLL_KEY = "home:scrollTop"
@@ -166,6 +168,8 @@ export default function Home() {
   const [sosCountdown, setSosCountdown] = useState<number | null>(null)
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null)
   const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
+  const [latestHeartRate, setLatestHeartRate] = useState<{ value: number | null; eventAt?: string } | null>(null)
+  const [latestBloodPressure, setLatestBloodPressure] = useState<{ sys: number | null; dia: number | null; eventAt?: string } | null>(null)
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -173,6 +177,18 @@ export default function Home() {
   const scoreTarget = 90
 
   const [moodHint, setMoodHint] = useState("")
+  const formatAge = (eventAt?: string) => {
+    if (!eventAt) return "No reading yet"
+    const ts = Date.parse(eventAt)
+    if (Number.isNaN(ts)) return "Recently"
+    const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60000))
+    if (diffMin < 1) return "Just now"
+    if (diffMin < 60) return `${diffMin} mins ago`
+    const hours = Math.floor(diffMin / 60)
+    if (hours < 24) return `${hours} hours ago`
+    const days = Math.floor(hours / 24)
+    return `${days} days ago`
+  }
 
   function computeMoodHint() {
     const threadId = localStorage.getItem(AI_THREAD_KEY)
@@ -303,6 +319,90 @@ export default function Home() {
     })
     return () => window.cancelAnimationFrame(raf)
   }, [])
+
+  useEffect(() => {
+    let active = true
+    const loadLatest = async () => {
+      try {
+        const latest = await getLatestVital("heart_rate")
+        if (!active) return
+        setLatestHeartRate({ value: typeof latest?.value === "number" ? latest.value : null, eventAt: latest?.eventAt })
+      } catch {
+        if (!active) return
+        setLatestHeartRate(null)
+      }
+    }
+    void loadLatest()
+    const interval = window.setInterval(loadLatest, 60000)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const loadLatestBp = async () => {
+      try {
+        const [sys, dia] = await Promise.all([
+          getLatestVital("blood_pressure_sys"),
+          getLatestVital("blood_pressure_dia"),
+        ])
+        if (!active) return
+        setLatestBloodPressure({
+          sys: typeof sys?.value === "number" ? sys.value : null,
+          dia: typeof dia?.value === "number" ? dia.value : null,
+          eventAt: sys?.eventAt || dia?.eventAt,
+        })
+      } catch {
+        if (!active) return
+        setLatestBloodPressure(null)
+      }
+    }
+    void loadLatestBp()
+    const interval = window.setInterval(loadLatestBp, 90000)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  const metricCards = useMemo(() => {
+    return metrics.map((item) => {
+      if (item.id !== "heart-rate") return item
+      const value = latestHeartRate?.value
+      const status = typeof value === "number"
+        ? value > 100
+          ? "high"
+          : value < 55
+            ? "low"
+            : "normal"
+        : item.status
+      return {
+        ...item,
+        value: typeof value === "number" ? String(Math.round(value)) : item.value,
+        age: latestHeartRate?.eventAt ? formatAge(latestHeartRate.eventAt) : item.age,
+        status,
+      }
+    })
+  }, [latestHeartRate])
+
+  const metricCardsWithBp = useMemo(() => {
+    if (!latestBloodPressure) return metricCards
+    return metricCards.map((item) => {
+      if (item.id !== "blood-pressure") return item
+      const sys = latestBloodPressure.sys
+      const dia = latestBloodPressure.dia
+      if (typeof sys !== "number" || typeof dia !== "number") return item
+      const status = sys >= 140 || dia >= 90 ? "high" : sys < 90 || dia < 60 ? "low" : "normal"
+      return {
+        ...item,
+        value: `${Math.round(sys)}/${Math.round(dia)}`,
+        age: latestBloodPressure.eventAt ? formatAge(latestBloodPressure.eventAt) : item.age,
+        status,
+      }
+    })
+  }, [metricCards, latestBloodPressure])
 
   const activeTab: (typeof tabs)[number]["id"] = useMemo(() => {
     if (location.pathname.startsWith("/health")) return "Health"
@@ -464,6 +564,19 @@ export default function Home() {
   }, [navigate])
 
   useEffect(() => {
+    const todayKey = new Date().toISOString().slice(0, 10)
+    const cachedDate = localStorage.getItem(DAILY_TIP_DATE_KEY)
+    const cachedTips = localStorage.getItem(DAILY_TIP_STORAGE_KEY)
+    if (cachedDate === todayKey && cachedTips) {
+      try {
+        const parsed = JSON.parse(cachedTips) as DailyTipPayload[]
+        if (parsed.length) {
+          setDailyTips(parsed)
+        }
+      } catch {
+        // ignore bad cache
+      }
+    }
     const raw = localStorage.getItem("employee_geo")
     if (!raw) return
     try {
@@ -475,7 +588,11 @@ export default function Home() {
           return fetchDailyTips({ lat: parsed.lat, lon: parsed.lon, city: data.location })
         })
         .then((daily) => {
-          if (daily?.tips?.length) setDailyTips(daily.tips)
+          if (daily?.tips?.length) {
+            setDailyTips(daily.tips)
+            localStorage.setItem(DAILY_TIP_STORAGE_KEY, JSON.stringify(daily.tips))
+            localStorage.setItem(DAILY_TIP_DATE_KEY, todayKey)
+          }
         })
         .catch(() => {
           // keep fallback tips
@@ -613,7 +730,7 @@ export default function Home() {
               className={`tip-track ${tipInteracting ? "dragging" : ""}`}
               style={{
                 width: `${displayTips.length * 100}%`,
-                transform: `translate3d(-${tipIndex * (100 / displayTips.length)}%, 0, 0)`,
+                transform: `translate3d(-${tipIndex * 100}%, 0, 0)`,
               }}
             >
               {displayTips.map((tip) => (
@@ -662,7 +779,7 @@ export default function Home() {
         <section className="section app-fade-stagger">
           <h3 className="section-title">Health Metrics</h3>
           <div className="metric-grid">
-            {metrics.map((item) => (
+            {metricCardsWithBp.map((item) => (
               <button
                 key={item.title}
                 className={`metric-card app-pressable ${item.tone}`}

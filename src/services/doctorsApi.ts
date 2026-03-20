@@ -9,6 +9,22 @@ export type DirectoryDoctor = {
   rating_count?: number
   consultation_fee_inr?: number
   doctor_specializations?: Array<{ specialization_name?: string }>
+  doctor_availability?: Array<DoctorAvailabilitySlot>
+}
+
+export type DoctorAvailabilitySlot = {
+  availability_type: 'virtual' | 'physical'
+  day_of_week: number
+  start_time: string
+  end_time: string
+  slot_minutes?: number | null
+  is_active?: boolean | null
+}
+
+export type DoctorProfile = DirectoryDoctor & {
+  user_id: string
+  email?: string | null
+  mobile?: string | null
 }
 
 export async function fetchDoctors(query?: { search?: string; specialization?: string; verificationStatus?: string; limit?: number }) {
@@ -19,4 +35,8 @@ export async function fetchDoctors(query?: { search?: string; specialization?: s
   if (query?.limit) params.set('limit', String(query.limit))
   const suffix = params.toString() ? `?${params.toString()}` : ''
   return apiGet<DirectoryDoctor[]>(`/doctors${suffix}`)
+}
+
+export async function fetchDoctorProfile(userId: string) {
+  return apiGet<DoctorProfile | null>(`/doctors/${userId}`)
 }
