@@ -183,11 +183,82 @@
   background: #fff;
 }
 
-.pickup-map iframe {
+.pickup-map .mapbox-container {
   width: 100%;
   height: 220px;
-  border: 0;
-  display: block;
+}
+
+.pickup-map .mapboxgl-canvas {
+  outline: none;
+}
+
+.pickup-map .mapbox-fallback,
+.pickup-map .mapbox-error {
+  padding: 14px;
+  font-size: 0.88rem;
+  color: #4b5563;
+}
+
+.pickup-map .mapbox-error {
+  color: #b91c1c;
+  border-top: 1px solid #eceff5;
+  background: #fff5f5;
+}
+
+.pickup-map .map-marker {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 3px solid #ffffff;
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.25);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.pickup-map .map-marker--user {
+  background: linear-gradient(140deg, #7c3aed, #2563eb);
+}
+
+.pickup-map .map-marker--clinic {
+  background: linear-gradient(140deg, #f97316, #ef4444);
+}
+
+.pickup-map .map-marker--clinic svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pickup-map .map-marker::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(124, 58, 237, 0.45);
+  animation: pickupMarkerPulse 1.6s ease-out infinite;
+}
+
+.pickup-map .map-marker--clinic::after {
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+@keyframes pickupMarkerPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.65;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .pickup-address {
@@ -196,6 +267,12 @@
   gap: 7px;
   color: #4c596f;
   font-size: 14px;
+}
+
+.pickup-address--clinic {
+  margin-top: 6px;
+  color: #667085;
+  font-size: 13px;
 }
 
 .pickup-footer {

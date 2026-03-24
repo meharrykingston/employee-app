@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { FiActivity, FiBell, FiBookOpen, FiChevronRight, FiFileText, FiHome, FiSettings, FiUser } from "react-icons/fi"
+import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import "./profile-info.css"
 
 const profileMenu = [
@@ -13,6 +14,14 @@ const profileMenu = [
 
 export default function ProfileInfo() {
   const navigate = useNavigate()
+  const authSession = getEmployeeAuthSession()
+  const companySession = getEmployeeCompanySession()
+  const companyName = companySession?.companyName?.trim() || "Astikan"
+  const emailDomain = (companySession?.companySlug || companyName)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+  const displayName = authSession?.fullName?.trim() || `${companyName} Employee`
+  const displayEmail = authSession?.email?.trim() || `employee@${emailDomain || "astikan"}.com`
 
   return (
     <main className="profile-hub-page app-page-enter">
@@ -27,8 +36,8 @@ export default function ProfileInfo() {
             <FiUser />
           </div>
           <div className="profile-identity">
-            <h2>Sam Mishra</h2>
-            <p>sam@hcl.com</p>
+            <h2>{displayName}</h2>
+            <p>{displayEmail}</p>
           </div>
         </article>
 

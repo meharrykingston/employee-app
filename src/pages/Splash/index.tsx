@@ -95,7 +95,6 @@ export default function Splash() {
         </div>
         <h1>Employee Health</h1>
         <p>Secure health platform</p>
-        <small>Please validate company code to continue</small>
         <div className="splash-loader" aria-hidden="true">
           <span />
         </div>

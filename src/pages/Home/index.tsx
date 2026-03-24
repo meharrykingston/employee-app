@@ -202,11 +202,19 @@ export default function Home() {
   const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
   const [latestHeartRate, setLatestHeartRate] = useState<{ value: number | null; eventAt?: string } | null>(null)
   const [latestBloodPressure, setLatestBloodPressure] = useState<{ sys: number | null; dia: number | null; eventAt?: string } | null>(null)
+  const [heroIndex, setHeroIndex] = useState(0)
+  const [heroDragging, setHeroDragging] = useState(false)
+  const heroDragStartX = useRef<number | null>(null)
+  const heroDragDelta = useRef(0)
+  const heroDragWidth = useRef(1)
+  const [heroDragOffset, setHeroDragOffset] = useState(0)
+  const heroContainerRef = useRef<HTMLDivElement | null>(null)
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
   const sosAlarmRef = useRef<number | null>(null)
   const sosAlarmAudioRef = useRef<HTMLAudioElement | null>(null)
+  const sosVibrateRef = useRef<number | null>(null)
   const scoreTarget = 90
 
   const [moodHint, setMoodHint] = useState("")
@@ -311,6 +319,122 @@ export default function Home() {
     const combined = [...unique, ...fallback]
     return combined.slice(0, 3)
   }, [moodHint, preferredTag, recentFastScroll, weatherTag])
+
+  const heroSlides = useMemo(
+    () => [
+      {
+        id: "pharmacy",
+        title: "Your medicines",
+        highlight: "are on the way",
+        subtitle: "Delivered in 5 MINS!",
+        cta: "Track delivery",
+        route: "/pharmacy/tracking",
+        tone: "tone-pharmacy",
+      },
+      {
+        id: "lab",
+        title: "Lab tests",
+        highlight: "at your doorstep",
+        subtitle: "Book sample pickup in minutes",
+        cta: "Book Lab Test",
+        route: "/lab-tests",
+        tone: "tone-lab",
+      },
+      {
+        id: "tele",
+        title: "Talk to a doctor",
+        highlight: "within minutes",
+        subtitle: "Video consults, anytime",
+        cta: "Start Consult",
+        route: "/teleconsultation",
+        tone: "tone-tele",
+      },
+    ],
+    [],
+  )
+  const labVariant = useMemo(() => ["a", "b", "c"][Math.floor(Math.random() * 3)], [])
+
+  function renderHeroIllustration(id: string) {
+    if (id === "lab") {
+      return (
+        <div className={`medicine-hero-illustration illustration-lab variant-${labVariant}`} aria-hidden="true">
+          <div className="lab-beaker" />
+          <div className="lab-chip" />
+          <span className="lab-icon lab-thermo"><FiThermometer /></span>
+          <span className="lab-icon lab-drop"><FiDroplet /></span>
+          <span className="lab-icon lab-activity"><FiActivity /></span>
+        </div>
+      )
+    }
+    if (id === "tele") {
+      return (
+        <div className="medicine-hero-illustration illustration-tele" aria-hidden="true">
+          <span className="tele-ring" />
+          <span className="tele-phone"><FiPhoneCall /></span>
+          <span className="tele-chat"><FiMessageCircle /></span>
+          <span className="tele-pulse" />
+        </div>
+      )
+    }
+    return (
+      <div className="medicine-hero-illustration illustration-pharmacy" aria-hidden="true">
+        <div className="route-line route-a" />
+        <div className="route-line route-b" />
+        <span className="hero-pin hero-shop"><FiMapPin /></span>
+        <span className="hero-pin hero-mid"><FiMapPin /></span>
+        <span className="hero-rider"><FiTruck /></span>
+        <span className="hero-pack"><FiPackage /></span>
+      </div>
+    )
+  }
+
+  useEffect(() => {
+    if (heroSlides.length <= 1) return
+    if (heroDragging) return
+    const interval = window.setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % heroSlides.length)
+    }, 4200)
+    return () => window.clearInterval(interval)
+  }, [heroSlides.length, heroDragging])
+
+  function onHeroDragStart(clientX: number) {
+    setHeroDragging(true)
+    heroDragStartX.current = clientX
+    heroDragDelta.current = 0
+    heroDragWidth.current = heroContainerRef.current?.getBoundingClientRect().width || 1
+    setHeroDragOffset(0)
+  }
+
+  function onHeroDragMove(clientX: number) {
+    if (heroDragStartX.current === null) return
+    const width = heroDragWidth.current || 1
+    const raw = clientX - heroDragStartX.current
+    const clamped = Math.max(-width * 0.85, Math.min(width * 0.85, raw))
+    heroDragDelta.current = clamped
+    setHeroDragOffset(clamped)
+  }
+
+  function onHeroDragEnd(clientX?: number) {
+    if (heroDragStartX.current === null) return
+    if (typeof clientX === "number") {
+      heroDragDelta.current = clientX - heroDragStartX.current
+    }
+    const delta = heroDragDelta.current
+    const width = heroDragWidth.current || 1
+    const threshold = Math.min(90, width * 0.18)
+    if (Math.abs(delta) > threshold) {
+      const skip =
+        Math.abs(delta) > width * 0.55 && heroSlides.length > 2 ? 2 : 1
+      setHeroIndex((prev) => {
+        if (delta > 0) return (prev - skip + heroSlides.length) % heroSlides.length
+        return (prev + skip) % heroSlides.length
+      })
+    }
+    heroDragStartX.current = null
+    heroDragDelta.current = 0
+    setHeroDragOffset(0)
+    window.setTimeout(() => setHeroDragging(false), 160)
+  }
 
   useEffect(() => {
     if (tipInteracting) return
@@ -544,6 +668,12 @@ export default function Home() {
         audio.play().catch(() => undefined)
       }
     }, 2000)
+    if ("vibrate" in navigator) {
+      navigator.vibrate(1200)
+      sosVibrateRef.current = window.setInterval(() => {
+        navigator.vibrate(1200)
+      }, 1600)
+    }
   }
 
   function stopSosAlarm() {
@@ -554,6 +684,13 @@ export default function Home() {
     if (audio) {
       audio.pause()
       audio.currentTime = 0
+    }
+    if (sosVibrateRef.current) {
+      window.clearInterval(sosVibrateRef.current)
+      sosVibrateRef.current = null
+      if ("vibrate" in navigator) {
+        navigator.vibrate(0)
+      }
     }
   }
 
@@ -724,24 +861,51 @@ export default function Home() {
         </nav>
 
         <section className="medicine-hero app-fade-stagger">
-          <article className="medicine-hero-card">
-            <div className="medicine-hero-copy">
-              <h2><strong>Your medicines</strong> are on the way</h2>
-              <p>Delivered in 5 MINS!</p>
-              <button className="medicine-hero-cta app-pressable" type="button" onClick={() => navigate("/pharmacy/tracking")}>
-                Track delivery
-              </button>
+          <div
+            className={`hero-slider ${heroDragging ? "dragging" : ""}`}
+            ref={heroContainerRef}
+            onPointerDown={(e) => {
+              if (e.pointerType === "mouse" && e.button !== 0) return
+              onHeroDragStart(e.clientX)
+              heroContainerRef.current?.setPointerCapture(e.pointerId)
+            }}
+            onPointerMove={(e) => {
+              if (!heroDragging) return
+              onHeroDragMove(e.clientX)
+            }}
+            onPointerUp={(e) => {
+              onHeroDragEnd(e.clientX)
+              heroContainerRef.current?.releasePointerCapture(e.pointerId)
+            }}
+            onPointerCancel={(e) => {
+              onHeroDragEnd()
+              heroContainerRef.current?.releasePointerCapture(e.pointerId)
+            }}
+          >
+            <div
+              className="hero-track"
+              style={{
+                transform: `translate3d(calc(-${heroIndex * 100}% + ${(-heroDragOffset / (heroDragWidth.current || 1)) * 100}%), 0, 0)`,
+              }}
+            >
+              {heroSlides.map((slide) => (
+                <article key={slide.id} className={`medicine-hero-card hero-slide ${slide.tone}`}>
+                  <div className="medicine-hero-copy">
+                    <h2><strong>{slide.title}</strong> {slide.highlight}</h2>
+                    <p>{slide.subtitle}</p>
+                    <button
+                      className="medicine-hero-cta app-pressable"
+                      type="button"
+                      onClick={() => navigate(slide.route)}
+                    >
+                      {slide.cta}
+                    </button>
+                  </div>
+                  {renderHeroIllustration(slide.id)}
+                </article>
+              ))}
             </div>
-
-            <div className="medicine-hero-illustration" aria-hidden="true">
-              <div className="route-line route-a" />
-              <div className="route-line route-b" />
-              <span className="hero-pin hero-shop"><FiMapPin /></span>
-              <span className="hero-pin hero-mid"><FiMapPin /></span>
-              <span className="hero-rider"><FiTruck /></span>
-              <span className="hero-pack"><FiPackage /></span>
-            </div>
-          </article>
+          </div>
         </section>
 
         <section className="section app-fade-stagger">

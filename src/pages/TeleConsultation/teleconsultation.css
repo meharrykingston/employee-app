@@ -371,6 +371,19 @@
   transform: translateY(0);
 }
 
+.doctor-loading {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding: 8px 0 4px;
+}
+
+.doctor-load-sentinel {
+  grid-column: 1 / -1;
+  height: 1px;
+}
+
 .doctor-card {
   position: relative;
   min-height: 224px;

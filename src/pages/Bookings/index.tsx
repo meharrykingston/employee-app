@@ -126,8 +126,13 @@ export default function Bookings() {
   const pastLab = mergedLabOrders.filter((item) => ["completed", "cancelled", "reported"].includes(item.status))
   const items = tab === "current" ? [...currentLab, ...current] : [...pastLab, ...past]
 
+  const formatStatus = (value?: string) => {
+    if (!value) return ""
+    return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
   return (
-    <main className="account-page app-page-enter">
+    <main className="account-page booking-page app-page-enter">
       <header className="account-header app-fade-stagger">
         <button className="account-back app-pressable" onClick={() => navigate(-1)} type="button" aria-label="Back">&lt;</button>
         <h1>Bookings</h1>
@@ -141,15 +146,27 @@ export default function Bookings() {
         <div className="notice-list app-fade-stagger">
           {items.map((item: any) => {
             const canJoin = Boolean(item.sessionId)
+            const statusLabel = formatStatus(item.status)
+            const statusClass = item.status ? `status-${String(item.status).toLowerCase().replace(/\\s+/g, "-")}` : ""
             return (
-              <article className="notice-item" key={item.id || item.title}>
-                <h4>{item.title}</h4>
-                <small>{item.at}</small>
-                {item.status && <small>Status: {item.status}</small>}
+              <article className="notice-item booking-item" key={item.id || item.title}>
+                <div className="booking-head">
+                  <h4>{item.title}</h4>
+                  {item.status && (
+                    <span className={`booking-status ${statusClass}`}>
+                      {statusLabel}
+                    </span>
+                  )}
+                </div>
+                <div className="booking-meta">
+                  <span>{item.at}</span>
+                  {item.type === "lab" && <span className="booking-tag">Lab</span>}
+                  {item.sessionId && <span className="booking-tag">Teleconsult</span>}
+                </div>
                 {canJoin && item.sessionId && (
                   <div className="booking-actions">
                     <button
-                      className="app-pressable"
+                      className="app-pressable booking-btn secondary"
                       type="button"
                       onClick={() =>
                         navigate(`/teleconsultation/overview/${item.id}`)
@@ -158,7 +175,7 @@ export default function Bookings() {
                       View Details
                     </button>
                     <button
-                      className="app-pressable"
+                      className="app-pressable booking-btn primary"
                       type="button"
                       onClick={() =>
                         navigate("/teleconsultation", {
@@ -176,13 +193,15 @@ export default function Bookings() {
                   </div>
                 )}
                 {item.type === "lab" && (
-                  <button
-                    className="app-pressable"
-                    type="button"
-                    onClick={() => navigate(`/lab-tests/track/${item.id}`)}
-                  >
-                    Track Status
-                  </button>
+                  <div className="booking-actions single">
+                    <button
+                      className="app-pressable booking-btn primary"
+                      type="button"
+                      onClick={() => navigate(`/lab-tests/track/${item.id}`)}
+                    >
+                      Track Status
+                    </button>
+                  </div>
                 )}
               </article>
             )

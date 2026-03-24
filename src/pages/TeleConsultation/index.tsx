@@ -21,7 +21,7 @@ import { playAppSound } from "../../utils/sound"
 import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
 import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
-import { fetchDoctors as fetchDoctorDirectory } from "../../services/doctorsApi"
+import { fetchDoctors as fetchDoctorDirectory, type DirectoryDoctor } from "../../services/doctorsApi"
 import { createTeleconsultSession, joinTeleconsultSession, type TeleconsultRtcPayload } from "../../services/teleconsultApi"
 import { addNotification } from "../../services/notificationCenter"
 import "./teleconsultation.css"
@@ -36,6 +36,7 @@ type Doctor = {
   eta: string
   fee: number
   avatar: string
+  practiceAddress?: string | null
 }
 
 type JourneyStep = "options" | "ride" | "video"
@@ -263,6 +264,10 @@ export default function TeleConsultation() {
   const [usingAgoraTemplate, setUsingAgoraTemplate] = useState(false)
   const [activeRtc, setActiveRtc] = useState<TeleconsultRtcPayload | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [doctorOffset, setDoctorOffset] = useState(0)
+  const [doctorHasMore, setDoctorHasMore] = useState(true)
+  const [doctorLoading, setDoctorLoading] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const [forceAgora, setForceAgora] = useState(false)
   const [hasRemoteStream, setHasRemoteStream] = useState(false)
   const [hasLocalStream, setHasLocalStream] = useState(false)
@@ -280,6 +285,7 @@ export default function TeleConsultation() {
   const callExitHandledRef = useRef(false)
 
   const selectedDoctorInfo = doctors.find((doctor) => doctor.id === selectedDoctor) ?? null
+  const effectiveStep: JourneyStep = step === "video" && !selectedDoctorInfo ? "options" : step
   const joinWindowStart = useMemo(() => {
     if (!scheduledAt) return null
     const scheduledMs = Date.parse(scheduledAt)
@@ -299,34 +305,51 @@ export default function TeleConsultation() {
     eta: "15 mins",
     fee: 28,
     avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=160&q=80",
+    practiceAddress: null,
   }
 
-  useEffect(() => {
-    let active = true
-    void ensureDoctorDirectory()
-      .then((rows) => {
-        if (!active) return
-        const mapped = rows.map((row, index) => {
-          const fallback = DEMO_DOCTORS[index % DEMO_DOCTORS.length]
-          return {
-            id: row.user_id,
-            name: row.full_name ?? row.full_display_name ?? fallback.fullName,
-            specialty: row.doctor_specializations?.[0]?.specialization_name ?? fallback.specialization,
-            rating: Number(row.rating_avg ?? 4.7),
-            reviews: Number(row.rating_count ?? 85),
-            distance: fallback.distance,
-            eta: fallback.eta,
-            fee: Number(row.consultation_fee_inr ?? fallback.fee),
-            avatar: row.avatar_url ?? fallback.avatar,
-          }
-        })
-        setDoctors(mapped)
-        if (!selectedDoctor && mapped[0]) {
-          setSelectedDoctor(mapped[0].id)
-        }
+  const PAGE_SIZE = 12
+
+  const mapDoctorRows = (rows: DirectoryDoctor[]) =>
+    rows.map((row, index) => {
+      const fallback = DEMO_DOCTORS[index % DEMO_DOCTORS.length]
+      return {
+        id: row.user_id,
+        name: row.full_name ?? row.full_display_name ?? fallback.fullName,
+        specialty: row.doctor_specializations?.[0]?.specialization_name ?? fallback.specialization,
+        rating: Number(row.rating_avg ?? 4.7),
+        reviews: Number(row.rating_count ?? 85),
+        distance: fallback.distance,
+        eta: fallback.eta,
+        fee: Number(row.consultation_fee_inr ?? fallback.fee),
+        avatar: row.avatar_url ?? fallback.avatar,
+        practiceAddress: row.practice_address ?? null,
+      }
+    })
+
+  async function loadDoctors(reset = false) {
+    if (doctorLoading) return
+    setDoctorLoading(true)
+    try {
+      const offset = reset ? 0 : doctorOffset
+      const rows = await fetchDoctorDirectory({
+        limit: PAGE_SIZE,
+        offset,
       })
-      .catch(() => {
-        if (!active) return
+      const mapped = mapDoctorRows(rows)
+      if (reset) {
+        setDoctors(mapped)
+      } else {
+        setDoctors((prev) => [...prev, ...mapped])
+      }
+      const nextOffset = offset + mapped.length
+      setDoctorOffset(nextOffset)
+      setDoctorHasMore(mapped.length === PAGE_SIZE)
+      if (!selectedDoctor && mapped[0]) {
+        setSelectedDoctor(mapped[0].id)
+      }
+    } catch {
+      if (reset) {
         setDoctors(
           DEMO_DOCTORS.map((doctor) => ({
             id: doctor.handle,
@@ -338,19 +361,46 @@ export default function TeleConsultation() {
             eta: doctor.eta,
             fee: doctor.fee,
             avatar: doctor.avatar,
+            practiceAddress: null,
           })),
         )
-      })
+        setDoctorHasMore(false)
+      }
+    } finally {
+      setDoctorLoading(false)
+    }
+  }
 
+  useEffect(() => {
+    setDoctorOffset(0)
+    setDoctorHasMore(true)
+    void loadDoctors(true)
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    if (!loadMoreRef.current) return () => {}
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!active) return
+        if (entries.some((entry) => entry.isIntersecting) && doctorHasMore && !doctorLoading) {
+          void loadDoctors(false)
+        }
+      },
+      { rootMargin: "200px" },
+    )
+    observer.observe(loadMoreRef.current)
     return () => {
       active = false
+      observer.disconnect()
     }
-  }, [])
+  }, [doctorHasMore, doctorLoading])
 
   const specialtyFilters = useMemo(() => {
-    const unique = Array.from(new Set(doctors.map((doctor) => doctor.specialty)))
+    const base = ["Internal Medicine", "Cardiology", "Dermatology", "Pulmonology"]
+    const unique = Array.from(new Set([...base, ...doctors.map((doctor) => doctor.specialty)]))
     return ["All Specialties", ...unique] as const
-  }, [])
+  }, [doctors])
 
   const specialtyIcons = useMemo<Record<string, ReactElement>>(
     () => ({
@@ -371,9 +421,9 @@ export default function TeleConsultation() {
       return bySpecialty && byText
     })
     if (filtered.length >= 2) return filtered
-    if (filtered.length > 0) return filtered.concat(doctors.filter((doc) => doc.id !== filtered[0].id)).slice(0, 2)
-    return doctors.slice(0, 2)
-  }, [query, activeSpecialty, doctors])
+    if (filtered.length > 0) return filtered
+    return []
+  }, [doctors, activeSpecialty, query])
 
   const rideSteps = [
     "Ride is on the way to pick you up",
@@ -430,6 +480,16 @@ export default function TeleConsultation() {
       setSelectedDoctor(visibleDoctors[0].id)
     }
   }, [selectedDoctor, visibleDoctors])
+
+  useEffect(() => {
+    if (step !== "video") return
+    if (selectedDoctorInfo) return
+    if (doctors.length > 0) {
+      setSelectedDoctor(doctors[0].id)
+      return
+    }
+    setStep("options")
+  }, [doctors, selectedDoctorInfo, step])
 
   useEffect(() => {
     if (step !== "ride" || !selectedDoctorInfo) return
@@ -961,7 +1021,7 @@ export default function TeleConsultation() {
 
   return (
     <main className="tele-page app-page-enter">
-      {step !== "video" && (
+      {effectiveStep !== "video" && (
         <header className="tele-header app-fade-stagger">
           <button className="tele-back app-pressable" onClick={() => goBackOrFallback(navigate)} type="button" aria-label="Back">
             <FiArrowLeft />
@@ -973,8 +1033,8 @@ export default function TeleConsultation() {
         </header>
       )}
 
-      <section className={`tele-content app-content-slide ${step === "video" ? "tele-content-call" : ""}`}>
-        {step === "options" && (
+      <section className={`tele-content app-content-slide ${effectiveStep === "video" ? "tele-content-call" : ""}`}>
+        {effectiveStep === "options" && (
           <>
             <section className="mode-row app-fade-stagger">
               <button
@@ -1054,6 +1114,10 @@ export default function TeleConsultation() {
                     </div>
                   </button>
                 ))}
+                {doctorLoading && (
+                  <div className="doctor-loading">Loading more doctors...</div>
+                )}
+                <div ref={loadMoreRef} className="doctor-load-sentinel" />
               </div>
             </section>
 
@@ -1061,7 +1125,7 @@ export default function TeleConsultation() {
           </>
         )}
 
-        {step === "video" && selectedDoctorInfo && (
+        {effectiveStep === "video" && selectedDoctorInfo && (
           <section className={`video-stage tele-call-stage app-fade-stagger ${usingZegoTemplate || usingAgoraTemplate ? "video-stage-template" : ""}`}>
             {!joinReady && (
               <div className="tele-wait-card">
@@ -1202,7 +1266,7 @@ export default function TeleConsultation() {
           </section>
         )}
 
-        {step === "ride" && (
+        {effectiveStep === "ride" && (
           <section className="ride-stage app-fade-stagger">
             <h3>OPD Ride Tracking</h3>
             <p>{rideDoctor.name} is booked. Live ride updates below.</p>
@@ -1212,7 +1276,7 @@ export default function TeleConsultation() {
                 title="Ride live map"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://maps.google.com/maps?q=12.9716,77.5946%20to%2012.9352,77.6245&z=12&output=embed"
+                src="https://maps.google.com/maps?q=28.6139,77.2090%20to%2028.6304,77.2177&z=12&output=embed"
               />
               <div className="ride-pin user">You</div>
               <div className="ride-route" />
@@ -1229,7 +1293,7 @@ export default function TeleConsultation() {
         )}
       </section>
 
-      {step === "options" && (
+      {effectiveStep === "options" && (
         <footer className="tele-footer app-fade-stagger">
           {selectedDoctorInfo && (
             <div className="book-actions">
@@ -1268,19 +1332,19 @@ export default function TeleConsultation() {
         </footer>
       )}
 
-      {step === "ride" && rideBanner === "booked" && (
+      {effectiveStep === "ride" && rideBanner === "booked" && (
         <div className="booked-toast app-page-enter" role="status">
           <FiCheckCircle /> Appointment booked.
         </div>
       )}
 
-      {step === "ride" && rideBanner === "onway" && (
+      {effectiveStep === "ride" && rideBanner === "onway" && (
         <div className="booked-toast onway app-page-enter" role="status">
           <FiCheckCircle /> Your ride is on the way.
         </div>
       )}
 
-      {step === "ride" && rideBanner === "reached" && (
+      {effectiveStep === "ride" && rideBanner === "reached" && (
         <div className="booked-toast app-page-enter" role="status">
           <FiCheckCircle /> Arrived. Please proceed to doctor cabin.
         </div>

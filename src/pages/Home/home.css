@@ -213,6 +213,35 @@
   margin-top: 10px;
 }
 
+.hero-slider {
+  overflow: hidden;
+  border-radius: 18px;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+
+.hero-slider.dragging {
+  cursor: grabbing;
+}
+
+.hero-track {
+  display: flex;
+  transition: transform 420ms ease;
+  will-change: transform;
+  align-items: stretch;
+  width: 100%;
+}
+
+.hero-slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+}
+
+.hero-slider.dragging .hero-track {
+  transition: none;
+}
+
 .medicine-hero-card {
   position: relative;
   border-radius: 18px;
@@ -225,8 +254,28 @@
     radial-gradient(circle at 88% 80%, rgba(241, 157, 255, 0.22), transparent 40%),
     linear-gradient(140deg, #6c1d8f 0%, #8427a9 54%, #5d1a7d 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+}
+
+.medicine-hero-copy {
+  min-width: 0;
+}
+
+.medicine-hero-card.tone-lab {
+  background:
+    radial-gradient(circle at 22% 12%, rgba(255, 255, 255, 0.18), transparent 42%),
+    radial-gradient(circle at 88% 80%, rgba(136, 184, 255, 0.25), transparent 40%),
+    linear-gradient(140deg, #1f3a8a 0%, #1e40af 52%, #1e3a8a 100%);
+}
+
+.medicine-hero-card.tone-tele {
+  background:
+    radial-gradient(circle at 22% 12%, rgba(255, 255, 255, 0.2), transparent 42%),
+    radial-gradient(circle at 88% 80%, rgba(255, 198, 132, 0.26), transparent 40%),
+    linear-gradient(140deg, #a14525 0%, #bf4e2e 52%, #7a2f16 100%);
 }
 
 .medicine-hero-copy h2 {
@@ -260,25 +309,34 @@
 
 .medicine-hero-illustration {
   position: relative;
-  min-height: 130px;
+  height: 120px;
+  width: 140px;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+  outline: none;
+  border-radius: 14px;
+  overflow: visible;
 }
 
 .route-line {
   position: absolute;
-  border: 2px dashed rgba(255, 151, 248, 0.66);
+  border: 2px dashed rgba(255, 255, 255, 0.75);
   border-radius: 999px;
+  z-index: 1;
 }
 
 .route-line.route-a {
-  left: 4%;
-  right: 28%;
-  top: 68%;
+  left: -14%;
+  right: 20%;
+  top: 62%;
 }
 
 .route-line.route-b {
-  left: 38%;
-  right: 8%;
-  top: 42%;
+  left: 24%;
+  right: -12%;
+  top: 36%;
 }
 
 .hero-pin {
@@ -288,8 +346,10 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #ff78d3;
-  color: #6f0c74;
+  background: #ff9adf;
+  color: #5f0a64;
+  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.3);
+  z-index: 2;
 }
 
 .hero-pin svg {
@@ -298,19 +358,19 @@
 }
 
 .hero-shop {
-  left: 0%;
-  top: 58%;
+  left: -6%;
+  top: 54%;
 }
 
 .hero-mid {
-  left: 50%;
-  top: 32%;
+  left: 40%;
+  top: 30%;
 }
 
 .hero-rider {
   position: absolute;
-  right: 8%;
-  top: 28%;
+  right: -2%;
+  top: 20%;
   width: 68px;
   height: 68px;
   border-radius: 18px;
@@ -319,6 +379,7 @@
   background: rgba(255, 108, 140, 0.93);
   color: #fff;
   animation: riderFloat 1500ms ease-in-out infinite;
+  z-index: 2;
 }
 
 .hero-rider svg {
@@ -328,8 +389,8 @@
 
 .hero-pack {
   position: absolute;
-  right: 4%;
-  top: 20%;
+  right: 8%;
+  top: 6%;
   width: 26px;
   height: 26px;
   border-radius: 8px;
@@ -337,11 +398,187 @@
   place-items: center;
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
+  z-index: 2;
 }
 
 .hero-pack svg {
   width: 14px;
   height: 14px;
+}
+
+.illustration-lab {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lab-beaker {
+  position: absolute;
+  right: 6%;
+  top: 10%;
+  width: 76px;
+  height: 76px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.16), rgba(120, 196, 255, 0.35));
+  box-shadow: 0 12px 22px rgba(12, 42, 92, 0.28);
+}
+
+.lab-beaker::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  height: 26px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(148, 237, 255, 0.95), rgba(82, 166, 255, 0.9));
+}
+
+.lab-chip {
+  position: absolute;
+  right: 38%;
+  bottom: 12%;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.lab-icon {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+}
+
+.lab-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lab-thermo {
+  left: 8%;
+  top: 20%;
+}
+
+.lab-drop {
+  left: 22%;
+  bottom: 18%;
+  background: rgba(96, 204, 255, 0.7);
+}
+
+.lab-activity {
+  right: 28%;
+  top: 16%;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.illustration-lab.variant-b .lab-thermo {
+  left: 18%;
+  top: 10%;
+}
+
+.illustration-lab.variant-b .lab-drop {
+  left: 10%;
+  bottom: 16%;
+}
+
+.illustration-lab.variant-b .lab-activity {
+  right: 14%;
+  top: 24%;
+}
+
+.illustration-lab.variant-b .lab-chip {
+  right: 48%;
+  bottom: 8%;
+}
+
+.illustration-lab.variant-c .lab-thermo {
+  left: 6%;
+  top: 30%;
+}
+
+.illustration-lab.variant-c .lab-drop {
+  left: 24%;
+  bottom: 8%;
+}
+
+.illustration-lab.variant-c .lab-activity {
+  right: 22%;
+  top: 8%;
+}
+
+.illustration-lab.variant-c .lab-chip {
+  right: 30%;
+  bottom: 20%;
+}
+
+.illustration-tele {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tele-ring {
+  position: absolute;
+  left: 14%;
+  top: 18%;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.65);
+}
+
+.tele-phone {
+  position: absolute;
+  right: 6%;
+  top: 18%;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 164, 98, 0.95);
+  color: #fff;
+  box-shadow: 0 12px 20px rgba(39, 20, 11, 0.35);
+}
+
+.tele-phone svg {
+  width: 28px;
+  height: 28px;
+}
+
+.tele-chat {
+  position: absolute;
+  left: 8%;
+  bottom: 16%;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.tele-chat svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tele-pulse {
+  position: absolute;
+  right: 40%;
+  bottom: 18%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.12);
 }
 
 .swiper-dots,

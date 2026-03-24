@@ -8,6 +8,7 @@ export type DirectoryDoctor = {
   rating_avg?: number
   rating_count?: number
   consultation_fee_inr?: number
+  practice_address?: string | null
   doctor_specializations?: Array<{ specialization_name?: string }>
   doctor_availability?: Array<DoctorAvailabilitySlot>
 }
@@ -27,12 +28,13 @@ export type DoctorProfile = DirectoryDoctor & {
   mobile?: string | null
 }
 
-export async function fetchDoctors(query?: { search?: string; specialization?: string; verificationStatus?: string; limit?: number }) {
+export async function fetchDoctors(query?: { search?: string; specialization?: string; verificationStatus?: string; limit?: number; offset?: number }) {
   const params = new URLSearchParams()
   if (query?.search) params.set('search', query.search)
   if (query?.specialization) params.set('specialization', query.specialization)
   if (query?.verificationStatus) params.set('verificationStatus', query.verificationStatus)
   if (query?.limit) params.set('limit', String(query.limit))
+  if (query?.offset !== undefined) params.set('offset', String(query.offset))
   const suffix = params.toString() ? `?${params.toString()}` : ''
   return apiGet<DirectoryDoctor[]>(`/doctors${suffix}`)
 }

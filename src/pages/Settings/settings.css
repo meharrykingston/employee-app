@@ -170,6 +170,10 @@
   gap: 10px;
 }
 
+.booking-page .notice-list {
+  gap: 12px;
+}
+
 .notice-item {
   border: 1px solid #dce3ef;
   border-radius: 13px;
@@ -209,6 +213,101 @@
   background: #f5f7ff;
   color: #3a3f59;
   font-weight: 600;
+}
+
+.booking-page .notice-item {
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(23, 32, 52, 0.08);
+}
+
+.booking-page .booking-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.booking-page .booking-head h4 {
+  font-size: 0.98rem;
+  color: #1f2a44;
+}
+
+.booking-page .booking-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 6px;
+  color: #6f7a91;
+  font-size: 0.78rem;
+}
+
+.booking-page .booking-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f4ff;
+  color: #40548c;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.booking-page .booking-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #39477a;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.booking-page .booking-status.status-created,
+.booking-page .booking-status.status-confirmed {
+  background: #e9f7ef;
+  color: #0f7a3d;
+}
+
+.booking-page .booking-status.status-pending {
+  background: #fff3e7;
+  color: #a15714;
+}
+
+.booking-page .booking-status.status-cancelled,
+.booking-page .booking-status.status-failed {
+  background: #ffe9ed;
+  color: #b4232f;
+}
+
+.booking-page .booking-status.status-completed,
+.booking-page .booking-status.status-reported {
+  background: #e9f1ff;
+  color: #2a4ea1;
+}
+
+.booking-page .booking-actions {
+  margin-top: 12px;
+}
+
+.booking-page .booking-actions.single {
+  grid-template-columns: 1fr;
+}
+
+.booking-page .booking-btn {
+  min-height: 38px;
+  border-radius: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.booking-page .booking-btn.primary {
+  background: linear-gradient(135deg, #6b6ff7, #8e5bff);
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(108, 96, 240, 0.22);
+}
+
+.booking-page .booking-btn.secondary {
+  background: #f4f6ff;
+  color: #3a4b7b;
+  border-color: #d7def1;
 }
 
 .notice-meta {
