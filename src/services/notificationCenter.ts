@@ -1,54 +1,131 @@
-﻿export type AppNotification = {
+﻿import { apiGet, apiPost } from "./api"
+import { getEmployeeAuthSession } from "./authApi"
+
+export type AppNotification = {
   id: string
   title: string
   body: string
-  time: string
-  group: "Today" | "Yesterday"
-  unread?: boolean
   channel: "delivery" | "consult" | "health" | "system"
-  cta?: { label: string; route: string }
-  joinWindowStart?: string
-  teleconsultSessionId?: string
-  doctorId?: string
-  scheduledAt?: string
+  time: string
+  group: string
+  unread: boolean
+  cta?: { label: string; route: string } | null
+  teleconsultSessionId?: string | null
+  doctorId?: string | null
+  scheduledAt?: string | null
 }
 
 const STORAGE_KEY = "employee_notifications"
 
 export const seedNotifications: AppNotification[] = [
   {
-    id: "n1",
-    title: "Medicine order is packed",
-    body: "Rider will pick up from HealthPlus in 2 mins. ETA 5 mins.",
-    time: "2 min ago",
+    id: "lab-001",
+    title: "Lab report ready",
+    body: "Your recent HbA1c report is now available.",
+    channel: "health",
+    time: "Just now",
     group: "Today",
     unread: true,
-    channel: "delivery",
-    cta: { label: "Track Order", route: "/pharmacy/tracking" },
   },
   {
-    id: "n2",
-    title: "Doctor is ready in waiting room",
-    body: "Dr. Riza Yuhi started your slot. Join now to avoid reschedule.",
-    time: "8 min ago",
+    id: "ride-021",
+    title: "Ride assigned",
+    body: "Your OPD pickup is on the way.",
+    channel: "consult",
+    time: "12 mins ago",
     group: "Today",
     unread: true,
-    channel: "consult",
-    cta: { label: "Join Now", route: "/teleconsultation" },
-    joinWindowStart: new Date(Date.now() - 60 * 1000).toISOString(),
-    teleconsultSessionId: "demo-session",
-    doctorId: "riza",
+  },
+  {
+    id: "system-110",
+    title: "Weekly summary",
+    body: "You earned 250 coins this week. Keep it up.",
+    channel: "system",
+    time: "Yesterday",
+    group: "Earlier",
+    unread: false,
   },
 ]
 
-function timeGroup(date: Date): "Today" | "Yesterday" {
-  const now = new Date()
-  const isToday = now.toDateString() === date.toDateString()
-  return isToday ? "Today" : "Yesterday"
+function normalizeItem(item: any): AppNotification {
+  return {
+    id: item.id || item._id,
+    title: item.title,
+    body: item.body,
+    channel: item.channel ?? "system",
+    time: item.time ?? new Date(item.createdAt ?? Date.now()).toLocaleString(),
+    group: item.group ?? "Today",
+    unread: Boolean(item.unread),
+    cta: item.cta ?? null,
+    teleconsultSessionId: item.teleconsultSessionId ?? item.meta?.teleconsultSessionId ?? null,
+    doctorId: item.doctorId ?? item.meta?.doctorId ?? null,
+    scheduledAt: item.scheduledAt ?? item.meta?.scheduledAt ?? null,
+  }
 }
 
-function formatTime(date: Date) {
-  return date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+export async function fetchNotifications() {
+  const auth = getEmployeeAuthSession()
+  if (!auth?.userId) throw new Error("Missing employee session")
+  const params = new URLSearchParams({ employeeId: auth.userId })
+  const data = await apiGet<any[]>(`/notifications?${params.toString()}`)
+  return data.map(normalizeItem)
+}
+
+export async function fetchUnreadCount() {
+  const auth = getEmployeeAuthSession()
+  if (!auth?.userId) throw new Error("Missing employee session")
+  const params = new URLSearchParams({ employeeId: auth.userId })
+  const data = await apiGet<{ count: number }>(`/notifications/unread-count?${params.toString()}`)
+  return data.count
+}
+
+export async function markNotificationsRead(ids?: string[]) {
+  const auth = getEmployeeAuthSession()
+  if (!auth?.userId) throw new Error("Missing employee session")
+  await apiPost<{ updated: boolean }, { employeeId: string; ids?: string[] }>("/notifications/mark-read", {
+    employeeId: auth.userId,
+    ids,
+  })
+}
+
+export async function addNotification(input: Omit<AppNotification, "id" | "time" | "group" | "unread">) {
+  const auth = getEmployeeAuthSession()
+  if (!auth?.userId) throw new Error("Missing employee session")
+  const payload = {
+    employeeId: auth.userId,
+    title: input.title,
+    body: input.body,
+    channel: input.channel,
+    cta: input.cta ?? null,
+  }
+  const item = await apiPost<any, typeof payload>("/notifications", payload)
+  const normalized = normalizeItem(item)
+  window.dispatchEvent(new CustomEvent("app-notification", { detail: normalized }))
+  return normalized
+}
+
+export async function pushBrowserNotification(title: string, body: string) {
+  if (!("Notification" in window)) return false
+  let permission = Notification.permission
+  if (permission === "default") {
+    permission = await Notification.requestPermission()
+  }
+  if (permission !== "granted") return false
+
+  if ("serviceWorker" in navigator) {
+    const reg = await navigator.serviceWorker.getRegistration()
+    if (reg) {
+      await reg.showNotification(title, {
+        body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+      })
+      return true
+    }
+  }
+
+  new Notification(title, { body })
+  return true
 }
 
 export function getStoredNotifications(): AppNotification[] {
@@ -56,11 +133,10 @@ export function getStoredNotifications(): AppNotification[] {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw) as AppNotification[]
-    if (Array.isArray(parsed)) return parsed
+    return parsed
   } catch {
     return []
   }
-  return []
 }
 
 export function setStoredNotifications(items: AppNotification[]) {
@@ -70,46 +146,4 @@ export function setStoredNotifications(items: AppNotification[]) {
 export function getNotificationsWithSeed(): AppNotification[] {
   const stored = getStoredNotifications()
   return stored.length ? stored : seedNotifications
-}
-
-export async function pushBrowserNotification(title: string, body: string) {
-  if (!("Notification" in window)) return false
-  let permission = Notification.permission
-  if (permission !== "granted") {
-    permission = await Notification.requestPermission()
-  }
-  if (permission !== "granted") return false
-
-  const options = {
-    body,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
-    tag: `notif-${Date.now()}`,
-  }
-
-  if ("serviceWorker" in navigator) {
-    const reg = await navigator.serviceWorker.getRegistration()
-    if (reg) {
-      await reg.showNotification(title, options)
-      return true
-    }
-  }
-
-  new Notification(title, options)
-  return true
-}
-
-export async function addNotification(input: Omit<AppNotification, "id" | "time" | "group" | "unread">) {
-  const now = new Date()
-  const item: AppNotification = {
-    ...input,
-    id: `n-${now.getTime()}`,
-    time: formatTime(now),
-    group: timeGroup(now),
-    unread: true,
-  }
-  const next = [item, ...getStoredNotifications()]
-  setStoredNotifications(next)
-  window.dispatchEvent(new CustomEvent("app-notification", { detail: item }))
-  return item
 }

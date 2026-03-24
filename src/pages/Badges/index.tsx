@@ -1,4 +1,4 @@
-﻿import { useState } from "react"
+﻿import { useEffect, useMemo, useState } from "react"
 import {
   FiArrowLeft,
   FiAward,
@@ -13,6 +13,7 @@ import {
   FiZap,
 } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
+import { fetchGamificationBadges } from "../../services/gamificationApi"
 import "./badges.css"
 
 type Tab = "leaderboard" | "badges"
@@ -45,35 +46,91 @@ type BadgeCard = {
   progress?: number
 }
 
-const topRanks: TopRank[] = [
-  { initials: "MC", name: "Michael Chen", coins: 5620, badges: 22, tone: "silver" },
-  { initials: "SJ", name: "Sarah Johnson", coins: 5840, badges: 24, tone: "gold" },
-  { initials: "ER", name: "Emily Rodriguez", coins: 5480, badges: 21, tone: "bronze" },
-]
-
-const rankings: RankItem[] = [
-  { rank: 1, initials: "SJ", name: "Sarah Johnson", level: 28, streak: 45, coins: 5840, badges: 24, trend: 0 },
-  { rank: 2, initials: "MC", name: "Michael Chen", level: 26, streak: 38, coins: 5620, badges: 22, trend: 1 },
-  { rank: 3, initials: "ER", name: "Emily Rodriguez", level: 25, streak: 42, coins: 5480, badges: 21, trend: -1 },
-  { rank: 4, initials: "DK", name: "David Kim", level: 23, streak: 30, coins: 4920, badges: 19, trend: 1 },
-  { rank: 5, initials: "JT", name: "Jessica Taylor", level: 22, streak: 28, coins: 4750, badges: 18, trend: -1 },
-  { rank: 42, initials: "YU", name: "You (You)", level: 12, streak: 12, coins: 1250, badges: 8, trend: 3, isYou: true },
-]
-
-const badgeCollection: BadgeCard[] = [
-  { title: "Early Bird", subtitle: "Complete 30 morning tasks", rarity: "Common", unlocked: true },
-  { title: "Meditation Master", subtitle: "100 meditation sessions", rarity: "Rare", unlocked: true },
-  { title: "Step Champion", subtitle: "Walk 1 million steps", rarity: "Epic", unlocked: true },
-  { title: "Health Legend", subtitle: "Complete 365 daily tasks", rarity: "Legendary", unlocked: false, progress: 42 },
-  { title: "Hydration Hero", subtitle: "Meet water goal for 50 days", rarity: "Common", unlocked: true },
-  { title: "Stress Warrior", subtitle: "Complete 200 stress relief sessions", rarity: "Rare", unlocked: false, progress: 65 },
-  { title: "Fitness Freak", subtitle: "500 workout sessions", rarity: "Epic", unlocked: false, progress: 28 },
-  { title: "Weekend Warrior", subtitle: "Complete all weekend tasks for 20 weeks", rarity: "Legendary", unlocked: false, progress: 15 },
-]
 
 export default function Badges() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>("leaderboard")
+
+  const [topRanks, setTopRanks] = useState<TopRank[]>([])
+  const [rankings, setRankings] = useState<RankItem[]>([])
+  const [badgeCollection, setBadgeCollection] = useState<BadgeCard[]>([])
+  const [summary, setSummary] = useState<{
+    yourRank: number
+    level: number
+    streak: number
+    coins: number
+    badgesUnlocked: number
+  } | null>(null)
+
+  const badgeStats = useMemo(() => {
+    const unlocked = summary?.badgesUnlocked ?? 0
+    const total = badgeCollection.length
+    const nextLocked = badgeCollection.find((badge) => !badge.unlocked && typeof badge.progress === "number")
+    return {
+      unlocked,
+      total,
+      nextUnlock: typeof nextLocked?.progress === "number" ? `${nextLocked.progress}%` : "0%",
+    }
+  }, [badgeCollection, summary?.badgesUnlocked])
+
+  const nextGoal = useMemo(() => {
+    const rank = summary?.yourRank ?? null
+    if (!rank) return "Top 30"
+    if (rank > 30) return "Top 30"
+    if (rank > 10) return "Top 10"
+    if (rank > 5) return "Top 5"
+    return "Top 3"
+  }, [summary?.yourRank])
+
+  useEffect(() => {
+    let active = true
+    void fetchGamificationBadges()
+      .then((data) => {
+        if (!active) return
+        setSummary({
+          yourRank: data.yourRank ?? 0,
+          level: data.level ?? 0,
+          streak: data.streak ?? 0,
+          coins: data.coins ?? 0,
+          badgesUnlocked: data.badgesUnlocked ?? 0,
+        })
+        setTopRanks(
+          (data.topRanks ?? []).map((item) => ({
+            initials: item.initials,
+            name: item.name,
+            coins: item.coins,
+            badges: item.badges,
+            tone: (item.tone as TopRank["tone"]) || "silver",
+          })),
+        )
+        setRankings(
+          (data.rankings ?? []).map((item) => ({
+            rank: item.rank,
+            initials: item.initials,
+            name: item.name,
+            level: item.level,
+            streak: item.streak,
+            coins: item.coins,
+            badges: item.badges,
+            trend: (item.trend as RankItem["trend"]) ?? 0,
+            isYou: item.isYou,
+          })),
+        )
+        setBadgeCollection(
+          (data.badgeCollection ?? []).map((item) => ({
+            title: item.title,
+            subtitle: item.subtitle,
+            rarity: (item.rarity as BadgeCard["rarity"]) || "Common",
+            unlocked: item.unlocked,
+            progress: item.progress ?? undefined,
+          })),
+        )
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <main className="badges-page">
@@ -110,19 +167,19 @@ export default function Badges() {
         <>
           <section className="badges-hero-card">
             <div className="badges-hero-left">
-              <div className="badges-rank-bubble">#42</div>
+              <div className="badges-rank-bubble">#{summary?.yourRank ?? "--"}</div>
               <div>
                 <p className="badges-hero-label">Your Rank</p>
                 <h2>You</h2>
                 <div className="badges-hero-pills">
-                  <span>Level 12</span>
-                  <span>12 days</span>
+                  <span>Level {summary?.level ?? 0}</span>
+                  <span>{summary?.streak ?? 0} days</span>
                 </div>
               </div>
             </div>
             <div className="badges-hero-right">
               <p>Total Coins</p>
-              <strong>1250</strong>
+              <strong>{summary?.coins ?? 0}</strong>
             </div>
           </section>
 
@@ -132,21 +189,21 @@ export default function Badges() {
                 <FiZap />
                 Streak
               </span>
-              <strong>12 Days</strong>
+              <strong>{summary?.streak ?? 0} Days</strong>
             </article>
             <article className="badges-kpi-card">
               <span>
                 <FiAward />
                 Badges
               </span>
-              <strong>8 Unlocked</strong>
+              <strong>{summary?.badgesUnlocked ?? 0} Unlocked</strong>
             </article>
             <article className="badges-kpi-card">
               <span>
                 <FiTarget />
                 Next Goal
               </span>
-              <strong>Top 30</strong>
+              <strong>{nextGoal}</strong>
             </article>
           </section>
 
@@ -203,9 +260,9 @@ export default function Badges() {
           <section className="badges-hero-card badges-hero-badges-card">
             <div>
               <p className="badges-hero-label">Badge Collection</p>
-              <h2>4 / 8</h2>
+              <h2>{badgeStats.unlocked} / {badgeStats.total}</h2>
               <div className="badges-hero-pills">
-                <span>Next unlock: 15%</span>
+                <span>Next unlock: {badgeStats.nextUnlock}</span>
                 <span>Weekly challenge live</span>
               </div>
             </div>

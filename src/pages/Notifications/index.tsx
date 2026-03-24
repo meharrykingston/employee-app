@@ -12,7 +12,7 @@ import {
 } from "react-icons/fi"
 import { useNavigate } from "react-router-dom"
 import { playAppSound } from "../../utils/sound"
-import { addNotification, getNotificationsWithSeed, setStoredNotifications, type AppNotification } from "../../services/notificationCenter"
+import { addNotification, fetchNotifications, markNotificationsRead, type AppNotification } from "../../services/notificationCenter"
 import "./notifications.css"
 
 function channelIcon(channel: AppNotification["channel"]) {
@@ -25,15 +25,24 @@ function channelIcon(channel: AppNotification["channel"]) {
 export default function Notifications() {
   const navigate = useNavigate()
   const [notifyState, setNotifyState] = useState("Push notifications are on")
-  const [items, setItems] = useState<AppNotification[]>(getNotificationsWithSeed())
+  const [items, setItems] = useState<AppNotification[]>([])
 
   useEffect(() => {
+    let active = true
+    void fetchNotifications()
+      .then((rows) => {
+        if (active) setItems(rows)
+      })
+      .catch(() => undefined)
     const onNew = (event: Event) => {
       const detail = (event as CustomEvent<AppNotification>).detail
       if (detail) setItems((prev) => [detail, ...prev])
     }
     window.addEventListener("app-notification", onNew as EventListener)
-    return () => window.removeEventListener("app-notification", onNew as EventListener)
+    return () => {
+      active = false
+      window.removeEventListener("app-notification", onNew as EventListener)
+    }
   }, [])
 
   const grouped = useMemo(() => {
@@ -73,11 +82,8 @@ export default function Notifications() {
   }
 
   function markAllRead() {
-    setItems((prev) => {
-      const next = prev.map((item) => ({ ...item, unread: false }))
-      setStoredNotifications(next)
-      return next
-    })
+    setItems((prev) => prev.map((item) => ({ ...item, unread: false })))
+    void markNotificationsRead()
     playAppSound("success")
   }
 
@@ -116,7 +122,15 @@ export default function Notifications() {
           </div>
           <div className="notif-list">
             {grouped.today.map((item) => (
-              <article className={`notif-item ${item.unread ? "unread" : ""}`} key={item.id}>
+              <article
+                className={`notif-item ${item.unread ? "unread" : ""}`}
+                key={item.id}
+                onClick={() => {
+                  if (!item.unread) return
+                  setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, unread: false } : row)))
+                  void markNotificationsRead([item.id])
+                }}
+              >
                 <span className={`notif-icon ${item.channel}`}>{channelIcon(item.channel)}</span>
                 <div className="notif-copy">
                   <div className="notif-row">

@@ -73,16 +73,22 @@ export default function OpdPickup() {
     return { lon: coords[0], lat: coords[1] }
   }
 
-  async function fetchRoute(origin: { lon: number; lat: number }, destination: { lon: number; lat: number }) {
+  type RouteResponse = {
+    geometry: { coordinates: [number, number][] }
+    duration?: number
+  }
+
+  async function fetchRoute(
+    origin: { lon: number; lat: number },
+    destination: { lon: number; lat: number },
+  ): Promise<RouteResponse> {
     const url =
       "https://api.mapbox.com/directions/v5/mapbox/driving-traffic/" +
       `${origin.lon},${origin.lat};${destination.lon},${destination.lat}` +
       `?geometries=geojson&overview=full&access_token=${mapboxToken}`
     const response = await fetch(url)
     if (!response.ok) throw new Error("Unable to fetch route")
-    const data = (await response.json()) as {
-      routes?: Array<{ geometry?: { coordinates: [number, number][] }; duration?: number }>
-    }
+    const data = (await response.json()) as { routes?: RouteResponse[] }
     const route = data.routes?.[0]
     if (!route?.geometry?.coordinates) throw new Error("No route available")
     return route

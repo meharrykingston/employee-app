@@ -23,6 +23,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom"
 import { getEmployeeAuthSession, getEmployeeCompanySession } from "../../services/authApi"
 import { logBehaviorSignal } from "../../services/behaviorApi"
+import { fetchUnreadCount } from "../../services/notificationCenter"
 import { preloadLabCatalog } from "../../services/labApi"
 import { getLatestVital } from "../../services/vitalsApi"
 import { fetchDailyTips, type DailyTipPayload } from "../../services/newsApi"
@@ -202,6 +203,7 @@ export default function Home() {
   const [dailyTips, setDailyTips] = useState<DailyTipPayload[] | null>(null)
   const [latestHeartRate, setLatestHeartRate] = useState<{ value: number | null; eventAt?: string } | null>(null)
   const [latestBloodPressure, setLatestBloodPressure] = useState<{ sys: number | null; dia: number | null; eventAt?: string } | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [heroIndex, setHeroIndex] = useState(0)
   const [heroDragging, setHeroDragging] = useState(false)
   const heroDragStartX = useRef<number | null>(null)
@@ -747,6 +749,25 @@ export default function Home() {
   }, [navigate])
 
   useEffect(() => {
+    let active = true
+    void fetchUnreadCount()
+      .then((count) => {
+        if (active) setUnreadCount(count)
+      })
+      .catch(() => undefined)
+    const onUpdate = () => {
+      void fetchUnreadCount()
+        .then((count) => active && setUnreadCount(count))
+        .catch(() => undefined)
+    }
+    window.addEventListener("app-notification", onUpdate as EventListener)
+    return () => {
+      active = false
+      window.removeEventListener("app-notification", onUpdate as EventListener)
+    }
+  }, [])
+
+  useEffect(() => {
     const todayKey = new Date().toISOString().slice(0, 10)
     const cachedDate = localStorage.getItem(DAILY_TIP_DATE_KEY)
     const cachedTips = localStorage.getItem(DAILY_TIP_STORAGE_KEY)
@@ -838,7 +859,7 @@ export default function Home() {
           <div className="header-actions">
             <button className="icon-btn notify-btn app-pressable" aria-label="notifications" type="button" onClick={() => navigate("/notifications")}>
               <FiBell />
-              <span className="notify-count">3</span>
+              {unreadCount > 0 && <span className="notify-count">{unreadCount}</span>}
             </button>
             <button className="icon-btn profile-btn app-pressable" aria-label="profile" type="button" onClick={() => navigate("/profile-info")}>
               <FiUser />

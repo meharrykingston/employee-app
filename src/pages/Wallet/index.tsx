@@ -10,6 +10,8 @@ import {
 } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
 import { getSugarLeaderboard } from "../../services/sugarChallengeApi"
+import { fetchGamificationSummary } from "../../services/gamificationApi"
+import { fetchUnreadCount } from "../../services/notificationCenter"
 import "./wallet.css"
 
 type WalletTab = "Home" | "Health" | "AI Chat" | "Stress Relief" | "Wallet"
@@ -44,6 +46,15 @@ export default function MyWallet() {
   const [isMenuDocked, setIsMenuDocked] = useState(false)
   const [leaderboard, setLeaderboard] = useState<Array<{ employeeId: string; coins: number; completedDays: number }>>([])
   const [rank, setRank] = useState<number | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [summary, setSummary] = useState<{
+    coins: number
+    streak: number
+    level: number
+    badgesUnlocked: number
+    milestones: Array<{ label: string; badge: string; progress: number; claimed: boolean }>
+    transactions: Array<{ title: string; meta: string; value: number }>
+  } | null>(null)
 
   const activeTab: WalletTab = useMemo(() => {
     if (location.pathname.startsWith("/home")) return "Home"
@@ -75,6 +86,28 @@ export default function MyWallet() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+    void fetchGamificationSummary()
+      .then((data) => {
+        if (active) setSummary(data)
+      })
+      .catch(() => undefined)
+    void fetchUnreadCount()
+      .then((count) => active && setUnreadCount(count))
+      .catch(() => undefined)
+    const onUpdate = () => {
+      void fetchUnreadCount()
+        .then((count) => active && setUnreadCount(count))
+        .catch(() => undefined)
+    }
+    window.addEventListener("app-notification", onUpdate as EventListener)
+    return () => {
+      active = false
+      window.removeEventListener("app-notification", onUpdate as EventListener)
+    }
+  }, [])
+
   return (
     <main className="wallet-page app-page-enter" onScroll={onPageScroll}>
       <header className="wallet-header app-fade-stagger">
@@ -87,7 +120,7 @@ export default function MyWallet() {
         </div>
         <button className="wallet-notif app-pressable" type="button" aria-label="Notifications" onClick={() => navigate("/notifications")}>
           <FiBell />
-          <span>3</span>
+          {unreadCount > 0 && <span>{unreadCount}</span>}
         </button>
       </header>
 
@@ -109,19 +142,19 @@ export default function MyWallet() {
         <div className="wallet-balance-card app-fade-stagger">
           <div className="wallet-balance-main">
             <div className="wallet-balance-label">Available Balance</div>
-            <div className="wallet-balance-amount">1,250</div>
+            <div className="wallet-balance-amount">{summary?.coins ?? 0}</div>
           </div>
           <div className="wallet-balance-meta">
-            <div className="wallet-balance-pill">12 day streak</div>
+            <div className="wallet-balance-pill">{summary?.streak ?? 0} day streak</div>
           </div>
           <div className="wallet-balance-stats">
             <div className="wallet-stat card-float">
               <div className="wallet-stat-label">Total Earned</div>
-              <div className="wallet-stat-value">3,480</div>
+              <div className="wallet-stat-value">{summary?.coins ?? 0}</div>
             </div>
             <div className="wallet-stat card-float">
               <div className="wallet-stat-label">Rank</div>
-              <div className="wallet-stat-value">#42</div>
+              <div className="wallet-stat-value">#{rank ?? "--"}</div>
             </div>
           </div>
         </div>
@@ -143,20 +176,23 @@ export default function MyWallet() {
         <section className="wallet-section wallet-card-section app-fade-stagger">
           <h3 className="wallet-section-title">Milestones &amp; Rewards</h3>
 
-          <Milestone label="500 coins" badge="Bronze Badge" progress={100} claimed />
-          <Milestone label="1000 coins" badge="Silver Badge" progress={100} claimed />
-          <Milestone label="2000 coins" badge="Gold Badge" progress={63} />
-          <Milestone label="5000 coins" badge="Platinum Badge" progress={25} />
+          {(summary?.milestones ?? []).map((milestone) => (
+            <Milestone
+              key={milestone.label}
+              label={milestone.label}
+              badge={milestone.badge}
+              progress={milestone.progress}
+              claimed={milestone.claimed}
+            />
+          ))}
         </section>
 
         <section className="wallet-section wallet-card-section app-fade-stagger">
           <h3 className="wallet-section-title">Recent Transactions</h3>
 
-          <Transaction title="Completed Weekend Challenge" meta="Weekend Task" value={500} />
-          <Transaction title="Daily Meditation - 7 day" meta="Mental Health" value={350} />
-          <Transaction title="10,000 Steps Achievement" meta="Physical Health" value={200} />
-          <Transaction title="Hydration Goal Met" meta="Health Goal" value={100} />
-          <Transaction title="Premium Health Report" meta="Service" value={-300} />
+          {(summary?.transactions ?? []).map((txn, index) => (
+            <Transaction key={`${txn.title}-${index}`} title={txn.title} meta={txn.meta} value={txn.value} />
+          ))}
         </section>
 
         <section className="wallet-section wallet-card-section app-fade-stagger">
