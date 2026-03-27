@@ -14,12 +14,12 @@ import { fetchGamificationSummary } from "../../services/gamificationApi"
 import { fetchUnreadCount } from "../../services/notificationCenter"
 import "./wallet.css"
 
-type WalletTab = "Home" | "Health" | "AI Chat" | "Stress Relief" | "Wallet"
+type WalletTab = "Home" | "Health" | "Doctor Chat" | "Stress Relief" | "Wallet"
 
 const tabs: Array<{ id: WalletTab; icon: "home" | "health" | "chat" | "stress" | "wallet" }> = [
   { id: "Home", icon: "home" },
   { id: "Health", icon: "health" },
-  { id: "AI Chat", icon: "chat" },
+  { id: "Doctor Chat", icon: "chat" },
   { id: "Stress Relief", icon: "stress" },
   { id: "Wallet", icon: "wallet" },
 ]
@@ -27,7 +27,7 @@ const tabs: Array<{ id: WalletTab; icon: "home" | "health" | "chat" | "stress" |
 const tabRoutes: Record<WalletTab, string> = {
   Home: "/home",
   Health: "/health",
-  "AI Chat": "/ai-chat",
+  "Doctor Chat": "/ai-chat",
   "Stress Relief": "/stress-relief",
   Wallet: "/wallet",
 }
@@ -59,7 +59,7 @@ export default function MyWallet() {
   const activeTab: WalletTab = useMemo(() => {
     if (location.pathname.startsWith("/home")) return "Home"
     if (location.pathname.startsWith("/health")) return "Health"
-    if (location.pathname.startsWith("/ai-chat")) return "AI Chat"
+    if (location.pathname.startsWith("/ai-chat")) return "Doctor Chat"
     if (location.pathname.startsWith("/stress-relief")) return "Stress Relief"
     return "Wallet"
   }, [location.pathname])

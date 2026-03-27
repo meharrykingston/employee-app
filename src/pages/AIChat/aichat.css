@@ -59,6 +59,26 @@
   gap: 6px;
 }
 
+.ai-chat-header-info {
+  display: grid;
+  gap: 2px;
+}
+
+.ai-chat-doctor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-chat-doctor img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(120, 150, 255, 0.5);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
+}
+
 .ai-chat-dot {
   width: 8px;
   height: 8px;

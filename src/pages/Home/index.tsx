@@ -46,7 +46,7 @@ type MetricId = "heart-rate" | "blood-pressure" | "calories" | "weight"
 const tabs = [
   { id: "Home", icon: "home" },
   { id: "Health", icon: "health" },
-  { id: "AI Chat", icon: "chat" },
+  { id: "Doctor Chat", icon: "chat" },
   { id: "Stress Relief", icon: "stress" },
   { id: "Wallet", icon: "wallet" },
 ] as const
@@ -54,7 +54,7 @@ const tabs = [
 const tabRoutes: Record<(typeof tabs)[number]["id"], string> = {
   Home: "/home",
   Health: "/health",
-  "AI Chat": "/ai-chat",
+  "Doctor Chat": "/ai-chat",
   "Stress Relief": "/stress-relief",
   Wallet: "/wallet",
 }
@@ -119,6 +119,33 @@ const feelingPrefill: Record<(typeof feelings)[number]["id"], string> = {
   tension: "I am feeling physical tension and stress in my body. Please assist.",
   fever: "I think I have a fever and feel unwell. Please advise.",
   fatigue: "I am dealing with chronic fatigue and low energy. Please help.",
+}
+
+const feelingDoctorIntro: Record<(typeof feelings)[number]["id"], { name: string; avatar: string }> = {
+  dizzy: {
+    name: "Dr. Asha Iyer",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=320&q=80",
+  },
+  mental: {
+    name: "Dr. Kavita Rao",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=320&q=80",
+  },
+  sleep: {
+    name: "Dr. Neha Menon",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=320&q=80",
+  },
+  tension: {
+    name: "Dr. Rohan Kapoor",
+    avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=320&q=80",
+  },
+  fever: {
+    name: "Dr. Arjun Mehta",
+    avatar: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=320&q=80",
+  },
+  fatigue: {
+    name: "Dr. Priya Nair",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=320&q=80",
+  },
 }
 
 const TIP_PREF_KEY = "home:tip-preference"
@@ -322,8 +349,126 @@ export default function Home() {
     return combined.slice(0, 3)
   }, [moodHint, preferredTag, recentFastScroll, weatherTag])
 
-  const heroSlides = useMemo(
-    () => [
+  type HeroSlide = {
+    id: string
+    title: string
+    highlight: string
+    subtitle: string
+    cta: string
+    route: string
+    tone: "tone-pharmacy" | "tone-lab" | "tone-tele"
+    illustration: "pharmacy" | "lab" | "tele"
+  }
+
+  type StoredLabBooking = {
+    id: string
+    status?: string
+    testName?: string
+    scheduledAt?: string
+    createdAt?: string
+    etaMinutes?: number
+  }
+
+  type StoredTeleBooking = {
+    id: string
+    doctorName?: string
+    scheduledAt?: string
+    joinWindowStart?: string
+  }
+
+  type StoredPharmacyOrder = {
+    id: string
+    orderId?: string
+    createdAt?: string
+    etaMinutes?: number
+  }
+
+  const [heroSeed, setHeroSeed] = useState(0)
+
+  useEffect(() => {
+    const onUpdate = () => setHeroSeed((prev) => prev + 1)
+    window.addEventListener("app-notification", onUpdate as EventListener)
+    window.addEventListener("storage", onUpdate)
+    return () => {
+      window.removeEventListener("app-notification", onUpdate as EventListener)
+      window.removeEventListener("storage", onUpdate)
+    }
+  }, [])
+
+  const heroSlides = useMemo<HeroSlide[]>(() => {
+    const labRaw = localStorage.getItem("lab_bookings")
+    const teleRaw = localStorage.getItem("teleconsult_bookings")
+    const pharmacyRaw = localStorage.getItem("pharmacy_orders")
+
+    const parseList = <T,>(raw: string | null): T[] => {
+      if (!raw) return []
+      try {
+        const parsed = JSON.parse(raw) as T[]
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+
+    const labBookings = parseList<StoredLabBooking>(labRaw)
+    const teleBookings = parseList<StoredTeleBooking>(teleRaw)
+    const pharmacyOrders = parseList<StoredPharmacyOrder>(pharmacyRaw)
+
+    const labLatest = labBookings[0]
+    const teleLatest = teleBookings[0]
+    const pharmacyLatest = pharmacyOrders[0]
+
+    const statusSlides: Array<HeroSlide & { createdAt: number }> = []
+
+    if (labLatest) {
+      const eta = labLatest.etaMinutes ?? 32
+      statusSlides.push({
+        id: `lab-status-${labLatest.id}`,
+        title: "Lab test booked",
+        highlight: "phlebo assigned",
+        subtitle: `Arriving in ${eta} mins`,
+        cta: "Track Lab Test",
+        route: `/lab-tests/track/${labLatest.id}`,
+        tone: "tone-lab",
+        illustration: "lab",
+        createdAt: Date.parse(labLatest.createdAt ?? labLatest.scheduledAt ?? "") || Date.now() - 2000,
+      })
+    }
+
+    if (pharmacyLatest) {
+      const eta = pharmacyLatest.etaMinutes ?? 18
+      statusSlides.push({
+        id: `pharmacy-status-${pharmacyLatest.id}`,
+        title: "Medicines booked",
+        highlight: "rider assigned",
+        subtitle: `Arriving in ${eta} mins`,
+        cta: "Track Order",
+        route: "/pharmacy/tracking",
+        tone: "tone-pharmacy",
+        illustration: "pharmacy",
+        createdAt: Date.parse(pharmacyLatest.createdAt ?? "") || Date.now() - 1500,
+      })
+    }
+
+    if (teleLatest) {
+      const joinAt = teleLatest.joinWindowStart ?? teleLatest.scheduledAt
+      const joinMs = joinAt ? Date.parse(joinAt) : NaN
+      const minutesToJoin =
+        Number.isFinite(joinMs) ? Math.max(1, Math.round((joinMs - Date.now()) / 60000)) : 30
+      statusSlides.push({
+        id: `tele-status-${teleLatest.id}`,
+        title: "Doctor consult",
+        highlight: "room ready",
+        subtitle: minutesToJoin <= 1 ? "Join now" : `Starts in ${minutesToJoin} mins`,
+        cta: "Join Call",
+        route: teleLatest.id ? `/teleconsultation/overview/${teleLatest.id}` : "/teleconsultation",
+        tone: "tone-tele",
+        illustration: "tele",
+        createdAt: Date.parse(teleLatest.scheduledAt ?? "") || Date.now() - 1000,
+      })
+    }
+
+    const baseSlides: HeroSlide[] = [
       {
         id: "pharmacy",
         title: "Your medicines",
@@ -332,6 +477,7 @@ export default function Home() {
         cta: "Track delivery",
         route: "/pharmacy/tracking",
         tone: "tone-pharmacy",
+        illustration: "pharmacy",
       },
       {
         id: "lab",
@@ -341,6 +487,7 @@ export default function Home() {
         cta: "Book Lab Test",
         route: "/lab-tests",
         tone: "tone-lab",
+        illustration: "lab",
       },
       {
         id: "tele",
@@ -350,14 +497,20 @@ export default function Home() {
         cta: "Start Consult",
         route: "/teleconsultation",
         tone: "tone-tele",
+        illustration: "tele",
       },
-    ],
-    [],
-  )
+    ]
+
+    const sortedStatus = statusSlides.sort((a, b) => b.createdAt - a.createdAt).map(({ createdAt, ...slide }) => slide)
+    const activeTypes = new Set(sortedStatus.map((slide) => slide.illustration))
+    const fallbacks = baseSlides.filter((slide) => !activeTypes.has(slide.illustration))
+    const combined = [...sortedStatus, ...fallbacks]
+    return combined.slice(0, 3)
+  }, [heroSeed])
   const labVariant = useMemo(() => ["a", "b", "c"][Math.floor(Math.random() * 3)], [])
 
-  function renderHeroIllustration(id: string) {
-    if (id === "lab") {
+  function renderHeroIllustration(kind: HeroSlide["illustration"]) {
+    if (kind === "lab") {
       return (
         <div className={`medicine-hero-illustration illustration-lab variant-${labVariant}`} aria-hidden="true">
           <div className="lab-beaker" />
@@ -368,7 +521,7 @@ export default function Home() {
         </div>
       )
     }
-    if (id === "tele") {
+    if (kind === "tele") {
       return (
         <div className="medicine-hero-illustration illustration-tele" aria-hidden="true">
           <span className="tele-ring" />
@@ -566,7 +719,7 @@ export default function Home() {
 
   const activeTab: (typeof tabs)[number]["id"] = useMemo(() => {
     if (location.pathname.startsWith("/health")) return "Health"
-    if (location.pathname.startsWith("/ai-chat")) return "AI Chat"
+    if (location.pathname.startsWith("/ai-chat")) return "Doctor Chat"
     if (location.pathname.startsWith("/stress-relief")) return "Stress Relief"
     if (location.pathname.startsWith("/wallet")) return "Wallet"
     return "Home"
@@ -605,7 +758,12 @@ export default function Home() {
   function toggleFeeling(id: string) {
     if (id in feelingPrefill) {
       const key = id as (typeof feelings)[number]["id"]
-      navigate("/ai-chat", { state: { prefill: feelingPrefill[key] } })
+      navigate("/ai-chat", {
+        state: {
+          prefill: feelingPrefill[key],
+          doctor: feelingDoctorIntro[key],
+        },
+      })
       return
     }
     setSelectedFeelings((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -922,7 +1080,7 @@ export default function Home() {
                       {slide.cta}
                     </button>
                   </div>
-                  {renderHeroIllustration(slide.id)}
+                  {renderHeroIllustration(slide.illustration)}
                 </article>
               ))}
             </div>
@@ -1015,17 +1173,6 @@ export default function Home() {
                   </div>
                   <p>{tip.summary}</p>
                 </section>
-              ))}
-            </div>
-            <div className="slider-dots">
-              {displayTips.map((tip, index) => (
-                <button
-                  key={tip.title}
-                  className={`dot app-pressable ${tipIndex === index ? "active" : ""}`}
-                  onClick={() => setTipIndex(index)}
-                  aria-label={`tip ${index + 1}`}
-                  type="button"
-                />
               ))}
             </div>
           </article>

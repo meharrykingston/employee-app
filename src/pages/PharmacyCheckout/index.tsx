@@ -10,8 +10,29 @@ import { playAppSound } from "../../utils/sound"
 import "./pharmacy-checkout.css"
 
 const HOME_ADDRESS_KEY = "employee_home_address"
+const PHARMACY_ORDERS_KEY = "pharmacy_orders"
 
 type Step = "address" | "review" | "confirm"
+type PharmacyOrder = {
+  id: string
+  orderId: string
+  createdAt: string
+  etaMinutes?: number
+}
+
+function storePharmacyOrder(input: PharmacyOrder) {
+  const raw = localStorage.getItem(PHARMACY_ORDERS_KEY)
+  let existing: PharmacyOrder[] = []
+  if (raw) {
+    try {
+      existing = JSON.parse(raw) as PharmacyOrder[]
+    } catch {
+      existing = []
+    }
+  }
+  const next = [input, ...existing.filter((item) => item.id !== input.id)].slice(0, 30)
+  localStorage.setItem(PHARMACY_ORDERS_KEY, JSON.stringify(next))
+}
 
 export default function PharmacyCheckout() {
   const navigate = useNavigate()
@@ -87,6 +108,12 @@ export default function PharmacyCheckout() {
       if (!result?.orderId) {
         throw new Error("Order not confirmed")
       }
+      storePharmacyOrder({
+        id: result.orderId,
+        orderId: result.orderId,
+        createdAt: new Date().toISOString(),
+        etaMinutes: 18,
+      })
       await addNotification({
         title: "Order confirmed",
         body: "Your medicines are confirmed. Live tracking is now available.",

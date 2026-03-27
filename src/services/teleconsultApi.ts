@@ -43,6 +43,7 @@ export async function joinTeleconsultSession(
     participantId: string
     preferredProvider?: "zego" | "agora"
     forceFailover?: boolean
+    allowEarlyJoin?: boolean
   }
 ) {
   return apiPost<TeleconsultSessionJoinResponse, typeof input>(`/teleconsult/sessions/${sessionId}/join`, input)

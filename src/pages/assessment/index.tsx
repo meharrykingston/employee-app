@@ -5,6 +5,7 @@ import Welcome from "./steps/Welcome"
 import Height from "./steps/Height"
 import Weight from "./steps/Weight"
 import Waist from "./steps/Waist"
+import { getHealthMetrics } from "../../services/healthMetricsApi"
 import "./assessment.css"
 
 const FINAL_STEP = 4
@@ -13,6 +14,28 @@ const ASSESSMENT_DONE_KEY = "astikan_assessment_done"
 export default function HealthAssessment() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    void getHealthMetrics()
+      .then((response) => {
+        if (!active) return
+        const metrics = response.metrics
+        const hasBaseline =
+          metrics &&
+          (typeof metrics.heightCm === "number" ||
+            typeof metrics.weightKg === "number" ||
+            typeof metrics.waistCm === "number")
+        if (hasBaseline) {
+          localStorage.setItem(ASSESSMENT_DONE_KEY, "1")
+          navigate("/home")
+        }
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [navigate])
 
   useEffect(() => {
     if (localStorage.getItem(ASSESSMENT_DONE_KEY)) {

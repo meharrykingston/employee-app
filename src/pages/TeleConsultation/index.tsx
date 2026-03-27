@@ -15,7 +15,7 @@ import {
 } from "react-icons/fi"
 import type { ReactElement } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import ZegoExpressEngine from "zego-express-engine-webrtc"
+import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt"
 import { goBackOrFallback } from "../../utils/navigation"
 import { playAppSound } from "../../utils/sound"
 import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
@@ -158,8 +158,6 @@ const MAX_TELECONSULT_SECONDS = 30 * 60
 const MAX_JOIN_RETRIES = 3
 const JOIN_RETRY_DELAY_MS = 1200
 const DEFAULT_COMPANY_ID = "astikan-demo-company"
-const ZEGO_SERVER_URL = "wss://webliveroom515869344-api.coolzcloud.com/ws"
-const ZEGO_SERVER_URL_BACKUP = "wss://webliveroom515869344-api-bak.coolzcloud.com/ws"
 const LazyAgoraUIKit = lazy(() => import("agora-react-uikit"))
 
 
@@ -174,11 +172,6 @@ function resolveAvatarUrl(avatar: string | null | undefined, fallback: string) {
     return trimmed
   }
   return `/assets/${trimmed.replace(/^assets\//, "")}`
-}
-
-const createZegoEngine = (appId: number, serverUrl: string) => {
-  const EngineCtor = ZegoExpressEngine as unknown as new (appId: number, serverUrl?: string) => any
-  return new EngineCtor(appId, serverUrl)
 }
 
 function getEmployeeRtcId() {
@@ -265,16 +258,8 @@ export default function TeleConsultation() {
   const [doctorLoading, setDoctorLoading] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const [forceAgora, setForceAgora] = useState(false)
-  const [hasRemoteStream, setHasRemoteStream] = useState(false)
-  const [hasLocalStream, setHasLocalStream] = useState(false)
-  const [zegoServerUsed, setZegoServerUsed] = useState<"primary" | "backup" | null>(null)
-
-  const zegoEngineRef = useRef<any>(null)
-  const zegoLocalStreamRef = useRef<MediaStream | null>(null)
-  const zegoRemoteStreamIdRef = useRef<string | null>(null)
-  const zegoRemoteStreamRef = useRef<MediaStream | null>(null)
-  const localVideoRef = useRef<HTMLVideoElement | null>(null)
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null)
+  const zegoContainerRef = useRef<HTMLDivElement | null>(null)
+  const zegoUiRef = useRef<ReturnType<typeof ZegoUIKitPrebuilt.create> | null>(null)
   const connectTimerRef = useRef<number | null>(null)
   const callClockRef = useRef<number | null>(null)
   const zegoBootstrapInProgressRef = useRef(false)
@@ -496,8 +481,9 @@ export default function TeleConsultation() {
       setSelectedDoctor(doctors[0].id)
       return
     }
+    if (teleconsultSessionId || bookingId) return
     setStep("options")
-  }, [doctors, selectedDoctorInfo, step])
+  }, [doctors, selectedDoctorInfo, step, teleconsultSessionId, bookingId])
 
   useEffect(() => {
     if (step !== "ride" || !selectedDoctorInfo) return
@@ -706,7 +692,7 @@ export default function TeleConsultation() {
       let booking: TeleBooking | null = null
       try {
         const now = new Date()
-        const start = new Date(now.getTime() + 5 * 60 * 1000)
+        const start = new Date(now.getTime())
         const end = new Date(start.getTime() + 30 * 60 * 1000)
         const actors = await ensureTeleconsultActors(selectedDoctorInfo)
         const appointment = await createAppointment({
@@ -718,7 +704,7 @@ export default function TeleConsultation() {
           source: "employee_booked",
           scheduledStart: start.toISOString(),
           scheduledEnd: end.toISOString(),
-          meetingJoinWindowStart: new Date(start.getTime() - 60 * 1000).toISOString(),
+          meetingJoinWindowStart: new Date(start.getTime()).toISOString(),
           meetingJoinWindowEnd: end.toISOString(),
           status: "confirmed",
           reason: analysisQuery || selectedDoctorInfo.specialty,
@@ -726,12 +712,12 @@ export default function TeleConsultation() {
           symptomSnapshot: { selectedSymptoms },
           aiTriageSummary: analysisQuery || undefined,
         })
-      const created = await createTeleconsultSession({
+        const created = await createTeleconsultSession({
         companyId: actors.employee.companyId,
         employeeId: actors.employee.employeeUserId,
         doctorId: actors.doctor.userId,
         appointmentId: appointment.appointmentId,
-        preferredProvider: "agora",
+        preferredProvider: "zego",
         scheduledAt: start.toISOString(),
       })
         setTeleconsultSessionId(created.sessionId)
@@ -745,7 +731,7 @@ export default function TeleConsultation() {
           doctorAvatar: selectedDoctorInfo.avatar,
           status: "confirmed",
           scheduledAt: start.toISOString(),
-          joinWindowStart: new Date(start.getTime() - 60 * 1000).toISOString(),
+          joinWindowStart: new Date(start.getTime()).toISOString(),
         }
         const existing = JSON.parse(localStorage.getItem(TELE_BOOKINGS_KEY) || "[]") as TeleBooking[]
         localStorage.setItem(TELE_BOOKINGS_KEY, JSON.stringify([booking, ...existing].slice(0, 20)))
@@ -796,35 +782,17 @@ export default function TeleConsultation() {
   }
 
   function teardownRealtimeCall() {
-    if (zegoEngineRef.current) {
+    if (zegoUiRef.current) {
       try {
-        if (zegoRemoteStreamIdRef.current) {
-          zegoEngineRef.current.stopPlayingStream(zegoRemoteStreamIdRef.current)
-          zegoRemoteStreamIdRef.current = null
-        }
-        if (zegoLocalStreamRef.current) {
-          zegoEngineRef.current.stopPublishingStream()
-          zegoEngineRef.current.destroyStream(zegoLocalStreamRef.current)
-          zegoLocalStreamRef.current = null
-        }
-        zegoEngineRef.current.logoutRoom()
-        zegoEngineRef.current.destroyEngine()
+        zegoUiRef.current.destroy()
       } catch {
         // best effort
       }
-      zegoEngineRef.current = null
+      zegoUiRef.current = null
     }
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null
+    if (zegoContainerRef.current) {
+      zegoContainerRef.current.innerHTML = ""
     }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null
-    }
-    zegoRemoteStreamRef.current = null
-    setHasRemoteStream(false)
-    setHasLocalStream(false)
-    setZegoServerUsed(null)
-
     setUsingZegoTemplate(false)
     setUsingAgoraTemplate(false)
     setActiveRtc(null)
@@ -832,137 +800,49 @@ export default function TeleConsultation() {
 
   async function startZegoTemplateCall(rtc: TeleconsultRtcPayload) {
     const appId = Number(rtc.appId)
-    if (!appId || !rtc.token) {
+    if (!appId) {
       throw new Error("Invalid Zego credentials")
     }
-    if (zegoEngineRef.current) {
-      return
+    const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET as string | undefined
+    const effectiveAppId = Number(import.meta.env.VITE_ZEGO_APP_ID || appId)
+    if (!serverSecret || !effectiveAppId) {
+      throw new Error("Zego credentials missing")
     }
-
-    let engine = createZegoEngine(appId, ZEGO_SERVER_URL)
-    zegoEngineRef.current = engine
+    if (!zegoContainerRef.current) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
+    }
+    if (!zegoContainerRef.current) {
+      throw new Error("Call container not ready")
+    }
     setUsingZegoTemplate(true)
-    setZegoServerUsed("primary")
-    console.info("[Teleconsult][Zego] Initializing Express SDK (primary WS).")
-
-    engine.on(
-      "roomStreamUpdate",
-      async (
-        _roomID: string,
-        updateType: "ADD" | "DELETE",
-        streamList: Array<{ streamID: string }>,
-      ) => {
-      if (updateType === "ADD") {
-        const streamID = streamList[0]?.streamID
-        if (!streamID || streamID === `${rtc.userId}-main`) return
-        try {
-          const remoteStream = await engine.startPlayingStream(streamID)
-          zegoRemoteStreamIdRef.current = streamID
-          zegoRemoteStreamRef.current = remoteStream
-          setHasRemoteStream(true)
-          console.info("[Teleconsult][Zego] Remote stream added:", streamID)
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream
-            await remoteVideoRef.current.play().catch(() => undefined)
-          }
-        } catch {
-          // ignore
-        }
-      }
-      if (updateType === "DELETE") {
-        const streamID = streamList[0]?.streamID
-        if (streamID && zegoRemoteStreamIdRef.current === streamID) {
-          engine.stopPlayingStream(streamID)
-          zegoRemoteStreamIdRef.current = null
-          zegoRemoteStreamRef.current = null
-          setHasRemoteStream(false)
-          console.info("[Teleconsult][Zego] Remote stream removed:", streamID)
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = null
-          }
-        }
-      }
-      },
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+      effectiveAppId,
+      serverSecret,
+      rtc.channelName,
+      rtc.userId,
+      "Astikan Employee",
     )
-
-    try {
-      await engine.loginRoom(
-        rtc.channelName,
-        rtc.token,
-        { userID: rtc.userId, userName: rtc.userId },
-        { userUpdate: true },
-      )
-      console.info("[Teleconsult][Zego] Logged in to room (primary WS).")
-    } catch {
-      try {
-        engine.logoutRoom()
-        engine.destroyEngine()
-      } catch {
-        // ignore
-      }
-      engine = createZegoEngine(appId, ZEGO_SERVER_URL_BACKUP)
-      zegoEngineRef.current = engine
-      setZegoServerUsed("backup")
-      console.warn("[Teleconsult][Zego] Primary WS failed. Switching to backup WS.")
-      await engine.loginRoom(
-        rtc.channelName,
-        rtc.token,
-        { userID: rtc.userId, userName: rtc.userId },
-        { userUpdate: true },
-      )
-      console.info("[Teleconsult][Zego] Logged in to room (backup WS).")
-      engine.on(
-        "roomStreamUpdate",
-        async (
-          _roomID: string,
-          updateType: "ADD" | "DELETE",
-          streamList: Array<{ streamID: string }>,
-        ) => {
-        if (updateType === "ADD") {
-          const streamID = streamList[0]?.streamID
-          if (!streamID || streamID === `${rtc.userId}-main`) return
-          try {
-            const remoteStream = await engine.startPlayingStream(streamID)
-            zegoRemoteStreamIdRef.current = streamID
-            zegoRemoteStreamRef.current = remoteStream
-            setHasRemoteStream(true)
-            console.info("[Teleconsult][Zego] Remote stream added:", streamID)
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = remoteStream
-              await remoteVideoRef.current.play().catch(() => undefined)
-            }
-          } catch {
-            // ignore
-          }
-        }
-        if (updateType === "DELETE") {
-          const streamID = streamList[0]?.streamID
-          if (streamID && zegoRemoteStreamIdRef.current === streamID) {
-            engine.stopPlayingStream(streamID)
-            zegoRemoteStreamIdRef.current = null
-            zegoRemoteStreamRef.current = null
-            setHasRemoteStream(false)
-            console.info("[Teleconsult][Zego] Remote stream removed:", streamID)
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = null
-            }
-          }
-        }
-        },
-      )
-    }
-
-    const localStream = await engine.createStream({ camera: { audio: true, video: true } })
-    zegoLocalStreamRef.current = localStream
-    setHasLocalStream(true)
-    console.info("[Teleconsult][Zego] Local stream created.")
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = localStream
-      await localVideoRef.current.play().catch(() => undefined)
-    }
-    const streamId = `${rtc.userId}-main`
-    engine.startPublishingStream(streamId, localStream)
-    console.info("[Teleconsult][Zego] Publishing local stream:", streamId)
+    const zp = ZegoUIKitPrebuilt.create(kitToken)
+    zegoUiRef.current = zp
+    zp.joinRoom({
+      container: zegoContainerRef.current,
+      scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
+      showPreJoinView: false,
+      turnOnCameraWhenJoining: true,
+      turnOnMicrophoneWhenJoining: true,
+      maxUsers: 2,
+      onLeaveRoom: () => {
+        if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
+        if (callClockRef.current) window.clearInterval(callClockRef.current)
+        connectTimerRef.current = null
+        callClockRef.current = null
+        setCallState("ended")
+        setElapsedSeconds(0)
+        setUsingZegoTemplate(false)
+        setActiveRtc(null)
+        exitCallToPreviousScreen()
+      },
+    })
   }
 
   function startLiveTimer() {
@@ -999,6 +879,7 @@ export default function TeleConsultation() {
           participantId: actors.employee.employeeUserId,
           preferredProvider: attempt === 0 ? preferredProvider ?? "zego" : undefined,
           forceFailover: attempt > 0 || preferredProvider === "agora",
+          allowEarlyJoin: true,
         })
 
         return joined.rtc
@@ -1208,26 +1089,8 @@ export default function TeleConsultation() {
                   </Suspense>
                 </div>
               ) : usingZegoTemplate ? (
-                <div className="zego-template-shell zego-express-shell">
-                  <div className="video-screen remote">
-                    <video ref={remoteVideoRef} autoPlay playsInline />
-                    {!hasRemoteStream && (
-                      <div className="video-placeholder">
-                        <span>Waiting for doctor to join…</span>
-                      </div>
-                    )}
-                    <div className="video-screen-overlay" />
-                    {zegoServerUsed && (
-                      <div className="video-state-chip">
-                        Zego Express ({zegoServerUsed} WS)
-                      </div>
-                    )}
-                    {callState === "live" && <div className="video-clock">{liveMinutes}:{liveSeconds}</div>}
-                  </div>
-                  <div className="video-screen local">
-                    <video ref={localVideoRef} autoPlay muted playsInline />
-                    {!hasLocalStream && <span>Preparing camera…</span>}
-                  </div>
+                <div className="zego-template-shell zego-uikit-shell">
+                  <div ref={zegoContainerRef} className="zego-uikit-container" />
                 </div>
               ) : (
                 <div className="zego-template-shell zego-express-shell">

@@ -710,6 +710,18 @@
   height: 100dvh;
 }
 
+.zego-uikit-shell {
+  display: grid;
+  place-items: stretch;
+  min-height: 100dvh;
+  background: #ffffff;
+}
+
+.zego-uikit-container {
+  width: 100%;
+  height: 100dvh;
+}
+
 .zego-express-shell {
   display: grid;
   place-items: stretch;

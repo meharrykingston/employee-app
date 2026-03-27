@@ -50,6 +50,11 @@ type ChatAction = {
   payload?: Record<string, unknown>
 }
 
+type DoctorIntro = {
+  name: string
+  avatar: string
+}
+
 const defaultSuggestions = [
   "Since when is this happening?",
   "What tests should I consider first?",
@@ -160,6 +165,7 @@ function mapCategoryToColor(tag: string): LabWidget["color"] {
 export default function AIChat() {
   const navigate = useNavigate()
   const location = useLocation()
+  const navState = location.state as { prefill?: string; doctor?: DoctorIntro } | undefined
   const companySession = getEmployeeCompanySession()
   const { start: startProcessLoading, stop: stopProcessLoading } = useProcessLoading()
   const { addItem } = useCart()
@@ -170,23 +176,20 @@ export default function AIChat() {
 
   const messagesRef = useRef<Message[]>([])
 
+  const [doctorIntro] = useState<DoctorIntro>(() => {
+    return (
+      navState?.doctor ?? {
+        name: "Dr. Asha Iyer",
+        avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=320&q=80",
+      }
+    )
+  })
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       from: "ai",
-      text: "Hello. I am here to help you with your symptoms. How are you feeling right now?",
-      time: "06:48 PM",
-    },
-    {
-      id: "2",
-      from: "user",
-      text: "I feel dizzy",
-      time: "06:48 PM",
-    },
-    {
-      id: "3",
-      from: "ai",
-      text: "Thanks for sharing that. Did this start suddenly, and are you drinking enough water today?",
+      text: `Hello, I’m ${doctorIntro.name}. I’m here to guide you with your symptoms and next steps. How are you feeling right now?`,
       time: "06:48 PM",
     },
   ])
@@ -579,13 +582,12 @@ export default function AIChat() {
   }
 
   useEffect(() => {
-    const state = location.state as { prefill?: string } | undefined
-    if (prefillHandled.current || !state?.prefill) {
+    if (prefillHandled.current || !navState?.prefill) {
       return
     }
     prefillHandled.current = true
-    sendMessage(state.prefill)
-  }, [location.state])
+    sendMessage(navState.prefill)
+  }, [navState])
 
   function openPicker() {
     fileInputRef.current?.click()
@@ -608,9 +610,14 @@ export default function AIChat() {
         </button>
 
         <div className="ai-chat-header-info">
-          <h1 className="ai-chat-title">AI Chat</h1>
-          <div className="ai-chat-status">
-            <span className="ai-chat-dot" /> Online and Ready to Help
+          <div className="ai-chat-doctor">
+            <img src={doctorIntro.avatar} alt={doctorIntro.name} />
+            <div>
+              <h1 className="ai-chat-title">{doctorIntro.name}</h1>
+              <div className="ai-chat-status">
+                <span className="ai-chat-dot" /> Doctor online and ready
+              </div>
+            </div>
           </div>
         </div>
       </header>

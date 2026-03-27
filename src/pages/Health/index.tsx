@@ -19,12 +19,12 @@ import { goBackOrFallback } from "../../utils/navigation"
 import "./health.css"
 
 type Range = "Day" | "Week" | "Month" | "Year"
-type HealthTab = "Home" | "Health" | "AI Chat" | "Stress Relief" | "Wallet"
+type HealthTab = "Home" | "Health" | "Doctor Chat" | "Stress Relief" | "Wallet"
 
 const tabs: Array<{ id: HealthTab; icon: "home" | "health" | "chat" | "stress" | "wallet" }> = [
   { id: "Home", icon: "home" },
   { id: "Health", icon: "health" },
-  { id: "AI Chat", icon: "chat" },
+  { id: "Doctor Chat", icon: "chat" },
   { id: "Stress Relief", icon: "stress" },
   { id: "Wallet", icon: "wallet" },
 ]
@@ -32,7 +32,7 @@ const tabs: Array<{ id: HealthTab; icon: "home" | "health" | "chat" | "stress" |
 const tabRoutes: Record<HealthTab, string> = {
   Home: "/home",
   Health: "/health",
-  "AI Chat": "/ai-chat",
+  "Doctor Chat": "/ai-chat",
   "Stress Relief": "/stress-relief",
   Wallet: "/wallet",
 }
@@ -67,7 +67,7 @@ export default function Health() {
 
   const activeTab: HealthTab = useMemo(() => {
     if (location.pathname.startsWith("/home")) return "Home"
-    if (location.pathname.startsWith("/ai-chat")) return "AI Chat"
+    if (location.pathname.startsWith("/ai-chat")) return "Doctor Chat"
     if (location.pathname.startsWith("/stress-relief")) return "Stress Relief"
     if (location.pathname.startsWith("/wallet")) return "Wallet"
     return "Health"
