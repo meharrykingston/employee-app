@@ -2,8 +2,26 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #f6f6f2;
+  background: var(--ai-bg, #f6f6f2);
   font-family: "Manrope", sans-serif;
+  --ai-header-bg: rgba(246, 246, 242, 0.96);
+  --ai-header-border: #e7e7de;
+  --ai-ai-bubble-bg: linear-gradient(135deg, rgba(68, 148, 255, 0.2), rgba(255, 82, 120, 0.2));
+  --ai-ai-bubble-border: rgba(88, 128, 255, 0.35);
+  --ai-user-bubble-bg: linear-gradient(135deg, #2b6eff, #ff4d8d);
+  --ai-user-bubble-color: #fff;
+  --ai-composer-bg: rgba(255, 255, 255, 0.96);
+  --ai-quick-bg: #f5e9f8;
+  --ai-quick-color: #6b2a83;
+  --ai-input-bg: #f3f4f6;
+  --ai-send-bg: #6b2a83;
+  --ai-send-color: #fff;
+  --ai-avatar-ring: rgba(120, 150, 255, 0.5);
+  --ai-accent: #6b2a83;
+  --ai-bubble-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  --ai-user-bubble-shadow: 0 10px 22px rgba(50, 86, 255, 0.25);
+  --ai-body-pattern: none;
+  background-image: var(--ai-body-pattern);
 }
 
 .ai-chat-header {
@@ -19,8 +37,8 @@
   gap: 10px;
   min-height: 72px;
   padding: 12px 14px;
-  border-bottom: 1px solid #e7e7de;
-  background: rgba(246, 246, 242, 0.96);
+  border-bottom: 1px solid var(--ai-header-border);
+  background: var(--ai-header-bg);
   backdrop-filter: blur(8px);
 }
 
@@ -75,7 +93,7 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(120, 150, 255, 0.5);
+  border: 2px solid var(--ai-avatar-ring);
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
 }
 
@@ -113,7 +131,7 @@
   border-radius: 16px;
   background: #ffffff;
   border: 1px solid #e4e8f1;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--ai-bubble-shadow);
   font-size: 14px;
   line-height: 1.45;
   animation: bubbleFloat 6s ease-in-out infinite;
@@ -122,15 +140,15 @@
 .message-row.ai .message-bubble {
   max-width: 92%;
   color: #1f2940;
-  background: linear-gradient(135deg, rgba(68, 148, 255, 0.2), rgba(255, 82, 120, 0.2));
-  border: 1px solid rgba(88, 128, 255, 0.35);
+  background: var(--ai-ai-bubble-bg);
+  border: 1px solid var(--ai-ai-bubble-border);
 }
 
 .message-row.user .message-bubble {
-  background: linear-gradient(135deg, #2b6eff, #ff4d8d);
+  background: var(--ai-user-bubble-bg);
   border: none;
-  box-shadow: 0 10px 22px rgba(50, 86, 255, 0.25);
-  color: #fff;
+  box-shadow: var(--ai-user-bubble-shadow);
+  color: var(--ai-user-bubble-color);
 }
 
 .bubble-badge {
@@ -334,7 +352,7 @@
   z-index: 16;
   padding: 8px 14px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid #e5e7eb;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--ai-composer-bg);
   backdrop-filter: blur(12px);
 }
 
@@ -370,8 +388,8 @@
   padding: 0 12px;
   border-radius: 999px;
   font-size: 12px;
-  background: #f5e9f8;
-  color: #6b2a83;
+  background: var(--ai-quick-bg);
+  color: var(--ai-quick-color);
   border: none;
 }
 
@@ -388,7 +406,7 @@
   min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
-  background: #f3f4f6;
+  background: var(--ai-input-bg);
 }
 
 .icon-btn,
@@ -408,8 +426,8 @@
 }
 
 .send-btn {
-  background: #6b2a83;
-  color: #fff;
+  background: var(--ai-send-bg);
+  color: var(--ai-send-color);
 }
 
 .icon-btn svg,
@@ -518,9 +536,123 @@
   border: 0;
   border-radius: 12px;
   min-height: 44px;
-  background: #6b2a83;
+  background: var(--ai-accent);
   color: #fff;
   font-weight: 700;
+}
+
+.ai-chat-page.theme-whatsapp-dizzy {
+  --ai-bg: #e7f3ef;
+  --ai-header-bg: rgba(231, 243, 239, 0.96);
+  --ai-header-border: #cfe3dc;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #d7e4de;
+  --ai-user-bubble-bg: linear-gradient(135deg, #4fc3a1, #2aa784);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(231, 243, 239, 0.96);
+  --ai-quick-bg: #dff3ec;
+  --ai-quick-color: #1f5f4d;
+  --ai-input-bg: #f0faf7;
+  --ai-send-bg: #2aa784;
+  --ai-avatar-ring: rgba(42, 167, 132, 0.4);
+  --ai-accent: #2aa784;
+  --ai-body-pattern: radial-gradient(circle at 20% 20%, rgba(79, 195, 161, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(42, 167, 132, 0.12), transparent 45%);
+}
+
+.ai-chat-page.theme-whatsapp-mental {
+  --ai-bg: #fff0f1;
+  --ai-header-bg: rgba(255, 240, 241, 0.96);
+  --ai-header-border: #f3c7cc;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #f0d2d7;
+  --ai-user-bubble-bg: linear-gradient(135deg, #f14a6f, #c2224e);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(255, 240, 241, 0.96);
+  --ai-quick-bg: #ffe2e6;
+  --ai-quick-color: #8c1f3d;
+  --ai-input-bg: #fff6f7;
+  --ai-send-bg: #c2224e;
+  --ai-avatar-ring: rgba(241, 74, 111, 0.35);
+  --ai-accent: #c2224e;
+  --ai-body-pattern: radial-gradient(circle at 15% 20%, rgba(241, 74, 111, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(194, 34, 78, 0.1), transparent 45%);
+}
+
+.ai-chat-page.theme-whatsapp-sleep {
+  --ai-bg: #eef1ff;
+  --ai-header-bg: rgba(238, 241, 255, 0.96);
+  --ai-header-border: #cfd7ff;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #d8defe;
+  --ai-user-bubble-bg: linear-gradient(135deg, #5866f2, #3a4cd6);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(238, 241, 255, 0.96);
+  --ai-quick-bg: #e2e6ff;
+  --ai-quick-color: #2e3fb3;
+  --ai-input-bg: #f6f7ff;
+  --ai-send-bg: #3a4cd6;
+  --ai-avatar-ring: rgba(88, 102, 242, 0.35);
+  --ai-accent: #3a4cd6;
+  --ai-body-pattern: radial-gradient(circle at 12% 15%, rgba(88, 102, 242, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 25%, rgba(58, 76, 214, 0.12), transparent 45%);
+}
+
+.ai-chat-page.theme-whatsapp-tension {
+  --ai-bg: #fff2e5;
+  --ai-header-bg: rgba(255, 242, 229, 0.96);
+  --ai-header-border: #f4d9bc;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #f2dcc7;
+  --ai-user-bubble-bg: linear-gradient(135deg, #ff8a3d, #f05b1e);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(255, 242, 229, 0.96);
+  --ai-quick-bg: #ffe2c8;
+  --ai-quick-color: #a94a1d;
+  --ai-input-bg: #fff7f0;
+  --ai-send-bg: #f05b1e;
+  --ai-avatar-ring: rgba(255, 138, 61, 0.35);
+  --ai-accent: #f05b1e;
+  --ai-body-pattern: radial-gradient(circle at 18% 20%, rgba(255, 138, 61, 0.2), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(240, 91, 30, 0.12), transparent 45%);
+}
+
+.ai-chat-page.theme-whatsapp-fever {
+  --ai-bg: #fff0ee;
+  --ai-header-bg: rgba(255, 240, 238, 0.96);
+  --ai-header-border: #f0c5bf;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #f2d4cf;
+  --ai-user-bubble-bg: linear-gradient(135deg, #ff5d5f, #d62a3a);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(255, 240, 238, 0.96);
+  --ai-quick-bg: #ffe1de;
+  --ai-quick-color: #a3202a;
+  --ai-input-bg: #fff6f5;
+  --ai-send-bg: #d62a3a;
+  --ai-avatar-ring: rgba(255, 93, 95, 0.35);
+  --ai-accent: #d62a3a;
+  --ai-body-pattern: radial-gradient(circle at 16% 16%, rgba(255, 93, 95, 0.18), transparent 45%),
+    radial-gradient(circle at 82% 8%, rgba(214, 42, 58, 0.12), transparent 45%);
+}
+
+.ai-chat-page.theme-whatsapp-fatigue {
+  --ai-bg: #eef1f6;
+  --ai-header-bg: rgba(238, 241, 246, 0.96);
+  --ai-header-border: #d4d9e1;
+  --ai-ai-bubble-bg: #ffffff;
+  --ai-ai-bubble-border: #dde2ea;
+  --ai-user-bubble-bg: linear-gradient(135deg, #7b8aa7, #5b6d8a);
+  --ai-user-bubble-color: #ffffff;
+  --ai-composer-bg: rgba(238, 241, 246, 0.96);
+  --ai-quick-bg: #e2e7f0;
+  --ai-quick-color: #445166;
+  --ai-input-bg: #f6f7fb;
+  --ai-send-bg: #5b6d8a;
+  --ai-avatar-ring: rgba(123, 138, 167, 0.35);
+  --ai-accent: #5b6d8a;
+  --ai-body-pattern: radial-gradient(circle at 15% 15%, rgba(123, 138, 167, 0.18), transparent 45%),
+    radial-gradient(circle at 80% 15%, rgba(91, 109, 138, 0.12), transparent 45%);
 }
 
 @keyframes typing {

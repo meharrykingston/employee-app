@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactElement } from "react"
-import { FiActivity, FiArrowLeft, FiHeart, FiPackage, FiZap } from "react-icons/fi"
+import { FiActivity, FiArrowLeft, FiCamera, FiDroplet, FiHeart, FiZap } from "react-icons/fi"
 import { useNavigate, useParams } from "react-router-dom"
 import { getLatestVital, getVitalHistory, saveVitalReading } from "../../services/vitalsApi"
 import "./metric-details.css"
@@ -16,6 +16,18 @@ type MetricConfig = {
   tone: "red" | "blue" | "orange" | "green"
   windows: Record<WindowKey, number[]>
   tips: string[]
+}
+
+type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack"
+
+type MealEntry = {
+  id: string
+  type: MealType
+  name: string
+  calories: number
+  notes: string
+  image?: string
+  loggedAt: string
 }
 
 const details: Record<string, MetricConfig> = {
@@ -64,20 +76,20 @@ const details: Record<string, MetricConfig> = {
     },
     tips: ["Maintain protein with meals", "Add a 10-min walk after lunch", "Hydrate to curb false hunger"],
   },
-  weight: {
-    title: "Weight",
-    current: "165",
-    unit: "lbs",
-    subtitle: "Consistent with your previous week",
-    insight: "Weight is stable across recent windows with minor fluctuation.",
-    icon: <FiPackage />,
+  sugar: {
+    title: "Sugar Count",
+    current: "110",
+    unit: "mg/dL",
+    subtitle: "Fasting range is within target",
+    insight: "Sugar values are stable with no sharp spikes this week.",
+    icon: <FiDroplet />,
     tone: "green",
     windows: {
-      "7D": [165, 165, 164, 165, 166, 165, 165],
-      "14D": [166, 165, 165, 164, 165, 166, 165, 165, 164, 165, 166, 165, 165, 165],
-      "30D": [167, 166, 166, 165, 165, 164, 165, 166, 166, 165, 165, 164, 165, 166, 165, 165, 164, 165, 166, 165, 165, 164, 165, 166, 165, 165, 164, 165, 165, 165],
+      "7D": [112, 110, 108, 114, 109, 111, 110],
+      "14D": [115, 112, 110, 108, 114, 111, 109, 110, 112, 108, 109, 111, 110, 109],
+      "30D": [116, 114, 112, 111, 110, 109, 111, 112, 110, 109, 108, 110, 111, 109, 112, 110, 108, 109, 110, 112, 111, 109, 108, 110, 111, 109, 110, 108, 109, 110],
     },
-    tips: ["Keep meal timing consistent", "Track weekly average", "Add light strength training"],
+    tips: ["Log readings at the same time daily", "Limit sugary snacks", "Walk after meals to stabilize glucose"],
   },
 }
 
@@ -123,6 +135,8 @@ export default function MetricDetails() {
   const trendText = trendDelta > 0 ? `+${trendDelta.toFixed(1)}` : trendDelta.toFixed(1)
   const displayCurrentNumber = latestOverride ?? Number(metric.current)
   const todayKey = new Date().toISOString().slice(0, 10)
+  const mealStorageKey = `calorie_meals_${todayKey}`
+  const mealTypes: MealType[] = ["Breakfast", "Lunch", "Dinner", "Snack"]
   const lastCheckDate = localStorage.getItem("heart_rate_check_date")
   const lastCheckAt = localStorage.getItem("heart_rate_check_at")
   const checkedToday = lastCheckDate === todayKey
@@ -147,6 +161,81 @@ export default function MetricDetails() {
       ? `${Math.round(bpLatest.sys)}/${Math.round(bpLatest.dia)}`
       : String(displayCurrentNumber)
   const displayUnit = metricId === "blood-pressure" ? "mmHg" : metric.unit
+
+  const [mealEntries, setMealEntries] = useState<MealEntry[]>(() => {
+    if (metricId !== "calories") return []
+    const raw = localStorage.getItem(mealStorageKey)
+    if (!raw) return []
+    try {
+      const parsed = JSON.parse(raw) as MealEntry[]
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+  const [mealDraft, setMealDraft] = useState({
+    type: "Breakfast" as MealType,
+    name: "",
+    calories: "",
+    notes: "",
+    image: "",
+  })
+  const [mealScanState, setMealScanState] = useState<"idle" | "scanning" | "done">("idle")
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (metricId !== "calories") return
+    localStorage.setItem(mealStorageKey, JSON.stringify(mealEntries))
+  }, [mealEntries, mealStorageKey, metricId])
+
+  function handlePickMealImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : ""
+      setMealDraft((prev) => ({ ...prev, image: result }))
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ""
+  }
+
+  function estimateCalories() {
+    if (mealScanState === "scanning") return
+    if (!mealDraft.image && !mealDraft.name.trim()) {
+      setMealDraft((prev) => ({ ...prev, notes: prev.notes || "Add a meal name or photo to estimate calories." }))
+      return
+    }
+    setMealScanState("scanning")
+    const base = mealDraft.type === "Breakfast" ? 350 : mealDraft.type === "Lunch" ? 600 : mealDraft.type === "Dinner" ? 650 : 220
+    const jitter = Math.round((Math.random() * 120) - 60)
+    window.setTimeout(() => {
+      const estimate = Math.max(120, base + jitter)
+      setMealDraft((prev) => ({ ...prev, calories: String(estimate) }))
+      setMealScanState("done")
+      window.setTimeout(() => setMealScanState("idle"), 1200)
+    }, 900)
+  }
+
+  function saveMeal() {
+    const name = mealDraft.name.trim() || `${mealDraft.type} meal`
+    const calories = Number(mealDraft.calories) || 0
+    if (!mealDraft.image && !mealDraft.name.trim()) {
+      setMealDraft((prev) => ({ ...prev, notes: prev.notes || "Add a meal name or photo before saving." }))
+      return
+    }
+    const entry: MealEntry = {
+      id: `meal-${Date.now()}`,
+      type: mealDraft.type,
+      name,
+      calories,
+      notes: mealDraft.notes.trim(),
+      image: mealDraft.image || undefined,
+      loggedAt: new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }),
+    }
+    setMealEntries((prev) => [entry, ...prev])
+    setMealDraft({ type: mealDraft.type, name: "", calories: "", notes: "", image: "" })
+  }
 
   useEffect(() => {
     if (measureStage !== "prepare") return
@@ -460,14 +549,18 @@ export default function MetricDetails() {
           </article>
         )}
 
-        {metricId === "blood-pressure" && (
+        {(metricId === "blood-pressure" || metricId === "sugar") && (
           <article className="metric-measure-card app-fade-stagger">
             <div>
               <h3>Daily tracking</h3>
-              <p>Log your BP reading on the tracking page to keep the analysis accurate.</p>
+              <p>Log your reading on the tracking page to keep the analysis accurate.</p>
             </div>
-            <button className="measure-btn app-pressable" type="button" onClick={() => navigate("/metric/blood-pressure/log")}>
-              Log blood pressure
+            <button
+              className="measure-btn app-pressable"
+              type="button"
+              onClick={() => navigate(metricId === "sugar" ? "/metric/sugar/log" : "/metric/blood-pressure/log")}
+            >
+              {metricId === "sugar" ? "Log blood sugar" : "Log blood pressure"}
             </button>
           </article>
         )}
@@ -507,6 +600,102 @@ export default function MetricDetails() {
           </section>
         </article>
 
+        {metricId === "calories" && (
+          <article className="meal-tracker-card app-fade-stagger">
+            <header className="meal-tracker-head">
+              <div>
+                <h3>Daily Meal Tracker</h3>
+                <p>Log breakfast, lunch, dinner, and snacks with a photo scan.</p>
+              </div>
+              <div className="meal-total">
+                <span>Total today</span>
+                <strong>{mealEntries.reduce((sum, item) => sum + item.calories, 0)} kcal</strong>
+              </div>
+            </header>
+
+            <div className="meal-grid">
+              {mealTypes.map((type) => {
+                const latest = mealEntries.find((item) => item.type === type)
+                return (
+                  <div key={type} className="meal-slot">
+                    <div className="meal-slot-head">
+                      <h4>{type}</h4>
+                      <span>{latest ? `${latest.calories} kcal` : "Not logged"}</span>
+                    </div>
+                    {latest ? (
+                      <div className="meal-slot-body">
+                        {latest.image ? <img src={latest.image} alt={latest.name} /> : <div className="meal-photo-fallback">No image</div>}
+                        <div>
+                          <p>{latest.name}</p>
+                          <small>{latest.loggedAt}</small>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="meal-slot-empty">Add your {type.toLowerCase()} to see insights.</div>
+                    )}
+                    <button
+                      type="button"
+                      className={`meal-chip ${mealDraft.type === type ? "active" : ""}`}
+                      onClick={() => setMealDraft((prev) => ({ ...prev, type }))}
+                    >
+                      Add {type}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="meal-form">
+              <div className="meal-form-row">
+                <label>
+                  Meal name
+                  <input
+                    className="meal-input"
+                    placeholder="E.g., Poha with peanuts"
+                    value={mealDraft.name}
+                    onChange={(e) => setMealDraft((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Calories (estimated)
+                  <input
+                    className="meal-input"
+                    placeholder="Auto estimate"
+                    value={mealDraft.calories}
+                    onChange={(e) => setMealDraft((prev) => ({ ...prev, calories: e.target.value }))}
+                  />
+                </label>
+              </div>
+              <label>
+                Notes
+                <input
+                  className="meal-input"
+                  placeholder="Add ingredients or portion size"
+                  value={mealDraft.notes}
+                  onChange={(e) => setMealDraft((prev) => ({ ...prev, notes: e.target.value }))}
+                />
+              </label>
+              <div className="meal-actions">
+                <button type="button" className="meal-btn secondary" onClick={() => fileInputRef.current?.click()}>
+                  <FiCamera /> Add food photo
+                </button>
+                <button type="button" className="meal-btn" onClick={estimateCalories} disabled={mealScanState === "scanning"}>
+                  {mealScanState === "scanning" ? "Scanning..." : "Scan & estimate"}
+                </button>
+                <button type="button" className="meal-btn primary" onClick={saveMeal}>
+                  Save meal
+                </button>
+              </div>
+              {!!mealDraft.image && (
+                <div className="meal-preview">
+                  <img src={mealDraft.image} alt="Meal preview" />
+                  <span>{mealDraft.type} preview</span>
+                </div>
+              )}
+            </div>
+          </article>
+        )}
+
         <article className="metric-chart-card app-fade-stagger">
           <h3>Trend ({windowKey})</h3>
           <div className="metric-chart">
@@ -536,6 +725,17 @@ export default function MetricDetails() {
           </ul>
         </article>
       </section>
+
+      {metricId === "calories" && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="meal-file"
+          onChange={handlePickMealImage}
+        />
+      )}
 
       {metricId === "heart-rate" && measureStage !== "idle" && (
         <div className="hr-measure-overlay">

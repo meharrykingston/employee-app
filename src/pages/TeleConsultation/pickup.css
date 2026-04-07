@@ -113,12 +113,26 @@
   gap: 10px;
 }
 
+.pickup-grid--single {
+  grid-template-columns: 1fr;
+}
+
 .pickup-card {
   border: 1px solid #d8deeb;
   border-radius: 18px;
   background: #fff;
   text-align: center;
   padding: 14px 10px;
+}
+
+.pickup-card--static {
+  border-color: #cfe0ff;
+  background: linear-gradient(160deg, #ffffff, #f3f7ff);
+}
+
+.pickup-card--static .pickup-icon {
+  color: #2563eb;
+  background: #e9efff;
 }
 
 .pickup-card.active {

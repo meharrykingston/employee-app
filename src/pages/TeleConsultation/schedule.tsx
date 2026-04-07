@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react"
 import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiStar } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
-import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
+import { ensureEmployeeActor } from "../../services/actorsApi"
 import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { fetchDoctorProfile, type DoctorAvailabilitySlot } from "../../services/doctorsApi"
@@ -54,14 +54,14 @@ async function ensureTeleconsultActors(doctor: DoctorInfo) {
     employeeCode: employeeHandle.toUpperCase(),
   })
 
-  const doctorActor = await ensureDoctorActor({
-    email: `${doctor.id}@doctor.astikan.local`,
-    fullName: doctor.name,
-    handle: doctor.id,
-    specialization: doctor.specialty,
-  })
-
-  return { employee, doctor: doctorActor }
+  return {
+    employee,
+    doctor: {
+      userId: doctor.id,
+      email: doctor.name,
+      fullName: doctor.name,
+    },
+  }
 }
 
 function startOfDay(date: Date) {
@@ -281,7 +281,6 @@ export default function TeleSchedule() {
         employeeId: actors.employee.employeeUserId,
         doctorId: actors.doctor.userId,
         appointmentId: appointment.appointmentId,
-        preferredProvider: "agora",
         scheduledAt: scheduled.toISOString(),
       })
 
