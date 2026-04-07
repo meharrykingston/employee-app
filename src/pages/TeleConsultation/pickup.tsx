@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { FiArrowLeft, FiCheckCircle, FiHome, FiMapPin } from "react-icons/fi"
-import { MdOutlineBusinessCenter } from "react-icons/md"
+import { FiArrowLeft, FiCheckCircle, FiMapPin } from "react-icons/fi"
 import { useLocation, useNavigate } from "react-router-dom"
 import mapboxgl from "mapbox-gl"
 import "mapbox-gl/dist/mapbox-gl.css"
@@ -26,7 +25,6 @@ export default function OpdPickup() {
     }
   }
   const doctor = state?.doctor
-  const [pickupType, setPickupType] = useState<"home" | "office">("home")
   const [showScheduled, setShowScheduled] = useState(false)
   const [mapError, setMapError] = useState("")
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null)
@@ -35,19 +33,11 @@ export default function OpdPickup() {
   const originMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destinationMarkerRef = useRef<mapboxgl.Marker | null>(null)
 
-  const address = useMemo(
-    () =>
-      pickupType === "home"
-        ? "A-47, Sector 62, Noida, Uttar Pradesh"
-        : "DLF Cyber City, Phase 2, Gurugram",
-    [pickupType],
-  )
+  const address = useMemo(() => "A-47, Sector 62, Noida, Uttar Pradesh", [])
   const destinationAddress = useMemo(() => {
     if (doctor?.practiceAddress) return doctor.practiceAddress
-    return pickupType === "home"
-      ? "Astikan OPD Clinic, Connaught Place, New Delhi"
-      : "Astikan Health Center, Saket, New Delhi"
-  }, [doctor?.practiceAddress, pickupType])
+    return "Astikan OPD Clinic, Connaught Place, New Delhi"
+  }, [doctor?.practiceAddress])
   const userInitial = (address.trim()[0] || "U").toUpperCase()
 
   const mapboxTokenRaw = (import.meta as any).env?.VITE_MAPBOX_TOKEN
@@ -244,9 +234,6 @@ export default function OpdPickup() {
     }
   }, [address, canRenderMap, destinationAddress, userInitial])
 
-  const homeEtaLabel = pickupType === "home" && etaMinutes ? `in ${etaMinutes} mins` : "ETA"
-  const officeEtaLabel = pickupType === "office" && etaMinutes ? `in ${etaMinutes} mins` : "ETA"
-
   function scheduleLater() {
     setShowScheduled(true)
     window.setTimeout(() => setShowScheduled(false), 1800)
@@ -269,8 +256,8 @@ export default function OpdPickup() {
           <FiArrowLeft />
         </button>
         <div>
-          <h1>OPD Pickup</h1>
-          <p>Select pickup type before ride booking</p>
+          <h1>OPD Visit</h1>
+          <p>Confirm appointment details before booking.</p>
         </div>
       </header>
 
@@ -287,29 +274,16 @@ export default function OpdPickup() {
         )}
 
         <section className="pickup-block app-fade-stagger">
-          <h3>Choose Pickup Type</h3>
-          <div className="pickup-grid">
-            <button
-              className={`pickup-card app-pressable ${pickupType === "home" ? "active" : ""}`}
-              type="button"
-              onClick={() => setPickupType("home")}
-            >
-              <span className="pickup-icon"><FiHome /></span>
-              <h4>Home Pickup</h4>
-              <p>Driver picks you from home</p>
-              <b className="pickup-pill green">{homeEtaLabel}</b>
-            </button>
-
-            <button
-              className={`pickup-card app-pressable ${pickupType === "office" ? "active" : ""}`}
-              type="button"
-              onClick={() => setPickupType("office")}
-            >
-              <span className="pickup-icon"><MdOutlineBusinessCenter /></span>
-              <h4>Office Pickup</h4>
-              <p>Driver picks you from office</p>
-              <b className="pickup-pill blue">{officeEtaLabel}</b>
-            </button>
+          <h3>Visit details</h3>
+          <div className="pickup-grid pickup-grid--single">
+            <div className="pickup-card pickup-card--static">
+              <span className="pickup-icon">
+                <FiMapPin />
+              </span>
+              <h4>Clinic visit</h4>
+              <p>Confirm your location and clinic before booking.</p>
+              <b className="pickup-pill green">{etaMinutes ? `ETA ${etaMinutes} mins` : "ETA"}</b>
+            </div>
           </div>
         </section>
 
@@ -320,7 +294,7 @@ export default function OpdPickup() {
         </article>
 
         <p className="pickup-address app-fade-stagger">
-          <FiMapPin /> {pickupType === "home" ? "Home Address:" : "Office Address:"} {address}
+          <FiMapPin /> Your Address: {address}
         </p>
         <p className="pickup-address pickup-address--clinic app-fade-stagger">
           <FiMapPin /> Clinic Address: {destinationAddress}
@@ -338,7 +312,7 @@ export default function OpdPickup() {
 
       {showScheduled && (
         <div className="pickup-toast app-page-enter" role="status">
-          <FiCheckCircle /> Pickup scheduled for later.
+          <FiCheckCircle /> Visit scheduled for later.
         </div>
       )}
     </main>

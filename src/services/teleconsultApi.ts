@@ -1,17 +1,15 @@
 import { apiPost } from "./api"
 
 export type TeleconsultRtcPayload = {
-  provider: "zego" | "agora"
-  appId: string
-  userId: string
   channelName: string
-  token: string | null
+  provider: "webrtc"
+  iceServers: RTCIceServer[]
 }
 
 export type TeleconsultSessionCreateResponse = {
   sessionId: string
   status: "scheduled" | "live" | "completed" | "cancelled"
-  provider: "zego" | "agora"
+  provider: "webrtc"
   channelName: string
   rtc: TeleconsultRtcPayload
 }
@@ -19,7 +17,7 @@ export type TeleconsultSessionCreateResponse = {
 export type TeleconsultSessionJoinResponse = {
   sessionId: string
   sessionStatus: "scheduled" | "live" | "completed" | "cancelled"
-  provider: "zego" | "agora"
+  provider: "webrtc"
   failoverCount: number
   channelName: string
   rtc: TeleconsultRtcPayload
@@ -30,7 +28,6 @@ export async function createTeleconsultSession(input: {
   employeeId: string
   doctorId: string
   appointmentId?: string
-  preferredProvider?: "zego" | "agora"
   scheduledAt?: string
 }) {
   return apiPost<TeleconsultSessionCreateResponse, typeof input>("/teleconsult/sessions", input)
@@ -41,8 +38,6 @@ export async function joinTeleconsultSession(
   input: {
     participantType: "employee" | "doctor"
     participantId: string
-    preferredProvider?: "zego" | "agora"
-    forceFailover?: boolean
     allowEarlyJoin?: boolean
   }
 ) {

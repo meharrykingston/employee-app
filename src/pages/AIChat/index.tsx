@@ -55,12 +55,18 @@ type DoctorIntro = {
   avatar: string
 }
 
+const TYPING_BASE_DELAY_MS = 60
+const TYPING_VARIANCE_MS = 30
+const TYPING_PUNCTUATION_PAUSE_MS = 320
+const TYPING_START_DELAY_MS = 360
+
 const defaultSuggestions = [
   "Since when is this happening?",
   "What tests should I consider first?",
   "Any urgent warning signs to watch?",
 ]
 const THREAD_STORAGE_KEY = "employee_ai_thread_id"
+const THREAD_LAST_KEY = "employee_ai_thread_id:last"
 const MESSAGE_STORAGE_PREFIX = "employee_ai_thread_messages:"
 const fallbackMedicineImage = "https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&w=900&q=80"
 
@@ -165,7 +171,7 @@ function mapCategoryToColor(tag: string): LabWidget["color"] {
 export default function AIChat() {
   const navigate = useNavigate()
   const location = useLocation()
-  const navState = location.state as { prefill?: string; doctor?: DoctorIntro } | undefined
+  const navState = location.state as { prefill?: string; doctor?: DoctorIntro; feelingId?: string; theme?: string } | undefined
   const companySession = getEmployeeCompanySession()
   const { start: startProcessLoading, stop: stopProcessLoading } = useProcessLoading()
   const { addItem } = useCart()
@@ -173,26 +179,24 @@ export default function AIChat() {
   const prefillHandled = useRef(false)
   const chatBodyRef = useRef<HTMLDivElement>(null)
   const chatSoundRef = useRef<HTMLAudioElement | null>(null)
+  const typingSessionRef = useRef(0)
 
   const messagesRef = useRef<Message[]>([])
 
-  const [doctorIntro] = useState<DoctorIntro>(() => {
+  const doctorIntro = useMemo<DoctorIntro>(() => {
     return (
       navState?.doctor ?? {
         name: "Dr. Asha Iyer",
         avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=320&q=80",
       }
     )
-  })
+  }, [navState?.doctor])
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      from: "ai",
-      text: `Hello, I’m ${doctorIntro.name}. I’m here to guide you with your symptoms and next steps. How are you feeling right now?`,
-      time: "06:48 PM",
-    },
-  ])
+  const feelingKey = navState?.feelingId ?? "default"
+  const themeKey = navState?.theme ?? feelingKey
+  const threadStorageKey = feelingKey === "default" ? THREAD_STORAGE_KEY : `${THREAD_STORAGE_KEY}:${feelingKey}`
+
+  const [messages, setMessages] = useState<Message[]>([])
   const [draft, setDraft] = useState("")
   const [attachedName, setAttachedName] = useState("")
   const [isTyping, setIsTyping] = useState(false)
@@ -201,16 +205,31 @@ export default function AIChat() {
   const [isListening, setIsListening] = useState(false)
   const [aiQuickReplies, setAiQuickReplies] = useState<string[]>(defaultSuggestions)
   const [bookingWidgetId, setBookingWidgetId] = useState<string | null>(null)
-  const [threadId] = useState(() => {
-    const existing = localStorage.getItem(THREAD_STORAGE_KEY)
-    if (existing) return existing
-    const generated = `emp-ai-${Math.random().toString(36).slice(2, 10)}`
-    localStorage.setItem(THREAD_STORAGE_KEY, generated)
-    return generated
-  })
+  const [threadId, setThreadId] = useState("")
   const [employeeUserId, setEmployeeUserId] = useState("")
 
   useEffect(() => {
+    const existing = localStorage.getItem(threadStorageKey)
+    const generated = existing ?? `emp-ai-${feelingKey}-${Math.random().toString(36).slice(2, 10)}`
+    localStorage.setItem(threadStorageKey, generated)
+    localStorage.setItem(THREAD_LAST_KEY, generated)
+    setThreadId(generated)
+    setMessages([
+      {
+        id: "seed-1",
+        from: "ai",
+        text: `Hello, I’m ${doctorIntro.name}. I’m here to guide you with your symptoms and next steps. How are you feeling right now?`,
+        time: nowTime(),
+      },
+    ])
+    setAiQuickReplies(defaultSuggestions)
+    setDraft("")
+    prefillHandled.current = false
+    typingSessionRef.current += 1
+  }, [doctorIntro.name, feelingKey, threadStorageKey])
+
+  useEffect(() => {
+    if (!threadId) return
     const stored = localStorage.getItem(`${MESSAGE_STORAGE_PREFIX}${threadId}`)
     if (!stored) return
     try {
@@ -261,6 +280,12 @@ export default function AIChat() {
     messagesRef.current = messages
   }, [messages])
 
+  useEffect(() => {
+    return () => {
+      typingSessionRef.current += 1
+    }
+  }, [])
+
   function playChatBubbleSound() {
     const audio = chatSoundRef.current ?? new Audio(chatBubbleSound)
     audio.volume = 0.6
@@ -308,9 +333,7 @@ export default function AIChat() {
 
   useEffect(() => {
     setAiQuickReplies(contextualSuggestions(getLatestUserText(messages)))
-    // Intentionally run only on first mount with seeded chat.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [threadId])
 
   const suggestions = useMemo(() => {
     if (!draft.trim()) {
@@ -455,9 +478,46 @@ export default function AIChat() {
     }
   }
 
+  const typeAiMessage = async (message: Message) => {
+    const session = typingSessionRef.current + 1
+    typingSessionRef.current = session
+
+    setMessages((prev) => [...prev, { ...message, text: "" }])
+
+    const fullText = message.text
+    if (!fullText) return
+
+    await new Promise<void>((resolve) => {
+      let index = 0
+      const step = () => {
+        if (typingSessionRef.current !== session) {
+          resolve()
+          return
+        }
+
+        index += 1
+        const nextText = fullText.slice(0, index)
+        setMessages((prev) => prev.map((item) => (item.id === message.id ? { ...item, text: nextText } : item)))
+
+        if (index >= fullText.length) {
+          resolve()
+          return
+        }
+
+        const currentChar = fullText[index - 1] ?? ""
+        const punctuationPause = /[,.!?]/.test(currentChar) ? TYPING_PUNCTUATION_PAUSE_MS : 0
+        const jitter = Math.floor(Math.random() * TYPING_VARIANCE_MS)
+        const delay = TYPING_BASE_DELAY_MS + jitter + punctuationPause
+        window.setTimeout(step, delay)
+      }
+
+      window.setTimeout(step, TYPING_START_DELAY_MS)
+    })
+  }
+
   async function sendMessage(text?: string) {
     const content = (text ?? draft).trim()
-    if (!content) {
+    if (!content || !threadId) {
       return
     }
 
@@ -483,18 +543,15 @@ export default function AIChat() {
         }))
 
       const aiMessage = await buildAiMessage(content, history)
-      setMessages((prev) => [...prev, aiMessage])
+      await typeAiMessage(aiMessage)
       playChatBubbleSound()
     } catch (_error: unknown) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-retry`,
-          from: "ai",
-          text: "I’m reaching AI again, one moment...",
-          time: nowTime(),
-        },
-      ])
+      await typeAiMessage({
+        id: `${Date.now()}-retry`,
+        from: "ai",
+        text: "I’m reaching AI again, one moment...",
+        time: nowTime(),
+      })
 
       try {
         await new Promise((resolve) => window.setTimeout(resolve, 1200))
@@ -506,16 +563,15 @@ export default function AIChat() {
             content: item.text,
           }))
         const retryMessage = await buildAiMessage(content, retryHistory)
-        setMessages((prev) => [...prev, retryMessage])
+        await typeAiMessage(retryMessage)
       } catch {
         setAiQuickReplies(defaultSuggestions)
-        const aiMessage: Message = {
+        await typeAiMessage({
           id: `${Date.now()}-a`,
           from: "ai",
           text: "Still unable to connect right now. I’ll keep trying in the background. Please send one more message.",
           time: nowTime(),
-        }
-        setMessages((prev) => [...prev, aiMessage])
+        })
       }
     } finally {
       setIsTyping(false)
@@ -582,12 +638,12 @@ export default function AIChat() {
   }
 
   useEffect(() => {
-    if (prefillHandled.current || !navState?.prefill) {
+    if (prefillHandled.current || !navState?.prefill || !threadId) {
       return
     }
     prefillHandled.current = true
     sendMessage(navState.prefill)
-  }, [navState])
+  }, [navState, threadId])
 
   function openPicker() {
     fileInputRef.current?.click()
@@ -603,7 +659,7 @@ export default function AIChat() {
   }
 
   return (
-    <div className="ai-chat-page">
+    <div className={`ai-chat-page theme-${themeKey}`}>
       <header className="ai-chat-header">
         <button className="ai-chat-back app-pressable" onClick={() => navigate(-1)} type="button" aria-label="Back">
           <FiArrowLeft />

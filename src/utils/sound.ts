@@ -1,15 +1,14 @@
 type SoundKind = "tap" | "success" | "notify" | "error"
 
 let sharedCtx: AudioContext | null = null
+let audioArmed = false
 
 function getCtx() {
   if (typeof window === "undefined") return null
   const AC = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!AC) return null
+  if (!audioArmed) return null
   if (!sharedCtx) sharedCtx = new AC()
-  if (sharedCtx.state === "suspended") {
-    sharedCtx.resume().catch(() => undefined)
-  }
   return sharedCtx
 }
 
@@ -25,6 +24,14 @@ function tone(ctx: AudioContext, freq: number, duration: number, startAt: number
   gain.connect(ctx.destination)
   osc.start(startAt)
   osc.stop(startAt + duration + 0.02)
+}
+
+export function armAudioContext() {
+  audioArmed = true
+  if (!sharedCtx) return
+  if (sharedCtx.state === "suspended") {
+    sharedCtx.resume().catch(() => undefined)
+  }
 }
 
 export function playAppSound(kind: SoundKind) {
@@ -48,4 +55,3 @@ export function playAppSound(kind: SoundKind) {
   }
   tone(ctx, 280, 0.1, now, "sawtooth", 0.02)
 }
-
