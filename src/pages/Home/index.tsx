@@ -41,7 +41,7 @@ type QuickAccessItem = {
   icon: "stress" | "lab" | "consult" | "weekend" | "pharmacy" | "badges"
 }
 
-type MetricId = "heart-rate" | "blood-pressure" | "calories" | "weight"
+type MetricId = "heart-rate" | "blood-pressure" | "calories" | "sugar"
 
 const tabs = [
   { id: "Home", icon: "home" },
@@ -84,6 +84,7 @@ const feelings = [
     priority: "check hydration",
     tone: "light-blue",
     level: "medium",
+    chatTheme: "whatsapp-dizzy",
     icon: <span className="emoji-icon sad-face" aria-hidden="true">😞</span>,
   },
   {
@@ -92,16 +93,18 @@ const feelings = [
     priority: "calm support",
     tone: "light-red",
     level: "high",
+    chatTheme: "whatsapp-mental",
     icon: <span className="emoji-icon eye-spiral" aria-hidden="true">🌀</span>,
   },
-  { id: "sleep", title: "Last Night Is...", priority: "recovery mode", tone: "light-purple", level: "low", icon: <FiMoon /> },
-  { id: "tension", title: "Physical Tension", priority: "stretch break", tone: "light-orange", level: "medium", icon: <FiZap /> },
+  { id: "sleep", title: "Last Night Is...", priority: "recovery mode", tone: "light-purple", level: "low", chatTheme: "whatsapp-sleep", icon: <FiMoon /> },
+  { id: "tension", title: "Physical Tension", priority: "stretch break", tone: "light-orange", level: "medium", chatTheme: "whatsapp-tension", icon: <FiZap /> },
   {
     id: "fever",
     title: "Running Feve",
     priority: "care needed",
     tone: "light-rose",
     level: "high",
+    chatTheme: "whatsapp-fever",
     icon: (
       <span className="fever-thermo" aria-hidden="true">
         <span className="fever-stem" />
@@ -109,7 +112,7 @@ const feelings = [
       </span>
     ),
   },
-  { id: "fatigue", title: "Chronic Fatigue", priority: "energy dip", tone: "light-gray", level: "medium", icon: <FiBatteryCharging /> },
+  { id: "fatigue", title: "Chronic Fatigue", priority: "energy dip", tone: "light-gray", level: "medium", chatTheme: "whatsapp-fatigue", icon: <FiBatteryCharging /> },
 ] as const
 
 const feelingPrefill: Record<(typeof feelings)[number]["id"], string> = {
@@ -153,13 +156,18 @@ const TIP_FAST_SCROLL_KEY = "home:tip-fast-scroll"
 const DAILY_TIP_STORAGE_KEY = "daily_tip_map"
 const DAILY_TIP_DATE_KEY = "daily_tip_date"
 const AI_THREAD_KEY = "employee_ai_thread_id"
+const AI_THREAD_KEY_LAST = "employee_ai_thread_id:last"
 const AI_MESSAGE_PREFIX = "employee_ai_thread_messages:"
+const HR_CACHE_KEY = "home:last_hr"
+const BP_CACHE_KEY = "home:last_bp"
+const WEATHER_CACHE_KEY = "home:last_weather"
+const UNREAD_CACHE_KEY = "home:last_unread"
 
 const metrics: Array<{ id: MetricId; title: string; value: string; unit: string; status: string; age: string; tone: string; icon: ReactElement }> = [
   { id: "heart-rate", title: "Heart Rate", value: "72", unit: "bpm", status: "normal", age: "2 hours ago", tone: "red", icon: <FiHeart /> },
   { id: "blood-pressure", title: "Blood Pressure", value: "120/80", unit: "mmHg", status: "normal", age: "4 hours ago", tone: "blue", icon: <FiActivity /> },
   { id: "calories", title: "Calories", value: "1850", unit: "kcal", status: "on track", age: "today", tone: "orange", icon: <FiZap /> },
-  { id: "weight", title: "Weight", value: "165", unit: "lbs", status: "normal", age: "1 day ago", tone: "green", icon: <FiPackage /> },
+  { id: "sugar", title: "Sugar Count", value: "110", unit: "mg/dL", status: "normal", age: "today", tone: "green", icon: <FiDroplet /> },
 ]
 const HOME_SCROLL_KEY = "home:scrollTop"
 
@@ -238,6 +246,8 @@ export default function Home() {
   const heroDragWidth = useRef(1)
   const [heroDragOffset, setHeroDragOffset] = useState(0)
   const heroContainerRef = useRef<HTMLDivElement | null>(null)
+  const apiCooldownRef = useRef<Record<string, number>>({})
+  const apiFailRef = useRef<Record<string, number>>({})
 
   const tipTouchStartX = useRef<number | null>(null)
   const pageRef = useRef<HTMLElement | null>(null)
@@ -247,6 +257,22 @@ export default function Home() {
   const scoreTarget = 90
 
   const [moodHint, setMoodHint] = useState("")
+  const shouldSkipApi = (key: string) => {
+    const until = apiCooldownRef.current[key] ?? 0
+    return Date.now() < until
+  }
+
+  const markApiFailure = (key: string) => {
+    const next = (apiFailRef.current[key] ?? 0) + 1
+    apiFailRef.current[key] = next
+    const backoffMs = Math.min(5 * 60 * 1000, 1000 * next * 30)
+    apiCooldownRef.current[key] = Date.now() + backoffMs
+  }
+
+  const markApiSuccess = (key: string) => {
+    apiFailRef.current[key] = 0
+    apiCooldownRef.current[key] = 0
+  }
   const formatAge = (eventAt?: string) => {
     if (!eventAt) return "No reading yet"
     const ts = Date.parse(eventAt)
@@ -261,7 +287,7 @@ export default function Home() {
   }
 
   function computeMoodHint() {
-    const threadId = localStorage.getItem(AI_THREAD_KEY)
+    const threadId = localStorage.getItem(AI_THREAD_KEY_LAST) ?? localStorage.getItem(AI_THREAD_KEY)
     if (!threadId) return ""
     const raw = localStorage.getItem(`${AI_MESSAGE_PREFIX}${threadId}`)
     if (!raw) return ""
@@ -636,12 +662,38 @@ export default function Home() {
   useEffect(() => {
     let active = true
     const loadLatest = async () => {
+      if (shouldSkipApi("vitals_hr")) {
+        const cached = localStorage.getItem(HR_CACHE_KEY)
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as { value: number | null; eventAt?: string }
+            setLatestHeartRate(parsed)
+          } catch {
+            // ignore cache parse errors
+          }
+        }
+        return
+      }
       try {
         const latest = await getLatestVital("heart_rate")
         if (!active) return
-        setLatestHeartRate({ value: typeof latest?.value === "number" ? latest.value : null, eventAt: latest?.eventAt })
+        const next = { value: typeof latest?.value === "number" ? latest.value : null, eventAt: latest?.eventAt }
+        setLatestHeartRate(next)
+        localStorage.setItem(HR_CACHE_KEY, JSON.stringify(next))
+        markApiSuccess("vitals_hr")
       } catch {
         if (!active) return
+        markApiFailure("vitals_hr")
+        const cached = localStorage.getItem(HR_CACHE_KEY)
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as { value: number | null; eventAt?: string }
+            setLatestHeartRate(parsed)
+            return
+          } catch {
+            // ignore cache parse errors
+          }
+        }
         setLatestHeartRate(null)
       }
     }
@@ -656,19 +708,45 @@ export default function Home() {
   useEffect(() => {
     let active = true
     const loadLatestBp = async () => {
+      if (shouldSkipApi("vitals_bp")) {
+        const cached = localStorage.getItem(BP_CACHE_KEY)
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as { sys: number | null; dia: number | null; eventAt?: string }
+            setLatestBloodPressure(parsed)
+          } catch {
+            // ignore cache parse errors
+          }
+        }
+        return
+      }
       try {
         const [sys, dia] = await Promise.all([
           getLatestVital("blood_pressure_sys"),
           getLatestVital("blood_pressure_dia"),
         ])
         if (!active) return
-        setLatestBloodPressure({
+        const next = {
           sys: typeof sys?.value === "number" ? sys.value : null,
           dia: typeof dia?.value === "number" ? dia.value : null,
           eventAt: sys?.eventAt || dia?.eventAt,
-        })
+        }
+        setLatestBloodPressure(next)
+        localStorage.setItem(BP_CACHE_KEY, JSON.stringify(next))
+        markApiSuccess("vitals_bp")
       } catch {
         if (!active) return
+        markApiFailure("vitals_bp")
+        const cached = localStorage.getItem(BP_CACHE_KEY)
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as { sys: number | null; dia: number | null; eventAt?: string }
+            setLatestBloodPressure(parsed)
+            return
+          } catch {
+            // ignore cache parse errors
+          }
+        }
         setLatestBloodPressure(null)
       }
     }
@@ -758,10 +836,13 @@ export default function Home() {
   function toggleFeeling(id: string) {
     if (id in feelingPrefill) {
       const key = id as (typeof feelings)[number]["id"]
+      const meta = feelings.find((item) => item.id === key)
       navigate("/ai-chat", {
         state: {
           prefill: feelingPrefill[key],
           doctor: feelingDoctorIntro[key],
+          feelingId: key,
+          theme: meta?.chatTheme ?? "whatsapp-dizzy",
         },
       })
       return
@@ -908,15 +989,34 @@ export default function Home() {
 
   useEffect(() => {
     let active = true
-    void fetchUnreadCount()
-      .then((count) => {
-        if (active) setUnreadCount(count)
-      })
-      .catch(() => undefined)
+    const syncUnread = async () => {
+      if (shouldSkipApi("notifications_unread")) {
+        const cached = localStorage.getItem(UNREAD_CACHE_KEY)
+        if (cached) {
+          const count = Number(cached)
+          if (!Number.isNaN(count) && active) setUnreadCount(count)
+        }
+        return
+      }
+      try {
+        const count = await fetchUnreadCount()
+        if (active) {
+          setUnreadCount(count)
+          localStorage.setItem(UNREAD_CACHE_KEY, String(count))
+          markApiSuccess("notifications_unread")
+        }
+      } catch {
+        markApiFailure("notifications_unread")
+        const cached = localStorage.getItem(UNREAD_CACHE_KEY)
+        if (cached) {
+          const count = Number(cached)
+          if (!Number.isNaN(count) && active) setUnreadCount(count)
+        }
+      }
+    }
+    void syncUnread()
     const onUpdate = () => {
-      void fetchUnreadCount()
-        .then((count) => active && setUnreadCount(count))
-        .catch(() => undefined)
+      void syncUnread()
     }
     window.addEventListener("app-notification", onUpdate as EventListener)
     return () => {
@@ -972,12 +1072,37 @@ export default function Home() {
     try {
       const parsed = JSON.parse(raw) as { lat?: number; lon?: number }
       if (parsed?.lat && parsed?.lon) {
+        if (shouldSkipApi("weather")) {
+          const cached = localStorage.getItem(WEATHER_CACHE_KEY)
+          if (cached) {
+            try {
+              const parsedWeather = JSON.parse(cached) as WeatherSnapshot
+              setWeather(parsedWeather)
+            } catch {
+              // ignore cache parse errors
+            }
+          }
+          void runDaily(parsed.lat, parsed.lon)
+          return
+        }
         fetchWeather(parsed.lat, parsed.lon)
           .then((data) => {
             setWeather(data)
+            localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data))
+            markApiSuccess("weather")
             return runDaily(parsed.lat, parsed.lon, data.location)
           })
           .catch(() => {
+            markApiFailure("weather")
+            const cached = localStorage.getItem(WEATHER_CACHE_KEY)
+            if (cached) {
+              try {
+                const parsedWeather = JSON.parse(cached) as WeatherSnapshot
+                setWeather(parsedWeather)
+              } catch {
+                // ignore cache parse errors
+              }
+            }
             void runDaily(parsed.lat, parsed.lon)
           })
       } else {

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   FiActivity,
   FiArrowUpRight,
@@ -15,10 +15,9 @@ import {
 } from "react-icons/fi"
 import type { ReactElement } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt"
 import { goBackOrFallback } from "../../utils/navigation"
-import { playAppSound } from "../../utils/sound"
-import { ensureDoctorActor, ensureEmployeeActor } from "../../services/actorsApi"
+import { armAudioContext, playAppSound } from "../../utils/sound"
+import { ensureEmployeeActor } from "../../services/actorsApi"
 import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { fetchDoctors as fetchDoctorDirectory, type DirectoryDoctor } from "../../services/doctorsApi"
@@ -28,6 +27,7 @@ import "./teleconsultation.css"
 
 type Doctor = {
   id: string
+  listKey: string
   name: string
   specialty: string
   rating: number
@@ -158,7 +158,6 @@ const MAX_TELECONSULT_SECONDS = 30 * 60
 const MAX_JOIN_RETRIES = 3
 const JOIN_RETRY_DELAY_MS = 1200
 const DEFAULT_COMPANY_ID = "astikan-demo-company"
-const LazyAgoraUIKit = lazy(() => import("agora-react-uikit"))
 
 
 function resolveAvatarUrl(avatar: string | null | undefined, fallback: string) {
@@ -197,23 +196,14 @@ async function ensureTeleconsultActors(doctor: Doctor) {
     employeeCode: employeeHandle.toUpperCase(),
   })
 
-  const doctorActor = await ensureDoctorActor({
-    email: `${doctor.id}@doctor.astikan.local`,
-    fullName: doctor.name,
-    handle: doctor.id,
-    specialization: doctor.specialty,
-  })
-
-  return { employee, doctor: doctorActor }
-}
-
-function toAgoraNumericUid(value: string) {
-  let hash = 0
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0
+  return {
+    employee,
+    doctor: {
+      userId: doctor.id,
+      email: doctor.name,
+      fullName: doctor.name,
+    },
   }
-  const safe = hash % 1000000000
-  return safe === 0 ? 1 : safe
 }
 
 export default function TeleConsultation() {
@@ -238,31 +228,32 @@ export default function TeleConsultation() {
   const [ridePhase, setRidePhase] = useState(0)
   const [rideProgress, setRideProgress] = useState(0)
   const [rideBanner, setRideBanner] = useState<"booked" | "onway" | "reached" | null>(null)
+  const [showRideMap, setShowRideMap] = useState(false)
   const [callState, setCallState] = useState<CallState>("ready")
   const [callError, setCallError] = useState("")
   const [mediaError, setMediaError] = useState("")
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [showDoctors, setShowDoctors] = useState(false)
   const [isBookingNow, setIsBookingNow] = useState(false)
+  const [bookingError, setBookingError] = useState("")
   const [teleconsultSessionId, setTeleconsultSessionId] = useState("")
   const [scheduledAt, setScheduledAt] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [joinReady, setJoinReady] = useState(true)
   const [autoJoin, setAutoJoin] = useState(false)
-  const [usingZegoTemplate, setUsingZegoTemplate] = useState(false)
-  const [usingAgoraTemplate, setUsingAgoraTemplate] = useState(false)
   const [activeRtc, setActiveRtc] = useState<TeleconsultRtcPayload | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [doctorOffset, setDoctorOffset] = useState(0)
   const [doctorHasMore, setDoctorHasMore] = useState(true)
   const [doctorLoading, setDoctorLoading] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
-  const [forceAgora, setForceAgora] = useState(false)
-  const zegoContainerRef = useRef<HTMLDivElement | null>(null)
-  const zegoUiRef = useRef<ReturnType<typeof ZegoUIKitPrebuilt.create> | null>(null)
+  const localVideoRef = useRef<HTMLVideoElement | null>(null)
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null)
+  const peerRef = useRef<RTCPeerConnection | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const localStreamRef = useRef<MediaStream | null>(null)
   const connectTimerRef = useRef<number | null>(null)
   const callClockRef = useRef<number | null>(null)
-  const zegoBootstrapInProgressRef = useRef(false)
   const callExitHandledRef = useRef(false)
 
   const selectedDoctorInfo = doctors.find((doctor) => doctor.id === selectedDoctor) ?? null
@@ -292,12 +283,13 @@ export default function TeleConsultation() {
 
   const PAGE_SIZE = 12
 
-  const mapDoctorRows = (rows: DirectoryDoctor[]) =>
+  const mapDoctorRows = (rows: DirectoryDoctor[], offset = 0) =>
     rows.map((row, index) => {
       const fallback = DEMO_DOCTORS[index % DEMO_DOCTORS.length]
       const fallbackAvatar = fallback.avatar
       return {
         id: row.user_id,
+        listKey: `${row.user_id}-${offset + index}`,
         name: row.full_name ?? row.full_display_name ?? fallback.fullName,
         specialty: row.doctor_specializations?.[0]?.specialization_name ?? fallback.specialization,
         rating: Number(row.rating_avg ?? 4.7),
@@ -320,7 +312,7 @@ export default function TeleConsultation() {
         limit: PAGE_SIZE,
         offset,
       })
-      const mapped = mapDoctorRows(rows)
+      const mapped = mapDoctorRows(rows, offset)
       if (reset) {
         setDoctors(mapped)
       } else {
@@ -335,8 +327,9 @@ export default function TeleConsultation() {
     } catch {
       if (reset) {
         setDoctors(
-          DEMO_DOCTORS.map((doctor) => ({
+          DEMO_DOCTORS.map((doctor, index) => ({
             id: doctor.handle,
+            listKey: `${doctor.handle}-${index}`,
             name: doctor.fullName,
             specialty: doctor.specialization,
             rating: 4.8,
@@ -456,10 +449,10 @@ export default function TeleConsultation() {
 
   useEffect(() => {
     if (!autoJoin || step !== "video" || !joinReady) return
-    if (callState !== "ready" || usingZegoTemplate || usingAgoraTemplate) return
+    if (callState !== "ready") return
     setAutoJoin(false)
-    void bootstrapZegoTemplateCall(forceAgora ? "agora" : undefined)
-  }, [autoJoin, callState, forceAgora, joinReady, step, usingAgoraTemplate, usingZegoTemplate])
+    void startWebRtcCall()
+  }, [autoJoin, callState, joinReady, step])
 
   useEffect(() => {
     if (step !== "options") return
@@ -473,6 +466,11 @@ export default function TeleConsultation() {
       setSelectedDoctor(visibleDoctors[0].id)
     }
   }, [selectedDoctor, visibleDoctors])
+
+  useEffect(() => {
+    if (!selectedDoctorInfo) return
+    setBookingError("")
+  }, [selectedDoctorInfo])
 
   useEffect(() => {
     if (step !== "video") return
@@ -536,16 +534,6 @@ export default function TeleConsultation() {
   }, [step])
 
   useEffect(() => {
-    if (step !== "video" || callState !== "failed") return
-    const timer = window.setTimeout(() => {
-      if (!usingAgoraTemplate) {
-        void bootstrapZegoTemplateCall("agora")
-      }
-    }, 800)
-    return () => window.clearTimeout(timer)
-  }, [step, callState, usingAgoraTemplate])
-
-  useEffect(() => {
     if (step !== "video" || !joinWindowStart) {
       setJoinReady(true)
       return
@@ -568,6 +556,30 @@ export default function TeleConsultation() {
     }
   }, [step, joinReady, bookingId, navigate])
 
+  useEffect(() => {
+    const onArm = () => {
+      armAudioContext()
+      window.removeEventListener("pointerdown", onArm)
+      window.removeEventListener("keydown", onArm)
+    }
+    window.addEventListener("pointerdown", onArm, { once: true })
+    window.addEventListener("keydown", onArm, { once: true })
+    return () => {
+      window.removeEventListener("pointerdown", onArm)
+      window.removeEventListener("keydown", onArm)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (effectiveStep !== "video") return
+    if (!joinReady) return
+    if (callState !== "ready") return
+    const timer = window.setTimeout(() => {
+      setAutoJoin(true)
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [effectiveStep, joinReady, callState])
+
   function exitCallToPreviousScreen() {
     if (callExitHandledRef.current) {
       return
@@ -576,71 +588,7 @@ export default function TeleConsultation() {
     goBackOrFallback(navigate)
   }
 
-  async function bootstrapZegoTemplateCall(preferredProvider?: "zego" | "agora") {
-    if (zegoBootstrapInProgressRef.current || usingZegoTemplate || usingAgoraTemplate || step !== "video" || mode !== "tele" || !joinReady) {
-      return
-    }
-    zegoBootstrapInProgressRef.current = true
-    setCallState("connecting")
-    setMediaError("")
-    setCallError("")
-    setElapsedSeconds(0)
-
-    try {
-      const preferred = forceAgora ? "agora" : preferredProvider
-      const rtc = await connectRealtimeCallWithRetry(preferred)
-      if (!rtc) {
-        throw new Error("Realtime provider unavailable")
-      }
-      setActiveRtc(rtc)
-      if (preferred === "agora" && rtc.provider !== "agora") {
-        throw new Error("Agora fallback unavailable")
-      }
-      if (rtc.provider === "zego") {
-        try {
-          await startZegoTemplateCall(rtc)
-        } catch {
-          setUsingZegoTemplate(false)
-          setActiveRtc(null)
-          const fallbackRtc = await connectRealtimeCallWithRetry("agora")
-          if (fallbackRtc) {
-            setActiveRtc(fallbackRtc)
-            setUsingAgoraTemplate(true)
-          } else {
-            throw new Error("Unable to start Zego. Agora fallback unavailable.")
-          }
-        }
-      } else {
-        setUsingAgoraTemplate(true)
-      }
-      setCallState("live")
-      playAppSound("notify")
-      startLiveTimer()
-    } catch (error) {
-      if (preferredProvider !== "agora") {
-        try {
-          const fallbackRtc = await connectRealtimeCallWithRetry("agora")
-          if (fallbackRtc) {
-            setActiveRtc(fallbackRtc)
-            setUsingAgoraTemplate(true)
-            setCallState("live")
-            playAppSound("notify")
-            startLiveTimer()
-            return
-          }
-        } catch {
-          // fall through to failure UI
-        }
-      }
-      const message = error instanceof Error ? error.message : "Unable to join consultation"
-      setForceAgora(true)
-      setCallState("failed")
-      setMediaError("")
-      setCallError(message)
-    } finally {
-      zegoBootstrapInProgressRef.current = false
-    }
-  }
+  // WebRTC join flow uses startWebRtcCall.
 
   // Join is now user-initiated from the waiting room UI.
 
@@ -678,7 +626,6 @@ export default function TeleConsultation() {
       employeeId: actors.employee.employeeUserId,
       doctorId: actors.doctor.userId,
       appointmentId: appointment.appointmentId,
-      preferredProvider: "zego",
     })
     setTeleconsultSessionId(created.sessionId)
     return created.sessionId
@@ -689,7 +636,9 @@ export default function TeleConsultation() {
     if (mode === "tele") {
       setIsBookingNow(true)
       setMediaError("")
+      setBookingError("")
       let booking: TeleBooking | null = null
+      let bookingFailed = false
       try {
         const now = new Date()
         const start = new Date(now.getTime())
@@ -713,13 +662,12 @@ export default function TeleConsultation() {
           aiTriageSummary: analysisQuery || undefined,
         })
         const created = await createTeleconsultSession({
-        companyId: actors.employee.companyId,
-        employeeId: actors.employee.employeeUserId,
-        doctorId: actors.doctor.userId,
-        appointmentId: appointment.appointmentId,
-        preferredProvider: "zego",
-        scheduledAt: start.toISOString(),
-      })
+          companyId: actors.employee.companyId,
+          employeeId: actors.employee.employeeUserId,
+          doctorId: actors.doctor.userId,
+          appointmentId: appointment.appointmentId,
+          scheduledAt: start.toISOString(),
+        })
         setTeleconsultSessionId(created.sessionId)
         setScheduledAt(start.toISOString())
         booking = {
@@ -745,15 +693,17 @@ export default function TeleConsultation() {
           doctorId: booking.doctorId,
           scheduledAt: booking.scheduledAt,
         })
-      } catch {
-        // Session can still be created during the call bootstrap path.
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "We could not create your booking right now."
+        setBookingError(message)
+        bookingFailed = true
       } finally {
         setIsBookingNow(false)
       }
       if (booking) {
         navigate("/teleconsultation/confirm", { state: { booking } })
-      } else {
-        navigate("/bookings")
+      } else if (!bookingFailed) {
+        setBookingError("Booking did not complete. Please try again.")
       }
       return
     }
@@ -782,67 +732,32 @@ export default function TeleConsultation() {
   }
 
   function teardownRealtimeCall() {
-    if (zegoUiRef.current) {
-      try {
-        zegoUiRef.current.destroy()
-      } catch {
-        // best effort
-      }
-      zegoUiRef.current = null
+    if (peerRef.current) {
+      peerRef.current.ontrack = null
+      peerRef.current.onicecandidate = null
+      peerRef.current.close()
+      peerRef.current = null
     }
-    if (zegoContainerRef.current) {
-      zegoContainerRef.current.innerHTML = ""
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
     }
-    setUsingZegoTemplate(false)
-    setUsingAgoraTemplate(false)
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop())
+      localStreamRef.current = null
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null
+    }
     setActiveRtc(null)
   }
 
-  async function startZegoTemplateCall(rtc: TeleconsultRtcPayload) {
-    const appId = Number(rtc.appId)
-    if (!appId) {
-      throw new Error("Invalid Zego credentials")
-    }
-    const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET as string | undefined
-    const effectiveAppId = Number(import.meta.env.VITE_ZEGO_APP_ID || appId)
-    if (!serverSecret || !effectiveAppId) {
-      throw new Error("Zego credentials missing")
-    }
-    if (!zegoContainerRef.current) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, 50))
-    }
-    if (!zegoContainerRef.current) {
-      throw new Error("Call container not ready")
-    }
-    setUsingZegoTemplate(true)
-    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-      effectiveAppId,
-      serverSecret,
-      rtc.channelName,
-      rtc.userId,
-      "Astikan Employee",
-    )
-    const zp = ZegoUIKitPrebuilt.create(kitToken)
-    zegoUiRef.current = zp
-    zp.joinRoom({
-      container: zegoContainerRef.current,
-      scenario: { mode: ZegoUIKitPrebuilt.OneONoneCall },
-      showPreJoinView: false,
-      turnOnCameraWhenJoining: true,
-      turnOnMicrophoneWhenJoining: true,
-      maxUsers: 2,
-      onLeaveRoom: () => {
-        if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
-        if (callClockRef.current) window.clearInterval(callClockRef.current)
-        connectTimerRef.current = null
-        callClockRef.current = null
-        setCallState("ended")
-        setElapsedSeconds(0)
-        setUsingZegoTemplate(false)
-        setActiveRtc(null)
-        exitCallToPreviousScreen()
-      },
-    })
+  function buildWsUrl(sessionId: string, participantId: string, role: "employee" | "doctor") {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws"
+    return `${protocol}://${window.location.host}/ws/teleconsult?sessionId=${sessionId}&participantId=${participantId}&role=${role}`
   }
 
   function startLiveTimer() {
@@ -863,26 +778,86 @@ export default function TeleConsultation() {
     }, 1000)
   }
 
-  async function connectRealtimeCallWithRetry(preferredProvider?: "zego" | "agora"): Promise<TeleconsultRtcPayload | null> {
+  async function startWebRtcCall() {
     let lastError: unknown = null
 
     for (let attempt = 0; attempt < MAX_JOIN_RETRIES; attempt += 1) {
       try {
-        if (!selectedDoctorInfo) {
-          return null
-        }
+        if (!selectedDoctorInfo) return
 
         const actors = await ensureTeleconsultActors(selectedDoctorInfo)
         const sessionId = teleconsultSessionId || (await ensureTeleconsultSession(selectedDoctorInfo.id))
         const joined = await joinTeleconsultSession(sessionId, {
           participantType: "employee",
           participantId: actors.employee.employeeUserId,
-          preferredProvider: attempt === 0 ? preferredProvider ?? "zego" : undefined,
-          forceFailover: attempt > 0 || preferredProvider === "agora",
           allowEarlyJoin: true,
         })
+        setTeleconsultSessionId(sessionId)
+        setActiveRtc(joined.rtc)
 
-        return joined.rtc
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        localStreamRef.current = stream
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream
+          localVideoRef.current.muted = true
+          await localVideoRef.current.play().catch(() => undefined)
+        }
+
+        const peer = new RTCPeerConnection({ iceServers: joined.rtc.iceServers })
+        peerRef.current = peer
+        stream.getTracks().forEach((track) => peer.addTrack(track, stream))
+
+        peer.ontrack = (event) => {
+          const [remoteStream] = event.streams
+          if (remoteVideoRef.current && remoteStream) {
+            remoteVideoRef.current.srcObject = remoteStream
+            void remoteVideoRef.current.play().catch(() => undefined)
+          }
+        }
+
+        const ws = new WebSocket(buildWsUrl(sessionId, actors.employee.employeeUserId, "employee"))
+        wsRef.current = ws
+
+        ws.onmessage = async (message) => {
+          try {
+            const data = JSON.parse(message.data as string) as { type?: string; sdp?: string; candidate?: RTCIceCandidateInit }
+            if (!data.type) return
+            if (data.type === "offer" && data.sdp) {
+              await peer.setRemoteDescription({ type: "offer", sdp: data.sdp })
+              const answer = await peer.createAnswer()
+              await peer.setLocalDescription(answer)
+              ws.send(JSON.stringify({ type: "answer", sdp: answer.sdp }))
+            }
+            if (data.type === "answer" && data.sdp) {
+              await peer.setRemoteDescription({ type: "answer", sdp: data.sdp })
+            }
+            if (data.type === "ice" && data.candidate) {
+              await peer.addIceCandidate(data.candidate)
+            }
+            if (data.type === "peer-joined") {
+              const offer = await peer.createOffer()
+              await peer.setLocalDescription(offer)
+              ws.send(JSON.stringify({ type: "offer", sdp: offer.sdp }))
+            }
+          } catch {
+            // ignore malformed messages
+          }
+        }
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ type: "join" }))
+        }
+
+        peer.onicecandidate = (event) => {
+          if (event.candidate && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ice", candidate: event.candidate }))
+          }
+        }
+
+        setCallState("live")
+        playAppSound("notify")
+        startLiveTimer()
+        return
       } catch (error) {
         lastError = error
         if (attempt < MAX_JOIN_RETRIES - 1) {
@@ -893,20 +868,16 @@ export default function TeleConsultation() {
       }
     }
 
-    throw lastError instanceof Error ? lastError : new Error("Unable to join teleconsult session")
+    const message = lastError instanceof Error ? lastError.message : "Unable to join teleconsult session"
+    setCallState("failed")
+    setMediaError("")
+    setCallError(message)
+    teardownRealtimeCall()
   }
 
   const liveMinutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0")
   const liveSeconds = String(elapsedSeconds % 60).padStart(2, "0")
-  const agoraRtcProps =
-    activeRtc && activeRtc.provider === "agora"
-      ? {
-          appId: activeRtc.appId,
-          channel: activeRtc.channelName,
-          token: activeRtc.token ?? undefined,
-          uid: toAgoraNumericUid(activeRtc.userId),
-        }
-      : null
+  const hasRemoteStream = Boolean(remoteVideoRef.current?.srcObject)
 
   return (
     <main className="tele-page app-page-enter">
@@ -959,9 +930,9 @@ export default function TeleConsultation() {
             </section>
 
             <section className="specialty-row app-fade-stagger">
-              {specialtyFilters.map((specialty) => (
+              {specialtyFilters.map((specialty, index) => (
                 <button
-                  key={specialty}
+                  key={`spec-${index}`}
                   className={`specialty-chip app-pressable ${activeSpecialty === specialty ? "active" : ""}`}
                   onClick={() => setActiveSpecialty(specialty)}
                   type="button"
@@ -975,9 +946,9 @@ export default function TeleConsultation() {
             <section className="doctor-section app-fade-stagger">
               <h3>Doctors for your symptoms</h3>
               <div className={`doctor-list ${showDoctors ? "ready" : ""}`}>
-                {visibleDoctors.map((doctor) => (
+                {visibleDoctors.map((doctor, index) => (
                   <button
-                    key={doctor.id}
+                    key={`doc-${index}`}
                     className={`doctor-card app-pressable ${selectedDoctor === doctor.id ? "selected" : ""}`}
                     onClick={() => {
                       setSelectedDoctor(doctor.id)
@@ -1022,7 +993,7 @@ export default function TeleConsultation() {
         )}
 
         {effectiveStep === "video" && selectedDoctorInfo && (
-          <section className={`video-stage tele-call-stage app-fade-stagger ${usingZegoTemplate || usingAgoraTemplate ? "video-stage-template" : ""}`}>
+          <section className="video-stage tele-call-stage app-fade-stagger">
             {!joinReady && (
               <div className="tele-wait-card">
                 <div className="tele-wait-icon"><FiClock /></div>
@@ -1036,7 +1007,7 @@ export default function TeleConsultation() {
               </div>
             )}
 
-            {joinReady && callState === "ready" && !usingZegoTemplate && !usingAgoraTemplate && (
+            {joinReady && callState === "ready" && (
               <div className="tele-wait-card">
                 <div className="tele-wait-icon"><FiVideo /></div>
                 <div className="tele-wait-copy">
@@ -1046,10 +1017,10 @@ export default function TeleConsultation() {
                 <button
                   className="app-pressable"
                   type="button"
-                  disabled={usingZegoTemplate || usingAgoraTemplate}
+                  disabled={callState !== "ready"}
                   onClick={() => {
                     if (callState !== "ready") return
-                    void bootstrapZegoTemplateCall(forceAgora ? "agora" : undefined)
+                    void startWebRtcCall()
                   }}
                 >
                   Join Call
@@ -1059,50 +1030,24 @@ export default function TeleConsultation() {
 
             {joinReady && (
               <>
-            {!usingZegoTemplate && !usingAgoraTemplate && (
-              <div className="video-top">
-                <h3>{selectedDoctorInfo.name}</h3>
-                <p>{selectedDoctorInfo.specialty}</p>
-              </div>
-            )}
+            <div className="video-top">
+              <h3>{selectedDoctorInfo.name}</h3>
+              <p>{selectedDoctorInfo.specialty}</p>
+            </div>
 
             <div className="video-call-shell">
-              {usingAgoraTemplate && agoraRtcProps ? (
-                <div className="zego-template-shell">
-                  <Suspense fallback={<p className="video-permission-note">Loading Agora call UI...</p>}>
-                    <LazyAgoraUIKit
-                      rtcProps={agoraRtcProps}
-                      callbacks={{
-                        EndCall: () => {
-                          if (connectTimerRef.current) window.clearTimeout(connectTimerRef.current)
-                          if (callClockRef.current) window.clearInterval(callClockRef.current)
-                          connectTimerRef.current = null
-                          callClockRef.current = null
-                          setCallState("ended")
-                          setElapsedSeconds(0)
-                          setUsingAgoraTemplate(false)
-                          setActiveRtc(null)
-                          exitCallToPreviousScreen()
-                        },
-                      }}
-                    />
-                  </Suspense>
-                </div>
-              ) : usingZegoTemplate ? (
-                <div className="zego-template-shell zego-uikit-shell">
-                  <div ref={zegoContainerRef} className="zego-uikit-container" />
-                </div>
-              ) : (
-                <div className="zego-template-shell zego-express-shell">
-                  <div className="video-screen remote">
-                    <div className="video-placeholder">
-                      <span>Call preview will appear here.</span>
-                    </div>
-                    <div className="video-screen-overlay" />
+              <div className="video-screen remote">
+                <video ref={remoteVideoRef} className="video-stream" playsInline autoPlay />
+                {!hasRemoteStream && (
+                  <div className="video-placeholder">
+                    <span>Waiting for the doctor to join...</span>
                   </div>
-                </div>
-              )}
-
+                )}
+                <div className="video-screen-overlay" />
+              </div>
+              <div className="video-screen local">
+                <video ref={localVideoRef} className="video-stream" playsInline autoPlay muted />
+              </div>
             </div>
 
             {callState === "connecting" && (
@@ -1119,7 +1064,7 @@ export default function TeleConsultation() {
                 <strong>We could not connect yet</strong>
                 <p>{callError || "Please check your network and try again."}</p>
                 <div className="tele-join-actions">
-                  <button className="app-pressable" type="button" onClick={() => void bootstrapZegoTemplateCall()}>
+                  <button className="app-pressable" type="button" onClick={() => void startWebRtcCall()}>
                     Retry join
                   </button>
                   <button className="ghost" type="button" onClick={exitCallToPreviousScreen}>
@@ -1130,15 +1075,13 @@ export default function TeleConsultation() {
             )}
 
             {mediaError ? <p className="video-permission-note">{mediaError}</p> : null}
-            {(callState === "live" || callState === "connecting") && !usingZegoTemplate && !usingAgoraTemplate && (
+            {(callState === "live" || callState === "connecting") && (
               <div className="video-clock-inline">
                 <span>{liveMinutes}:{liveSeconds}</span>
               </div>
             )}
 
-            {!usingZegoTemplate && !usingAgoraTemplate && (
-              <div className="video-controls" />
-            )}
+            <div className="video-controls" />
               </>
             )}
           </section>
@@ -1146,27 +1089,50 @@ export default function TeleConsultation() {
 
         {effectiveStep === "ride" && (
           <section className="ride-stage app-fade-stagger">
-            <h3>OPD Ride Tracking</h3>
-            <p>{rideDoctor.name} is booked. Live ride updates below.</p>
+            <h3>Appointment confirmed</h3>
+            <p>Your OPD visit with {rideDoctor.name} is booked successfully.</p>
 
-            <article className="ride-map">
-              <iframe
-                title="Ride live map"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                src="https://maps.google.com/maps?q=28.6139,77.2090%20to%2028.6304,77.2177&z=12&output=embed"
-              />
-              <div className="ride-pin user">You</div>
-              <div className="ride-route" />
-              <div className="ride-car" style={{ left: `calc(${rideProgress}% - 18px)` }}>Ride</div>
-              <div className="ride-pin clinic">OPD</div>
+            <article className="ride-status ride-status--complete">
+              <div>
+                <span>Doctor</span>
+                <strong>{rideDoctor.name}</strong>
+              </div>
+              <div>
+                <span>Specialty</span>
+                <strong>{rideDoctor.specialty}</strong>
+              </div>
+              <div>
+                <span>Booking ID</span>
+                <strong>{bookingId ?? "Assigned shortly"}</strong>
+              </div>
             </article>
 
-            <article className="ride-status">
-              <span>{ridePhase + 1}/3</span>
-              <strong>{rideSteps[ridePhase]}</strong>
-              <p>{rideProgress}% completed</p>
-            </article>
+            <div className="ride-actions">
+              <button
+                className="book-later-btn app-pressable"
+                type="button"
+                onClick={() => setShowRideMap((prev) => !prev)}
+              >
+                {showRideMap ? "Hide Map" : "View Map"}
+              </button>
+              <button className="book-btn app-pressable" type="button" onClick={() => navigate("/bookings")}>
+                View Bookings
+              </button>
+            </div>
+
+            {showRideMap && (
+              <article className="ride-map">
+                <iframe
+                  title="Clinic map"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src="https://maps.google.com/maps?q=28.6139,77.2090%20to%2028.6304,77.2177&z=12&output=embed"
+                />
+                <div className="ride-pin user">You</div>
+                <div className="ride-route" />
+                <div className="ride-pin clinic">OPD</div>
+              </article>
+            )}
           </section>
         )}
       </section>
@@ -1204,8 +1170,9 @@ export default function TeleConsultation() {
               </button>
             </div>
           )}
+          {bookingError && <p className="tele-booking-error">{bookingError}</p>}
           {!selectedDoctorInfo && (
-            <p className="tele-hint">Select any doctor card to choose Office Pickup or Home Pickup.</p>
+            <p className="tele-hint">Select any doctor card to review visit details and book.</p>
           )}
         </footer>
       )}
@@ -1213,18 +1180,6 @@ export default function TeleConsultation() {
       {effectiveStep === "ride" && rideBanner === "booked" && (
         <div className="booked-toast app-page-enter" role="status">
           <FiCheckCircle /> Appointment booked.
-        </div>
-      )}
-
-      {effectiveStep === "ride" && rideBanner === "onway" && (
-        <div className="booked-toast onway app-page-enter" role="status">
-          <FiCheckCircle /> Your ride is on the way.
-        </div>
-      )}
-
-      {effectiveStep === "ride" && rideBanner === "reached" && (
-        <div className="booked-toast app-page-enter" role="status">
-          <FiCheckCircle /> Arrived. Please proceed to doctor cabin.
         </div>
       )}
     </main>
