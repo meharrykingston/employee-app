@@ -14,6 +14,7 @@ export type AppNotification = {
   teleconsultSessionId?: string | null
   doctorId?: string | null
   scheduledAt?: string | null
+  joinWindowStart?: string | null
 }
 
 const STORAGE_KEY = "employee_notifications"
@@ -61,6 +62,7 @@ function normalizeItem(item: any): AppNotification {
     teleconsultSessionId: item.teleconsultSessionId ?? item.meta?.teleconsultSessionId ?? null,
     doctorId: item.doctorId ?? item.meta?.doctorId ?? null,
     scheduledAt: item.scheduledAt ?? item.meta?.scheduledAt ?? null,
+    joinWindowStart: item.joinWindowStart ?? item.meta?.joinWindowStart ?? null,
   }
 }
 

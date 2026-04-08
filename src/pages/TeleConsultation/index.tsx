@@ -21,7 +21,7 @@ import { ensureEmployeeActor } from "../../services/actorsApi"
 import { createAppointment } from "../../services/appointmentsApi"
 import { getEmployeeCompanySession } from "../../services/authApi"
 import { fetchDoctors as fetchDoctorDirectory, type DirectoryDoctor } from "../../services/doctorsApi"
-import { createTeleconsultSession, joinTeleconsultSession, type TeleconsultRtcPayload } from "../../services/teleconsultApi"
+import { createTeleconsultSession, joinTeleconsultSession } from "../../services/teleconsultApi"
 import { addNotification } from "../../services/notificationCenter"
 import "./teleconsultation.css"
 
@@ -225,8 +225,8 @@ export default function TeleConsultation() {
     return incomingState?.recommendedMode ?? "tele"
   })
   const [selectedDoctor, setSelectedDoctor] = useState(() => incomingState?.selectedDoctorId ?? "")
-  const [ridePhase, setRidePhase] = useState(0)
-  const [rideProgress, setRideProgress] = useState(0)
+  const [, setRidePhase] = useState(0)
+  const [, setRideProgress] = useState(0)
   const [rideBanner, setRideBanner] = useState<"booked" | "onway" | "reached" | null>(null)
   const [showRideMap, setShowRideMap] = useState(false)
   const [callState, setCallState] = useState<CallState>("ready")
@@ -241,7 +241,6 @@ export default function TeleConsultation() {
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [joinReady, setJoinReady] = useState(true)
   const [autoJoin, setAutoJoin] = useState(false)
-  const [activeRtc, setActiveRtc] = useState<TeleconsultRtcPayload | null>(null)
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [doctorOffset, setDoctorOffset] = useState(0)
   const [doctorHasMore, setDoctorHasMore] = useState(true)
@@ -402,12 +401,6 @@ export default function TeleConsultation() {
     if (filtered.length > 0) return filtered
     return []
   }, [doctors, activeSpecialty, query])
-
-  const rideSteps = [
-    "Ride is on the way to pick you up",
-    "You are on the way to the OPD doctor",
-    "Arrived at clinic. Doctor will see you shortly",
-  ]
 
   useEffect(() => {
     const state = location.state as TeleNavState | undefined
@@ -752,7 +745,6 @@ export default function TeleConsultation() {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null
     }
-    setActiveRtc(null)
   }
 
   function buildWsUrl(sessionId: string, participantId: string, role: "employee" | "doctor") {
@@ -793,8 +785,6 @@ export default function TeleConsultation() {
           allowEarlyJoin: true,
         })
         setTeleconsultSessionId(sessionId)
-        setActiveRtc(joined.rtc)
-
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         localStreamRef.current = stream
         if (localVideoRef.current) {
